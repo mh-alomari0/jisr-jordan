@@ -1,26 +1,50 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
+import { Cairo } from "next/font/google";
+import "./globals.css";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
-import WhatsAppWidget from "@/components/common/WhatsAppWidget";
-import "./globals.css";
+import RegisterSW from "@/components/common/RegisterSW";
+
+const cairo = Cairo({
+  subsets: ["arabic", "latin"],
+  weight: ["400", "500", "600", "700", "800", "900"],
+  variable: "--font-cairo",
+});
+
+export const viewport: Viewport = {
+  themeColor: "#0284c7",
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+};
 
 export const metadata: Metadata = {
-  title: "جسر | JISR — المنصة المعتمدة للصيانة المنزلية في الأردن",
-  description: "احجز أفضل الفنيين المعتمدين للسباكة، الكهرباء، التكييف والنجارة في الأردن بضغطة زر واحدة.",
+  title: "جسر | JISR - خدمات الصيانة المنزلية في الأردن",
+  description: "المنصة الأولى لحجز ومتابعة خدمات الصيانة المنزلية الموثوقة بضغطة زر.",
+  manifest: "/manifest.webmanifest",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "جسر",
+  },
+  formatDetection: {
+    telephone: false,
+  },
 };
 
 export default function RootLayout({
   children,
-}: {
+}: Readonly<{
   children: React.ReactNode;
-}) {
+}>) {
   return (
-    <html lang="ar" dir="rtl">
-      <body className="min-h-screen flex flex-col bg-neutral-surface text-neutral-text font-sans antialiased selection:bg-primary-light selection:text-primary">
+    <html lang="ar" dir="rtl" className={cairo.variable}>
+      <body className="font-sans bg-neutral-surface text-neutral-text antialiased min-h-screen flex flex-col">
+        <RegisterSW />
         <Header />
-        <main className="flex-1">{children}</main>
+        <main className="flex-grow">{children}</main>
         <Footer />
-        <WhatsAppWidget />
       </body>
     </html>
   );
