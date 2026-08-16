@@ -25,16 +25,12 @@ export const metadata: Metadata = {
   manifest: "/manifest.json",
   icons: {
     icon: "/icon-192.png",
-    shortcut: "/icon-192.png",
     apple: "/icon-192.png",
   },
   appleWebApp: {
     capable: true,
-    statusBarStyle: "black-translucent",
+    statusBarStyle: "default",
     title: "جسر",
-  },
-  formatDetection: {
-    telephone: false,
   },
 };
 
@@ -45,6 +41,11 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ar" dir="rtl" className={cairo.variable}>
+      <head>
+        <link rel="apple-touch-icon" href="/icon-192.png" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+      </head>
       <body className="font-sans bg-neutral-surface text-neutral-text antialiased min-h-screen flex flex-col">
         <RegisterSW />
         <Header />

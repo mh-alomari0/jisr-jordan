@@ -7,5 +7,7 @@ self.addEventListener("activate", (event) => {
 });
 
 self.addEventListener("fetch", (event) => {
-  // السماح بالطلبات المباشرة للشبكة والـ Realtime
+  event.respondWith(
+    fetch(event.request).catch(() => caches.match(event.request))
+  );
 });
