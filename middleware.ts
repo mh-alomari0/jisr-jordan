@@ -6,7 +6,7 @@ export async function middleware(request: NextRequest) {
   const ip = request.headers.get("x-forwarded-for")?.split(",")[0] || "127.0.0.1";
   const { pathname } = request.nextUrl;
 
-  // 1. تحديد معدل الطلبات (Rate Limiting) لصفحة الدخول والـ APIs
+  // 1. تحديد معدل الطلبات لصفحة الدخول والـ APIs
   if (pathname.startsWith("/login")) {
     const rateCheck = await checkRateLimit(`login_${ip}`, { limit: 5, windowMs: 60 * 1000 });
     if (!rateCheck.success) {
@@ -21,13 +21,14 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  // 2. تحديث الجلسة وحماية المسارات الحساسة (Auth Guard)
+  // 2. تحديث الجلسة وحماية المسارات الحساسة
   return await updateSession(request);
 }
 
 export const config = {
   matcher: [
     "/admin/:path*",
+    "/provider/:path*",
     "/bookings/:path*",
     "/profile/:path*",
     "/booking/:path*",

@@ -1,5 +1,5 @@
 import { getProviderBookingsAction } from "@/lib/actions/provider";
-import ProviderBookingCard from "./_components/provider-booking-card";
+import ProviderBookingCard, { ProviderBookingItem } from "./_components/provider-booking-card";
 
 export const metadata = {
   title: "بوابة مزودي الخدمة | جسر الأردن",
@@ -16,7 +16,7 @@ export default async function ProviderDashboardPage() {
     );
   }
 
-  const bookings = result.bookings;
+  const bookings = result.bookings as unknown as ProviderBookingItem[];
 
   return (
     <div className="container mx-auto p-6 space-y-6 dir-rtl">
@@ -31,7 +31,7 @@ export default async function ProviderDashboardPage() {
         </div>
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {bookings.map((booking: any) => (
+          {bookings.map((booking: ProviderBookingItem) => (
             <ProviderBookingCard key={booking.id} booking={booking} />
           ))}
         </div>

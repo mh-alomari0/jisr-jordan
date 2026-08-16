@@ -37,10 +37,10 @@ export async function updateSession(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   const pathname = request.nextUrl.pathname;
-  const protectedRoutes = ["/admin", "/bookings", "/profile", "/booking"];
+  const protectedRoutes = ["/admin", "/provider", "/bookings", "/profile", "/booking"];
   const isProtectedRoute = protectedRoutes.some((route) => pathname.startsWith(route));
 
-  // 1. تحويل الزوار غير المسجلين تلقائياً إلى صفحة التسجيل عند محاولة دخول مسار محمي
+  // تحويل الزوار غير المسجلين تلقائياً لصفحة الدخول عند محاولة فتح مسار محمي
   if (isProtectedRoute && !user) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
@@ -48,8 +48,7 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // 2. فحص صريح ومضمون لرتبة الأدمن/الـ Staff بقراءة جدول public.users المباشر
-  // ينبغي عدم الثق بأي حقل داخل user_metadata لأنه قابل للتعديل من العميل client-side
+  // فحص صريح ومضمون لرتبة الأدمن بقراءة جدول public.users المباشر
   if (pathname.startsWith("/admin") && user) {
     const { data: profile } = await supabase
       .from("users")
@@ -57,7 +56,6 @@ export async function updateSession(request: NextRequest) {
       .eq("id", user.id)
       .single();
 
-    // نستخدم دور الجدول المحمي RLS أولاً، أو app_metadata الذي لا يمكن تعديله من العميل
     const userRole = profile?.role || user.app_metadata?.role;
     const allowedRoles = ["ADMIN", "SUPER_ADMIN", "STAFF"];
 
