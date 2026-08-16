@@ -1,55 +1,79 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { createServerClient } from "@supabase/ssr";
+import { getServicesAction } from "@/lib/actions/services";
 
+// 1. محاكاة next/headers لمنع خطأ cookies()
+vi.mock("next/headers", () => ({
+  cookies: vi.fn().mockResolvedValue({
+    getAll: vi.fn().mockReturnValue([]),
+    get: vi.fn().mockReturnValue(undefined),
+    set: vi.fn(),
+  }),
+}));
+
+// 2. محاكاة Supabase SSR
 vi.mock("@supabase/ssr", () => ({
   createServerClient: vi.fn(),
 }));
 
-describe("Server Actions Security & Validation Tests", () => {
+describe("Real Server Actions Integration & Security Tests", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     process.env.NEXT_PUBLIC_SUPABASE_URL = "https://test.supabase.co";
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = "test-key";
   });
 
-  it("ينبغي رفض تنفيذ الحجز إذا كانت جلسة المستخدم غير موجودة", async () => {
+  it("ينبغي جلب قائمة الخدمات المتاحة بنجاح من قاعدة البيانات عبر getServicesAction الحقيقية", async () => {
+    const mockOrder = vi.fn().mockResolvedValue({
+      data: [
+        { id: "srv_1", title: "صيانة كهرباء", price: 30, description: "خدمة صيانة شاملة" },
+        { id: "srv_2", title: "سباكة منزلية", price: 20, description: "تصليح وتسريب" },
+      ],
+      error: null,
+    });
+
+    const mockEq = vi.fn().mockReturnValue({
+      order: mockOrder,
+    });
+
     vi.mocked(createServerClient).mockReturnValue({
-      auth: {
-        getUser: vi.fn().mockResolvedValue({ data: { user: null }, error: null }),
-      },
+      from: vi.fn().mockReturnValue({
+        select: vi.fn().mockReturnValue({
+          eq: mockEq,
+          order: mockOrder,
+        }),
+      }),
     } as unknown as ReturnType<typeof createServerClient>);
 
-    const mockCreateBookingAction = async () => {
-      const supabase = createServerClient("https://test.supabase.co", "test-key", { cookies: { getAll: () => [], setAll: () => {} } });
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return { success: false, error: "Unauthorized" };
-      return { success: true };
-    };
+    const result = await getServicesAction();
 
-    const result = await mockCreateBookingAction();
-    expect(result.success).toBe(false);
-    expect(result.error).toBe("Unauthorized");
+    expect(result.success).toBe(true);
+    expect(result.services).toHaveLength(2);
+    expect(result.services?.[0].title).toBe("صيانة كهرباء");
   });
 
-  it("ينبغي السماح بالتنفيذ عندما تكون الجلسة صالحة للمستخدم المسجل", async () => {
+  it("ينبغي معالجة خطأ قاعدة البيانات بشكل آمن وإرجاع success = false عند فشل الاستعلام", async () => {
+    const mockOrder = vi.fn().mockResolvedValue({
+      data: null,
+      error: { message: "Database connection failed" },
+    });
+
+    const mockEq = vi.fn().mockReturnValue({
+      order: mockOrder,
+    });
+
     vi.mocked(createServerClient).mockReturnValue({
-      auth: {
-        getUser: vi.fn().mockResolvedValue({
-          data: { user: { id: "usr_999", email: "client@test.com" } },
-          error: null,
+      from: vi.fn().mockReturnValue({
+        select: vi.fn().mockReturnValue({
+          eq: mockEq,
+          order: mockOrder,
         }),
-      },
+      }),
     } as unknown as ReturnType<typeof createServerClient>);
 
-    const mockDeleteAccountAction = async () => {
-      const supabase = createServerClient("https://test.supabase.co", "test-key", { cookies: { getAll: () => [], setAll: () => {} } });
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return { success: false, error: "Unauthorized" };
-      return { success: true, userId: user.id };
-    };
+    const result = await getServicesAction();
 
-    const result = await mockDeleteAccountAction();
-    expect(result.success).toBe(true);
-    expect(result.userId).toBe("usr_999");
+    expect(result.success).toBe(false);
+    expect(result.services).toBeUndefined();
   });
 });
