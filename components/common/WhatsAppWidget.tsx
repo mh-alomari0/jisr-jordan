@@ -4,7 +4,7 @@ import { MessageCircle } from "lucide-react";
 
 export default function WhatsAppWidget() {
   // رقم الواتساب المخصص للدعم الفني (مثال: الأردن)
-  const whatsappNumber = "962780853633"; // استبدل هذا الرقم برقم الواتساب الخاص بك 
+  const whatsappNumber = "962780583633"; // استبدل هذا الرقم برقم الواتساب الخاص بك 
   const defaultText = encodeURIComponent("مرحباً منصة جسر، أود الاستفسار عن خدمات الصيانة المتاحة.");
 
   const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${defaultText}`;
