@@ -1,4 +1,4 @@
-import { createServerClient, type CookieOptions } from "@supabase/ssr";
+import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 export async function updateSession(request: NextRequest) {
@@ -6,8 +6,8 @@ export async function updateSession(request: NextRequest) {
     request,
   });
 
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
   if (!supabaseUrl || !supabaseAnonKey) {
     return supabaseResponse;
@@ -18,8 +18,10 @@ export async function updateSession(request: NextRequest) {
       getAll() {
         return request.cookies.getAll();
       },
-      setAll(cookiesToSet: { name: string; value: string; options: CookieOptions }[]) {
-        cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
+      setAll(cookiesToSet) {
+        cookiesToSet.forEach(({ name, value }) =>
+          request.cookies.set(name, value)
+        );
         supabaseResponse = NextResponse.next({
           request,
         });
@@ -34,34 +36,24 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const url = request.nextUrl.clone();
-  const pathname = url.pathname;
+  const pathname = request.nextUrl.pathname;
+  const protectedRoutes = ["/admin", "/bookings", "/profile", "/booking"];
+  const isProtectedRoute = protectedRoutes.some((route) => pathname.startsWith(route));
 
-  const isAdminRoute = pathname.startsWith("/admin");
-  const isCustomerRoute = pathname.startsWith("/bookings") || pathname.startsWith("/profile") || pathname.startsWith("/booking");
-  const isAuthRoute = pathname.startsWith("/login") || pathname.startsWith("/register") || pathname.startsWith("/forgot-password");
-
-  if ((isAdminRoute || isCustomerRoute) && !user) {
+  // تحويل الزوار غير المسجلين تلقائياً لصفحة التسجيل عند محاولة فتح مسار محمي
+  if (isProtectedRoute && !user) {
+    const url = request.nextUrl.clone();
     url.pathname = "/login";
     url.searchParams.set("redirectTo", pathname);
     return NextResponse.redirect(url);
   }
 
-  if (isAuthRoute && user) {
-    url.pathname = "/profile";
-    return NextResponse.redirect(url);
-  }
-
-  if (isAdminRoute && user) {
-    const { data: profile } = await supabase
-      .from("users")
-      .select("role")
-      .eq("id", user.id)
-      .single();
-
-    const userRole = profile?.role || "CUSTOMER";
-
-    if (!["ADMIN", "SUPER_ADMIN", "STAFF"].includes(userRole)) {
+  // التحقق من صلاحيات الأدمن والـ Staff ومنع وصول المستخدم العادي
+  if (pathname.startsWith("/admin") && user) {
+    const userRole = user.user_metadata?.role || user.app_metadata?.role;
+    const allowedRoles = ["ADMIN", "SUPER_ADMIN", "STAFF"];
+    if (!allowedRoles.includes(userRole)) {
+      const url = request.nextUrl.clone();
       url.pathname = "/";
       return NextResponse.redirect(url);
     }
