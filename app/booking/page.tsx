@@ -2,7 +2,6 @@
 
 import React, { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/lib/supabase/client";
-import { RealtimePostgresChangesPayload } from "@supabase/supabase-js";
 import { Calendar, Clock, MapPin, CheckCircle, Star } from "lucide-react";
 import RatingModal from "@/components/common/RatingModal";
 
@@ -36,7 +35,6 @@ export default function BookingsPage() {
   const [selectedBookingForRating, setSelectedBookingForRating] = useState<Booking | null>(null);
 
   const fetchBookings = useCallback(async () => {
-    setLoading(true);
     const { data: { user } } = await supabase.auth.getUser();
 
     if (!user) {
@@ -67,7 +65,15 @@ export default function BookingsPage() {
   }, []);
 
   useEffect(() => {
-    fetchBookings();
+    let isMounted = true;
+
+    const init = async () => {
+      if (isMounted) {
+        await fetchBookings();
+      }
+    };
+
+    init();
 
     const channelName = "customer_bookings_realtime";
     const existingChannel = supabase
@@ -87,13 +93,14 @@ export default function BookingsPage() {
           schema: "public",
           table: "bookings",
         },
-        (_payload: RealtimePostgresChangesPayload<Booking>) => {
+        () => {
           fetchBookings();
         }
       )
       .subscribe();
 
     return () => {
+      isMounted = false;
       supabase.removeChannel(channel);
     };
   }, [fetchBookings]);
@@ -185,6 +192,8 @@ export default function BookingsPage() {
       {selectedBookingForRating && (
         <RatingModal
           bookingId={selectedBookingForRating.id}
+          serviceTitle={selectedBookingForRating.services?.title}
+          isOpen={true}
           onClose={() => setSelectedBookingForRating(null)}
           onSuccess={() => {
             setSelectedBookingForRating(null);

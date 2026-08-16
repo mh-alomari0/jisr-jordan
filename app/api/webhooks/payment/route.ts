@@ -5,55 +5,48 @@ import { logger } from "@/lib/logger";
 
 export async function POST(request: Request) {
   try {
-    const bodyText = await request.text();
+    const rawBody = await request.text();
     const signature = request.headers.get("x-signature") || "";
-    const webhookSecret = process.env.PAYMENT_WEBHOOK_SECRET || "";
+    const secret = process.env.PAYMENT_WEBHOOK_SECRET;
 
-    // 1. التحقق من التوقيع الأمني للإشعار
-    const isValid = paymentService.verifyWebhookSignature(bodyText, signature, webhookSecret);
+    if (!secret) {
+      logger.error("Missing PAYMENT_WEBHOOK_SECRET environment variable", { context: "PaymentWebhook" });
+      return NextResponse.json({ error: "Server Configuration Error" }, { status: 500 });
+    }
+
+    const isValid = paymentService.verifyWebhookSignature(rawBody, signature, secret);
     if (!isValid) {
-      logger.warn("Received invalid payment webhook signature", { context: "PaymentWebhook" });
-      return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
+      logger.warn("Invalid webhook signature received", { context: "PaymentWebhook" });
+      return NextResponse.json({ error: "Invalid Signature" }, { status: 401 });
     }
 
-    const payload = JSON.parse(bodyText);
-    const { bookingId, status, transactionId } = payload;
+    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 
-    if (!bookingId || !status) {
-      return NextResponse.json({ error: "Missing payload data" }, { status: 400 });
+    // Fail-Fast: يرفض العمل بدون مفتاح الأدمن المباشر بدلاً من الانزلاق لـ Anon Key
+    if (!serviceRoleKey || !supabaseUrl) {
+      logger.error("CRITICAL: Missing SUPABASE_SERVICE_ROLE_KEY for payment confirmation", { context: "PaymentWebhook" });
+      return NextResponse.json({ error: "Server Security Misconfiguration" }, { status: 500 });
     }
 
-    // 2. استخدام Service Role للوصول المباشر المحمي لقاعدة البيانات
-    const supabaseAdmin = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    );
+    const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey);
+    const body = JSON.parse(rawBody);
 
-    // 3. تحديث حالة الحجز بناءً على النتيجة السيرفرية
-    const newStatus = status === "SUCCESS" ? "CONFIRMED" : "CANCELLED";
+    if (body.bookingId && body.status === "SUCCESS") {
+      const { error } = await supabaseAdmin
+        .from("bookings")
+        .update({ status: "CONFIRMED" })
+        .eq("id", body.bookingId);
 
-    const { error } = await supabaseAdmin
-      .from("bookings")
-      .update({
-        status: newStatus,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", bookingId);
-
-    if (error) {
-      logger.error(`Failed to update booking status via Webhook: ${error.message}`, {
-        context: "PaymentWebhook",
-      });
-      return NextResponse.json({ error: "Database update failed" }, { status: 500 });
+      if (error) {
+        logger.error(`Failed to update booking status: ${error.message}`, { context: "PaymentWebhook" });
+        return NextResponse.json({ error: "Database Update Failed" }, { status: 500 });
+      }
     }
 
-    logger.info(`Booking ${bookingId} updated to ${newStatus} via Webhook [Tx: ${transactionId}]`, {
-      context: "PaymentWebhook",
-    });
-
-    return NextResponse.json({ received: true, status: newStatus });
+    return NextResponse.json({ received: true, status: "PROCESSED" });
   } catch (err) {
-    logger.error("Unhandled error in Payment Webhook", { context: "PaymentWebhook", error: err });
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    logger.error("Error processing payment webhook", { context: "PaymentWebhook", error: err });
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }
