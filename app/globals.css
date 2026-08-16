@@ -1,28 +1,56 @@
-@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&display=swap');
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
-  --font-cairo: 'Cairo', sans-serif;
+  /* Brand Palette Tokens */
+  --primary: 2, 132, 199;        /* #0284c7 - Sky 600 */
+  --primary-dark: 3, 105, 161;   /* #0369a1 - Sky 700 */
+  --primary-light: 224, 242, 254;/* #e0f2fe - Sky 100 */
+
+  /* Canvas & Card Surfaces */
+  --bg-canvas: 250, 248, 245;    /* #faf8f5 - Warm Neutral Canvas */
+  --bg-surface: 255, 255, 255;   /* #ffffff - Card Surface */
+
+  /* Typography Colors */
+  --text-main: 15, 23, 42;       /* #0f172a - Slate 900 */
+  --text-muted: 71, 85, 105;     /* #475569 - Slate 600 */
+
+  /* Status Tokens */
+  --success: 22, 163, 74;        /* #16a34a - Green 600 */
+  --destructive: 220, 38, 38;    /* #dc2626 - Red 600 */
+  --warning: 217, 119, 6;        /* #d97706 - Amber 600 */
 }
 
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
+@layer base {
+  * {
+    @apply border-slate-200;
+  }
+
+  html {
+    -webkit-tap-highlight-color: transparent;
+    scroll-behavior: smooth;
+  }
+
+  body {
+    background-color: rgb(var(--bg-canvas));
+    color: rgb(var(--text-main));
+    font-family: var(--font-cairo), system-ui, -apple-system, sans-serif;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Accessible Focus Ring (WCAG 2.2 AA Standard) */
+  :focus-visible {
+    outline: 2px solid rgb(var(--primary));
+    outline-offset: 2px;
+  }
 }
 
-body {
-  font-family: var(--font-cairo);
-  background-color: #F8FAFC;
-  color: #0F172A;
-  direction: rtl;
-  text-align: right;
-  overflow-x: hidden;
-}
-
-html {
-  scroll-behavior: smooth;
+@layer utilities {
+  .glass-card {
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(226, 232, 240, 0.8);
+  }
 }
