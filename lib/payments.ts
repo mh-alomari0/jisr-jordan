@@ -1,3 +1,4 @@
+import crypto from "crypto";
 import { logger } from "@/lib/logger";
 
 export type PaymentMethod = "CASH_ON_DELIVERY" | "EFAWATEERCOM" | "CREDIT_CARD";
@@ -36,7 +37,6 @@ class PaymentService {
         };
 
       case "EFAWATEERCOM":
-        // جاهز للربط مع API أيقونة eFAWATEERcom / البنوك الأردنية
         return {
           transactionId: `efaw_${Date.now()}`,
           status: "PENDING",
@@ -44,7 +44,6 @@ class PaymentService {
         };
 
       case "CREDIT_CARD":
-        // جاهز للربط مع Stripe / Checkout.com
         return {
           transactionId: `tx_${Date.now()}`,
           status: "PENDING",
@@ -57,12 +56,25 @@ class PaymentService {
   }
 
   /**
-   * التحقق من توقيع الـ Webhook لمنع التزوير (Signature Verification)
+   * التحقق المعتمد أمنياً من HMAC-SHA256 ومقارنته بالوقت الثابت لمنع Timing Attacks
    */
   verifyWebhookSignature(payload: string, signature: string, secret: string): boolean {
-    if (!signature || !secret) return false;
-    // يتم التثبت من التوقيع المشفّر من بوابة الدفع بـ HMAC-SHA256
-    return true; 
+    if (!signature || !secret || !payload) return false;
+
+    try {
+      const hmac = crypto.createHmac("sha256", secret);
+      const digest = Buffer.from(hmac.update(payload).digest("hex"), "utf8");
+      const checksum = Buffer.from(signature, "utf8");
+
+      if (digest.length !== checksum.length) {
+        return false;
+      }
+
+      return crypto.timingSafeEqual(digest, checksum);
+    } catch (err) {
+      logger.error("Error verifying webhook signature", { context: "PaymentService", error: err });
+      return false;
+    }
   }
 }
 

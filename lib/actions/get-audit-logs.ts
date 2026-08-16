@@ -32,8 +32,26 @@ export async function getAuditLogsAction(page = 1, limit = 20): Promise<{
       },
     });
 
-    const offset = (page - 1) * limit;
+    // 1. التثبت من الجلسة
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
+      return { success: false, error: "غير مصرح: يجب تسجيل الدخول" };
+    }
 
+    // 2. فحص الدور الصريح داخل الكود (Defense-in-Depth)
+    const { data: profile } = await supabase
+      .from("users")
+      .select("role")
+      .eq("id", user.id)
+      .single();
+
+    if (!profile || !["ADMIN", "SUPER_ADMIN"].includes(profile.role)) {
+      logger.warn(`Unauthorized audit logs access attempt by user ${user.id}`, { context: "AdminAudit" });
+      return { success: false, error: "غير مصرح: هذه الصفحة مخصصة للمسؤولين فقط" };
+    }
+
+    // 3. تنفيذ الاستعلام
+    const offset = (page - 1) * limit;
     const { data, error } = await supabase
       .from("audit_logs")
       .select("*")
