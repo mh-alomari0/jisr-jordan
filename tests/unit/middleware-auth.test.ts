@@ -16,39 +16,35 @@ describe("Real Auth Guard & Middleware Unit Tests", () => {
   });
 
   it("ينبغي تحويل الزائر غير المسجل تلقائياً إلى /login عند فتح مسار محمي مثل /admin", async () => {
-    // محاكاة زائر غير مسجل (User = null)
-    (createServerClient as any).mockReturnValue({
+    vi.mocked(createServerClient).mockReturnValue({
       auth: {
         getUser: vi.fn().mockResolvedValue({ data: { user: null }, error: null }),
       },
-    });
+    } as unknown as ReturnType<typeof createServerClient>);
 
     const req = new NextRequest("http://localhost:3000/admin");
     const res = await updateSession(req);
 
-    // التحقق من إرجاع استجابة تحويل (Redirect) وتضمين رابط اللوجن والمسار المستهدف
     expect(res.status).toBe(307);
     expect(res.headers.get("location")).toContain("/login?redirectTo=%2Fadmin");
   });
 
   it("ينبغي السماح للزائر بزيارة المسارات العامة مثل /services بدون أي إعادة توجيه", async () => {
-    (createServerClient as any).mockReturnValue({
+    vi.mocked(createServerClient).mockReturnValue({
       auth: {
         getUser: vi.fn().mockResolvedValue({ data: { user: null }, error: null }),
       },
-    });
+    } as unknown as ReturnType<typeof createServerClient>);
 
     const req = new NextRequest("http://localhost:3000/services");
     const res = await updateSession(req);
 
-    // عدم إرجاع رابط تحويل والسماح بمرور الطلب كالمعتاد
     expect(res.status).toBe(200);
     expect(res.headers.get("location")).toBeNull();
   });
 
   it("ينبغي منع المستخدم العادي (USER) من دخول /admin وإعادته للصفحة الرئيسية", async () => {
-    // محاكاة مستخدم مسجل دخول لكن بدور USER عادي في قاعدة البيانات
-    (createServerClient as any).mockReturnValue({
+    vi.mocked(createServerClient).mockReturnValue({
       auth: {
         getUser: vi.fn().mockResolvedValue({
           data: { user: { id: "user-123", email: "user@test.com" } },
@@ -62,18 +58,17 @@ describe("Real Auth Guard & Middleware Unit Tests", () => {
           }),
         }),
       }),
-    });
+    } as unknown as ReturnType<typeof createServerClient>);
 
     const req = new NextRequest("http://localhost:3000/admin");
     const res = await updateSession(req);
 
-    // التحقق من طرد المستخدم للرئيسية
     expect(res.status).toBe(307);
     expect(res.headers.get("location")).toBe("http://localhost:3000/");
   });
 
   it("ينبغي السماح للأدمن (ADMIN) بالمرور والوصول لوحة التحكم /admin بنجاح", async () => {
-    (createServerClient as any).mockReturnValue({
+    vi.mocked(createServerClient).mockReturnValue({
       auth: {
         getUser: vi.fn().mockResolvedValue({
           data: { user: { id: "admin-123", email: "admin@test.com" } },
@@ -87,7 +82,7 @@ describe("Real Auth Guard & Middleware Unit Tests", () => {
           }),
         }),
       }),
-    });
+    } as unknown as ReturnType<typeof createServerClient>);
 
     const req = new NextRequest("http://localhost:3000/admin");
     const res = await updateSession(req);
