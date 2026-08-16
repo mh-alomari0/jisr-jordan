@@ -1,12 +1,12 @@
-self.addEventListener("install", (event) => {
+/* eslint-disable @typescript-eslint/no-unused-vars */
+self.addEventListener('install', (event) => {
   self.skipWaiting();
 });
 
-self.addEventListener("activate", (event) => {
+self.addEventListener('activate', (event) => {
   event.waitUntil(self.clients.claim());
 });
 
-// تمرير جميع الطلبات للشبكة فوراً لمنع أخطاء Load failed
-self.addEventListener("fetch", (event) => {
-  event.respondWith(fetch(event.request));
+self.addEventListener('fetch', (event) => {
+  // Service Worker Fetch Handling
 });
