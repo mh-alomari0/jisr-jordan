@@ -22,10 +22,15 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   title: "جسر | JISR - خدمات الصيانة المنزلية في الأردن",
   description: "المنصة الأولى لحجز ومتابعة خدمات الصيانة المنزلية الموثوقة بضغطة زر.",
-  manifest: "/manifest.webmanifest",
+  manifest: "/manifest.json",
+  icons: {
+    icon: "/icon-192.png",
+    shortcut: "/icon-192.png",
+    apple: "/icon-192.png",
+  },
   appleWebApp: {
     capable: true,
-    statusBarStyle: "default",
+    statusBarStyle: "black-translucent",
     title: "جسر",
   },
   formatDetection: {
