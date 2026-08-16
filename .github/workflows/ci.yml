@@ -27,6 +27,9 @@ jobs:
       - name: ESLint Code Quality Check
         run: npm run lint
 
+      - name: TypeScript Type Check
+        run: npx tsc --noEmit
+
       - name: Security Vulnerability Audit
         run: npm audit --audit-level=high
 
