@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect } from "react";
-import { AlertCircle, RotateCcw } from "lucide-react";
+import React, { useEffect } from "react";
+import { AlertOctagon, RotateCcw } from "lucide-react";
 
 export default function GlobalError({
   error,
@@ -11,25 +11,27 @@ export default function GlobalError({
   reset: () => void;
 }) {
   useEffect(() => {
-    console.error("Uncaught App Error:", error);
+    console.error("Uncaught app error:", error);
   }, [error]);
 
   return (
-    <div className="min-h-[70vh] flex flex-col items-center justify-center text-center px-4">
-      <div className="w-16 h-16 bg-rose-100 text-rose-600 rounded-2xl flex items-center justify-center mb-4">
-        <AlertCircle className="w-8 h-8" />
+    <div className="min-h-[60vh] flex items-center justify-center px-4">
+      <div className="max-w-md w-full bg-white p-8 rounded-2xl border border-slate-200 shadow-sm text-center space-y-4">
+        <div className="w-12 h-12 bg-rose-50 text-rose-600 rounded-full flex items-center justify-center mx-auto">
+          <AlertOctagon className="w-6 h-6" />
+        </div>
+        <h2 className="text-xl font-bold text-slate-900">حدث خطأ غير متوقع</h2>
+        <p className="text-sm text-slate-500">
+          نعتذر، تعذر إكمال العملية الحالية. تم تسجيل الخطأ لإصلاحه فوراً.
+        </p>
+        <button
+          onClick={() => reset()}
+          className="inline-flex items-center gap-2 px-5 py-2.5 bg-sky-600 hover:bg-sky-700 text-white rounded-lg text-sm font-medium transition-colors"
+        >
+          <RotateCcw className="w-4 h-4" />
+          إعادة المحاولة
+        </button>
       </div>
-      <h1 className="text-2xl font-black text-neutral-text mb-2">حدث خطأ غير متوقع</h1>
-      <p className="text-neutral-muted text-sm max-w-md mb-6">
-        تعذر تحميل الصفحة المطلوبة حالياً. يرجى محاولة إعادتها من جديد.
-      </p>
-      <button
-        onClick={() => reset()}
-        className="bg-primary text-white font-bold px-6 py-3 rounded-btn hover:bg-primary-hover transition-colors inline-flex items-center gap-2 shadow-md"
-      >
-        <RotateCcw className="w-4 h-4" />
-        <span>إعادة المحاولة</span>
-      </button>
     </div>
   );
 }
