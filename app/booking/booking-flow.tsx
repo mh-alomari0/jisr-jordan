@@ -1,34 +1,34 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
-
-interface Service {
-  id: string;
-  title: string;
-  price?: number;
-}
-
-const SERVICES: Service[] = [
-  { id: "1", title: "صيانة الكهرباء", price: 25 },
-  { id: "2", title: "صيانة السباكة", price: 20 },
-];
+import React, { useState, useEffect, useMemo } from "react";
+import { getServicesAction, ServiceItem } from "@/lib/actions/services";
 
 interface BookingFlowProps {
   initialServiceId?: string;
 }
 
 export default function BookingFlow({ initialServiceId }: BookingFlowProps) {
-  // تهيئة الخدمة المحددة مباشرة من Props دون الحاجة لـ useEffect
-  const [selectedService, setSelectedService] = useState<Service | null>(() => {
-    if (initialServiceId) {
-      return SERVICES.find((s) => s.id === initialServiceId) || null;
-    }
-    return null;
-  });
-
+  const [services, setServices] = useState<ServiceItem[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [selectedService, setSelectedService] = useState<ServiceItem | null>(null);
   const [bookingDate, setBookingDate] = useState<string>("");
 
-  // حساب التواريخ المتاحة مشتقاً (Derived State) بـ useMemo لمنع الـ Cascading Renders
+  useEffect(() => {
+    async function loadServices() {
+      setLoading(true);
+      const res = await getServicesAction();
+      if (res.success && res.services) {
+        setServices(res.services);
+        if (initialServiceId) {
+          const match = res.services.find((s) => s.id === initialServiceId);
+          if (match) setSelectedService(match);
+        }
+      }
+      setLoading(false);
+    }
+    loadServices();
+  }, [initialServiceId]);
+
   const availableDates = useMemo(() => {
     const today = new Date();
     const datesList = [];
@@ -51,22 +51,27 @@ export default function BookingFlow({ initialServiceId }: BookingFlowProps) {
 
       <div className="mb-6">
         <label className="block text-sm font-medium mb-2 text-slate-700">اختر الخدمة</label>
-        <div className="grid grid-cols-2 gap-3">
-          {SERVICES.map((service) => (
-            <button
-              key={service.id}
-              type="button"
-              onClick={() => setSelectedService(service)}
-              className={`p-3 text-right rounded-lg border transition-all ${
-                selectedService?.id === service.id
-                  ? "border-sky-600 bg-sky-50 text-sky-900 font-semibold"
-                  : "border-slate-200 hover:border-slate-300"
-              }`}
-            >
-              {service.title}
-            </button>
-          ))}
-        </div>
+        {loading ? (
+          <div className="p-4 text-center text-sm text-slate-500">جاري جلب الخدمات المتاحة...</div>
+        ) : (
+          <div className="grid grid-cols-2 gap-3">
+            {services.map((service) => (
+              <button
+                key={service.id}
+                type="button"
+                onClick={() => setSelectedService(service)}
+                className={`p-3 text-right rounded-lg border transition-all ${
+                  selectedService?.id === service.id
+                    ? "border-sky-600 bg-sky-50 text-sky-900 font-semibold"
+                    : "border-slate-200 hover:border-slate-300"
+                }`}
+              >
+                <div>{service.title}</div>
+                <div className="text-xs text-slate-500 mt-1">{service.price} دينار</div>
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       <div className="mb-6">

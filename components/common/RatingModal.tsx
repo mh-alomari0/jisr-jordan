@@ -1,155 +1,124 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState } from "react";
 import { supabase } from "@/lib/supabase/client";
-import { Star, X, Loader2, CheckCircle2 } from "lucide-react";
+import { Star, X } from "lucide-react";
 
-interface RatingModalProps {
+export interface RatingModalProps {
   bookingId: string;
-  serviceTitle: string;
-  isOpen: boolean;
+  serviceTitle?: string;
+  isOpen?: boolean;
   onClose: () => void;
-  onSuccess: () => void;
+  onSuccess?: () => void;
 }
 
 export default function RatingModal({
   bookingId,
   serviceTitle,
-  isOpen,
+  isOpen = true,
   onClose,
   onSuccess,
 }: RatingModalProps) {
-  const [rating, setRating] = useState(5);
-  const [hoverRating, setHoverRating] = useState(0);
-  const [comment, setComment] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [rating, setRating] = useState<number>(5);
+  const [comment, setComment] = useState<string>("");
+  const [submitting, setSubmitting] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
   if (!isOpen) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
+    setSubmitting(true);
     setError(null);
 
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
-      if (!user) {
-        setError("يرجى تسجيل الدخول مجدداً لإرسال التقييم.");
-        setLoading(false);
-        return;
-      }
-
-      const { error: dbError } = await supabase.from("reviews").insert({
-        booking_id: bookingId,
-        customer_id: user.id,
-        rating,
-        comment: comment.trim() || null,
-      });
-
-      if (dbError) {
-        if (dbError.code === "23505") {
-          setError("لقد قمت بتقديم تقييم لهذا الطلب سابقاً.");
-        } else {
-          setError("تعذر حفظ التقييم. حاول مرة أخرى.");
-        }
-      } else {
-        onSuccess();
-        onClose();
-      }
-    } catch (err) {
-      console.error("Rating Submission Error:", err);
-      setError("حدث خطأ غير متوقع.");
-    } finally {
-      setLoading(false);
+    if (!user) {
+      setError("يجب تسجيل الدخول لتقديم التقييم");
+      setSubmitting(false);
+      return;
     }
+
+    const { error: insertError } = await supabase.from("reviews").insert({
+      booking_id: bookingId,
+      customer_id: user.id,
+      rating,
+      comment: comment.trim() || null,
+    });
+
+    if (insertError) {
+      setError("تعذر حفظ التقييم. يرجى المحاولة لاحقاً.");
+      setSubmitting(false);
+      return;
+    }
+
+    setSubmitting(false);
+    if (onSuccess) onSuccess();
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-white rounded-card border border-neutral-border shadow-2xl max-w-md w-full p-6 space-y-6 relative animate-in fade-in zoom-in-95 duration-200">
-        
-        {/* زر الإغلاق */}
+    <div className="fixed inset-0 bg-slate-900/50 flex items-center justify-center p-4 z-50">
+      <div className="bg-white rounded-2xl max-w-md w-full p-6 space-y-4 relative">
         <button
           onClick={onClose}
-          className="absolute left-4 top-4 text-neutral-muted hover:text-neutral-text transition-colors"
+          type="button"
+          className="absolute top-4 left-4 text-slate-400 hover:text-slate-600 transition-colors"
         >
           <X className="w-5 h-5" />
         </button>
 
-        <div className="text-center space-y-2">
-          <div className="w-12 h-12 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center mx-auto">
-            <Star className="w-6 h-6 fill-amber-500 stroke-amber-500" />
-          </div>
-          <h2 className="text-xl font-bold text-neutral-text">تقييم الخدمة المنجزة</h2>
-          <p className="text-xs text-neutral-muted">
-            كيف كانت تجربتك في خدمة <span className="font-bold text-neutral-text">{serviceTitle}</span>؟
-          </p>
+        <div>
+          <h3 className="text-lg font-bold text-slate-900">تقييم الخدمة</h3>
+          {serviceTitle && (
+            <p className="text-xs text-slate-500 mt-0.5">{serviceTitle}</p>
+          )}
         </div>
 
-        {error && (
-          <div className="bg-rose-50 text-rose-700 p-3 rounded-lg text-xs font-medium border border-rose-200 text-center">
-            {error}
-          </div>
-        )}
+        {error && <p className="text-xs text-rose-600">{error}</p>}
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          
-          {/* نجوم التقييم */}
-          <div className="flex items-center justify-center gap-2 dir-ltr">
-            {[1, 2, 3, 4, 5].map((star) => {
-              const active = star <= (hoverRating || rating);
-              return (
-                <button
-                  key={star}
-                  type="button"
-                  onClick={() => setRating(star)}
-                  onMouseEnter={() => setHoverRating(star)}
-                  onMouseLeave={() => setHoverRating(0)}
-                  className="p-1 transition-transform hover:scale-125 focus:outline-none"
-                >
-                  <Star
-                    className={`w-8 h-8 transition-colors ${
-                      active
-                        ? "fill-amber-400 text-amber-400"
-                        : "fill-neutral-surface text-neutral-border"
-                    }`}
-                  />
-                </button>
-              );
-            })}
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="flex justify-center gap-2">
+            {[1, 2, 3, 4, 5].map((star) => (
+              <button
+                key={star}
+                type="button"
+                onClick={() => setRating(star)}
+                className="p-1 focus:outline-none"
+              >
+                <Star
+                  className={`w-8 h-8 transition-colors ${
+                    star <= rating
+                      ? "text-amber-400 fill-amber-400"
+                      : "text-slate-200"
+                  }`}
+                />
+              </button>
+            ))}
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-neutral-text mb-2">
-              ملاحظاتك وانطباعك عن عمل الفني (اختياري)
+            <label className="block text-xs font-medium text-slate-700 mb-1">
+              ملاحظاتك (اختياري)
             </label>
             <textarea
-              rows={3}
               value={comment}
               onChange={(e) => setComment(e.target.value)}
-              placeholder="اكتب ملاحظاتك هنا لمساعدتنا في تحسين جودة الخدمات..."
-              className="w-full p-3 bg-neutral-surface border border-neutral-border rounded-btn text-xs font-medium focus:outline-none focus:border-primary resize-none"
+              rows={3}
+              className="w-full p-2.5 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500"
+              placeholder="اكتب انطباعك عن الخدمة والمزود..."
             />
           </div>
 
           <button
             type="submit"
-            disabled={loading}
-            className="w-full bg-primary text-white font-bold py-3.5 rounded-btn hover:bg-primary-hover transition-colors flex items-center justify-center gap-2 shadow-md disabled:opacity-50 text-sm"
+            disabled={submitting}
+            className="w-full py-2.5 bg-sky-600 hover:bg-sky-700 text-white rounded-lg text-sm font-semibold transition-colors disabled:opacity-50"
           >
-            {loading ? (
-              <Loader2 className="w-5 h-5 animate-spin" />
-            ) : (
-              <>
-                <CheckCircle2 className="w-4 h-4" />
-                <span>إرسال التقييم</span>
-              </>
-            )}
+            {submitting ? "جاري الحفظ..." : "إرسال التقييم"}
           </button>
         </form>
-
       </div>
     </div>
   );

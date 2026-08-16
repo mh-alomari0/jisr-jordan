@@ -2,15 +2,17 @@ import { describe, it, expect } from "vitest";
 import { checkRateLimit } from "@/lib/rate-limit";
 
 describe("Rate Limiter Unit Tests", () => {
-  it("ينبغي السماح بالطلبات ضمن الحد وحظر الطلب الزائد", () => {
-    const config = { limit: 2, windowMs: 10000 };
-    const testKey = "test_ip_999";
+  it("ينبغي أن يسمح بالطلبات ضمن الحد المسموح ويرفض ما يتجاوزه", async () => {
+    const testKey = `test_ip_${Date.now()}`;
+    const config = { limit: 2, windowMs: 60000 };
 
-    // الطلب الأول والثاني مقبولان
-    expect(checkRateLimit(testKey, config).success).toBe(true);
-    expect(checkRateLimit(testKey, config).success).toBe(true);
+    const req1 = await checkRateLimit(testKey, config);
+    expect(req1.success).toBe(true);
 
-    // الطلب الثالث يتم حظره
-    expect(checkRateLimit(testKey, config).success).toBe(false);
+    const req2 = await checkRateLimit(testKey, config);
+    expect(req2.success).toBe(true);
+
+    const req3 = await checkRateLimit(testKey, config);
+    expect(req3.success).toBe(false);
   });
 });
