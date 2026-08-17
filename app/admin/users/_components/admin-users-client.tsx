@@ -1,62 +1,89 @@
 "use client";
 
 import { useState } from "react";
-import { updateUserRoleAction, UserRole } from "@/lib/actions/admin-users";
+import { updateUserRoleAction, AdminUserItem } from "@/lib/actions/admin-users";
 
-export interface UserManagementItem {
-  id: string;
-  email?: string | null;
-  role: UserRole;
-  created_at?: string | null;
-}
-
-export default function AdminUsersClient({ initialUsers }: { initialUsers: UserManagementItem[] }) {
+export default function AdminUsersClient({ initialUsers }: { initialUsers: AdminUserItem[] }) {
+  const [users, setUsers] = useState<AdminUserItem[]>(initialUsers);
   const [loadingId, setLoadingId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
 
-  const handleRoleChange = async (userId: string, newRole: UserRole) => {
+  const handleRoleChange = async (userId: string, newRole: "USER" | "STAFF" | "ADMIN") => {
     setLoadingId(userId);
     const res = await updateUserRoleAction(userId, newRole);
-    if (!res.success) {
-      alert(res.error || "فشل التحديث");
+    if (res.success) {
+      setUsers((prev) =>
+        prev.map((u) => (u.id === userId ? { ...u, role: newRole } : u))
+      );
+    } else {
+      alert(res.error || "فشل تغيير رتبة المستخدم");
     }
     setLoadingId(null);
   };
 
+  const filteredUsers = users.filter((u) =>
+    (u.email || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (u.full_name || "").toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   return (
-    <div className="bg-white border rounded-xl shadow-sm overflow-hidden">
-      <table className="w-full text-right text-sm">
-        <thead className="bg-gray-50 border-b">
-          <tr>
-            <th className="p-4">البريد الإلكتروني</th>
-            <th className="p-4">الرتبة الحالية</th>
-            <th className="p-4">تغيير الرتبة</th>
-          </tr>
-        </thead>
-        <tbody>
-          {initialUsers.map((usr) => (
-            <tr key={usr.id} className="border-b">
-              <td className="p-4 font-medium">{usr.email || usr.id}</td>
-              <td className="p-4">
-                <span className="px-2 py-1 rounded text-xs bg-gray-100 font-semibold">
-                  {usr.role || "USER"}
-                </span>
-              </td>
-              <td className="p-4">
-                <select
-                  disabled={loadingId === usr.id}
-                  defaultValue={usr.role || "USER"}
-                  onChange={(e) => handleRoleChange(usr.id, e.target.value as UserRole)}
-                  className="border p-1.5 rounded text-xs bg-white"
-                >
-                  <option value="USER">عميل (USER)</option>
-                  <option value="STAFF">مزود خدمة (STAFF)</option>
-                  <option value="ADMIN">مدير (ADMIN)</option>
-                </select>
-              </td>
+    <div className="space-y-4 text-right dir-rtl">
+      <input
+        type="text"
+        placeholder="ابحث بالبريد الإلكتروني أو الاسم..."
+        value={searchQuery}
+        onChange={(e) => setSearchQuery(e.target.value)}
+        className="w-full md:w-1/3 border p-2.5 rounded-lg text-sm bg-white"
+      />
+
+      <div className="bg-white border rounded-xl shadow-sm overflow-x-auto">
+        <table className="w-full text-right text-sm">
+          <thead className="bg-gray-50 border-b text-xs text-gray-500">
+            <tr>
+              <th className="p-3">المستخدم</th>
+              <th className="p-3">الهاتف</th>
+              <th className="p-3">الرتبة الحالية</th>
+              <th className="p-3">تغيير الرتبة</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody className="divide-y text-xs">
+            {filteredUsers.length === 0 ? (
+              <tr>
+                <td colSpan={4} className="p-6 text-center text-gray-500">
+                  لا يوجد مستخدمون يطابقون خيارات البحث.
+                </td>
+              </tr>
+            ) : (
+              filteredUsers.map((u) => (
+                <tr key={u.id} className="hover:bg-gray-50">
+                  <td className="p-3">
+                    <p className="font-bold text-gray-900">{u.full_name || "بدون اسم"}</p>
+                    <p className="text-gray-500 font-mono text-[11px]">{u.email}</p>
+                  </td>
+                  <td className="p-3 text-gray-600">{u.phone || "—"}</td>
+                  <td className="p-3">
+                    <span className="px-2 py-0.5 rounded font-bold bg-gray-100 text-gray-800">
+                      {u.role}
+                    </span>
+                  </td>
+                  <td className="p-3">
+                    <select
+                      disabled={loadingId === u.id}
+                      value={u.role}
+                      onChange={(e) => handleRoleChange(u.id, e.target.value as "USER" | "STAFF" | "ADMIN")}
+                      className="border rounded p-1.5 text-xs bg-white disabled:opacity-50"
+                    >
+                      <option value="USER">عميل (USER)</option>
+                      <option value="STAFF">مزود خدمة (STAFF)</option>
+                      <option value="ADMIN">مدير نظام (ADMIN)</option>
+                    </select>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

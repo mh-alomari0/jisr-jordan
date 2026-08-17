@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { createServerClient } from "@supabase/ssr";
-import { updateUserRoleAction } from "@/lib/actions/admin-users";
+import { getAdminUsersAction } from "@/lib/actions/admin-users";
 
 vi.mock("next/headers", () => ({
   cookies: vi.fn().mockResolvedValue({
@@ -13,14 +13,14 @@ vi.mock("@supabase/ssr", () => ({
   createServerClient: vi.fn(),
 }));
 
-describe("Admin User Management Security Tests", () => {
+describe("Admin Users Security Unit Tests", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     process.env.NEXT_PUBLIC_SUPABASE_URL = "https://test.supabase.co";
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = "test-key";
   });
 
-  it("ينبغي حظر العميل العادي من تغيير ألقاب المستخدمين وصلاحياتهم", async () => {
+  it("ينبغي حظر المستخدمين العاديين من استعراض قائمة المستخدمين", async () => {
     vi.mocked(createServerClient).mockReturnValue({
       auth: {
         getUser: vi.fn().mockResolvedValue({
@@ -37,9 +37,9 @@ describe("Admin User Management Security Tests", () => {
       }),
     } as unknown as ReturnType<typeof createServerClient>);
 
-    const res = await updateUserRoleAction("usr-target", "ADMIN");
+    const res = await getAdminUsersAction();
 
     expect(res.success).toBe(false);
-    expect(res.error).toBe("غير مصرح لك بتعديل صلاحيات المستخدمين");
+    expect(res.error).toBe("غير مصرح لك بإدارة المستخدمين");
   });
 });
