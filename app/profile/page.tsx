@@ -1,41 +1,29 @@
-"use client";
+import { getUserProfileAction } from "@/lib/actions/profile";
+import ProfileClient from "./_components/profile-client";
 
-import React from "react";
-import { User, Mail, Shield } from "lucide-react";
+export const metadata = {
+  title: "الملف الشخصي | جسر الأردن",
+};
 
-export default function ProfilePage() {
-  const handleProfileUpdate = async () => {
-    try {
-      // منطق تحديث البيانات
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : "حدث خطأ غير متوقع";
-      console.error(message);
-    }
-  };
+export default async function ProfilePage() {
+  const result = await getUserProfileAction();
+
+  if (!result.success || !result.profile) {
+    return (
+      <div className="p-8 text-center text-red-600 bg-white border rounded-xl my-6 container mx-auto">
+        <p>{result.error || "تعذر تحميل الملف الشخصي"}</p>
+      </div>
+    );
+  }
 
   return (
-    <div className="max-w-2xl mx-auto py-8">
-      <h1 className="text-2xl font-bold mb-6">الملف الشخصي</h1>
-      <div className="bg-white p-6 rounded-xl border border-slate-200 space-y-4 shadow-sm">
-        <div className="flex items-center gap-3">
-          <User className="w-5 h-5 text-sky-600" />
-          <span className="text-slate-800">المستخدم الحالي</span>
-        </div>
-        <div className="flex items-center gap-3">
-          <Mail className="w-5 h-5 text-sky-600" />
-          <span className="text-slate-800">user@jisr.jo</span>
-        </div>
-        <div className="flex items-center gap-3">
-          <Shield className="w-5 h-5 text-sky-600" />
-          <span className="text-slate-800">عميل معتمد</span>
-        </div>
-        <button
-          onClick={handleProfileUpdate}
-          className="mt-4 px-4 py-2 bg-sky-600 text-white rounded-lg text-sm hover:bg-sky-700 transition-colors"
-        >
-          حفظ التغييرات
-        </button>
+    <div className="container mx-auto p-6 space-y-6 dir-rtl">
+      <div className="border-b pb-4">
+        <h1 className="text-2xl font-bold">الملف الشخصي</h1>
+        <p className="text-gray-600 text-sm">إدارة معلومات الحساب والعنوان الافتراضي والتواصل</p>
       </div>
+
+      <ProfileClient initialProfile={result.profile} />
     </div>
   );
 }
