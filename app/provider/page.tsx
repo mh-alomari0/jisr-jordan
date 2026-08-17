@@ -1,41 +1,29 @@
-import { getProviderBookingsAction } from "@/lib/actions/provider";
-import ProviderBookingCard, { ProviderBookingItem } from "./_components/provider-booking-card";
+import { getProviderBookingsAction } from "@/lib/actions/provider-bookings";
+import ProviderBookingsClient from "./_components/provider-bookings-client";
 
 export const metadata = {
-  title: "بوابة مزودي الخدمة | جسر الأردن",
+  title: "الطلبات الحالية والحجوزات | بوابة المزودين",
 };
 
 export default async function ProviderDashboardPage() {
   const result = await getProviderBookingsAction();
 
-  if (!result.success || !result.bookings) {
+  if (!result.success) {
     return (
-      <div className="p-8 text-center text-red-600">
-        <p>{result.error || "تعذر تحميل لوحة تحكم المزود"}</p>
+      <div className="p-8 text-center text-red-600 bg-white border rounded-xl dir-rtl">
+        <p>{result.error || "تعذر تحميل طلبات بوابة المزودين"}</p>
       </div>
     );
   }
 
-  const bookings = result.bookings as unknown as ProviderBookingItem[];
-
   return (
     <div className="container mx-auto p-6 space-y-6 dir-rtl">
       <div className="border-b pb-4">
-        <h1 className="text-2xl font-bold">بوابة مزودي الخدمة</h1>
-        <p className="text-gray-600 text-sm">إدارة الطلبات الموكلة وتحديث حالة الأعمال الحالية</p>
+        <h1 className="text-2xl font-bold">إدارة الطلبات الموكلة بالحرفيين</h1>
+        <p className="text-gray-600 text-sm">متابعة طلبات الحجز الواردة وتحديث حالة التنفيذ فورياً</p>
       </div>
 
-      {bookings.length === 0 ? (
-        <div className="p-8 text-center text-gray-500 bg-gray-50 rounded-lg">
-          لا توجد حجوزات موكلة إليك حالياً.
-        </div>
-      ) : (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {bookings.map((booking: ProviderBookingItem) => (
-            <ProviderBookingCard key={booking.id} booking={booking} />
-          ))}
-        </div>
-      )}
+      <ProviderBookingsClient initialBookings={result.bookings || []} />
     </div>
   );
 }
