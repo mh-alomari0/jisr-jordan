@@ -1,79 +1,49 @@
-import { logger } from "@/lib/logger";
-
-interface RateLimitStore {
-  count: number;
-  resetAt: number;
-}
-
 export interface RateLimitOptions {
-  limit: number;
+  limit?: number;
+  maxRequests?: number;
   windowMs?: number;
-  windowInSeconds?: number;
 }
 
-const memoryStore = new Map<string, RateLimitStore>();
+const actionTracker = new Map<string, { count: number; resetAt: number }>();
 
 export async function checkRateLimit(
   identifier: string,
-  optionsOrLimit: number | RateLimitOptions = 10,
-  defaultWindowInSeconds = 60
-): Promise<{ success: boolean; remaining: number }> {
-  // استخلاص القيم سواء تم تمرير رقم أو كائن إعدادات
-  const limit = typeof optionsOrLimit === "number" ? optionsOrLimit : optionsOrLimit.limit;
-  
-  const windowInSeconds = typeof optionsOrLimit === "object"
-    ? (optionsOrLimit.windowInSeconds || (optionsOrLimit.windowMs ? optionsOrLimit.windowMs / 1000 : 60))
-    : defaultWindowInSeconds;
+  optionsOrMaxRequests: RateLimitOptions | number = 10,
+  windowMsParam = 60000
+) {
+  let maxRequests = 10;
+  let windowMs = windowMsParam;
 
-  const url = process.env.UPSTASH_REDIS_REST_URL;
-  const token = process.env.UPSTASH_REDIS_REST_TOKEN;
-
-  // 1. Upstash Redis Distributed Engine
-  if (url && token) {
-    try {
-      const key = `ratelimit:${identifier}`;
-      const response = await fetch(`${url}/pipeline`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify([
-          ["INCR", key],
-          ["EXPIRE", key, Math.ceil(windowInSeconds)],
-        ]),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        const currentCount = Number(data[0]?.result || 1);
-        return {
-          success: currentCount <= limit,
-          remaining: Math.max(0, limit - currentCount),
-        };
-      }
-    } catch (err) {
-      logger.error("Upstash Redis connection failed, falling back to local memory", {
-        context: "RateLimiter",
-        error: err,
-      });
-    }
+  if (typeof optionsOrMaxRequests === "number") {
+    maxRequests = optionsOrMaxRequests;
+  } else if (typeof optionsOrMaxRequests === "object" && optionsOrMaxRequests !== null) {
+    maxRequests = optionsOrMaxRequests.limit ?? optionsOrMaxRequests.maxRequests ?? 10;
+    windowMs = optionsOrMaxRequests.windowMs ?? windowMsParam;
   }
 
-  // 2. Local In-Memory Fallback Engine
   const now = Date.now();
-  const windowMs = windowInSeconds * 1000;
-  const record = memoryStore.get(identifier);
+  const record = actionTracker.get(identifier);
 
   if (!record || now > record.resetAt) {
-    memoryStore.set(identifier, { count: 1, resetAt: now + windowMs });
-    return { success: true, remaining: limit - 1 };
+    actionTracker.set(identifier, { count: 1, resetAt: now + windowMs });
+    return { success: true, remaining: maxRequests - 1, reset: now + windowMs };
   }
 
-  if (record.count >= limit) {
-    return { success: false, remaining: 0 };
+  if (record.count >= maxRequests) {
+    return {
+      success: false,
+      remaining: 0,
+      reset: record.resetAt,
+      error: "تم تجاوز الحد المسموح من المحاولات، يرجى الانتظار قليلاً",
+    };
   }
 
   record.count += 1;
-  return { success: true, remaining: limit - record.count };
+  return {
+    success: true,
+    remaining: maxRequests - record.count,
+    reset: record.resetAt,
+  };
 }
+
+export const verifyActionRateLimit = checkRateLimit;
