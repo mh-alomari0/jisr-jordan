@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import Navbar from "@/components/navbar";
+import Footer from "@/components/footer";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -43,6 +44,7 @@ export default async function RootLayout({
       <body className="min-h-screen bg-gray-50 flex flex-col font-sans antialiased">
         <Navbar userRole={userRole} />
         <main className="flex-1">{children}</main>
+        <Footer />
       </body>
     </html>
   );
