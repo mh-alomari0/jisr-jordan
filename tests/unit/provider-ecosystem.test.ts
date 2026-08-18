@@ -30,6 +30,18 @@ vi.mock("@supabase/ssr", () => ({
           }),
         };
       }
+      if (table === "provider_profiles") {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              maybeSingle: vi.fn().mockResolvedValue({
+                data: { is_verified: true, application_status: "APPROVED" },
+                error: null,
+              }),
+            }),
+          }),
+        };
+      }
       return {
         upsert: vi.fn().mockResolvedValue({ error: null }),
       };

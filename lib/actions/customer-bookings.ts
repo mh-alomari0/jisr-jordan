@@ -3,7 +3,8 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
-import { CANCELLABLE_STATUSES, validateStatusTransition } from "@/lib/booking-state-machine";
+import { validateStatusTransition } from "@/lib/booking-state-machine";
+import { enrichBookingsWithServices } from "@/lib/booking-data";
 
 export async function getCustomerBookingsAction() {
   try {
@@ -26,15 +27,19 @@ export async function getCustomerBookingsAction() {
 
     const { data: bookings, error } = await supabase
       .from("bookings")
-      .select("*, services(title, price)")
+      .select("id, customer_id, provider_id, service_id, service_title, booking_date, booking_time, start_time, end_time, status, notes, phone, address, payment_status, created_at, updated_at")
       .eq("customer_id", user.id)
-      .order("created_at", { ascending: false });
+      .order("created_at", { ascending: false })
+      .limit(100);
 
     if (error) {
-      return { success: false, error: error.message };
+      return { success: false, error: "تعذر تحميل الحجوزات حالياً" };
     }
 
-    return { success: true, bookings };
+    return {
+      success: true,
+      bookings: await enrichBookingsWithServices(supabase, bookings || []),
+    };
   } catch {
     return { success: false, error: "حدث خطأ أثناء جلب الحجوزات" };
   }
@@ -80,15 +85,16 @@ export async function cancelCustomerBookingAction(bookingId: string) {
       return { success: false, error: transition.error };
     }
 
-    const { error } = await supabase
-      .from("bookings")
-      .update({ status: "CANCELLED", updated_at: new Date().toISOString() })
-      .eq("id", bookingId)
-      .eq("customer_id", user.id)
-      .in("status", CANCELLABLE_STATUSES);
+    const { data, error } = await supabase.rpc("transition_booking_status", {
+      p_booking_id: bookingId,
+      p_new_status: "CANCELLED",
+    });
 
-    if (error) {
-      return { success: false, error: error.message };
+    if (error || !data?.success) {
+      const message = data?.error === "PAID_BOOKING_REQUIRES_REFUND"
+        ? "لا يمكن إلغاء حجز مدفوع تلقائياً؛ تواصل مع الدعم لإجراء الاسترداد"
+        : "تعذر إلغاء الحجز في حالته الحالية";
+      return { success: false, error: message };
     }
 
     revalidatePath("/bookings");

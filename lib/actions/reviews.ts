@@ -3,6 +3,13 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
+import { z } from "zod";
+
+const ReviewSchema = z.object({
+  serviceId: z.string().uuid("معرف الخدمة غير صالح"),
+  rating: z.number().int().min(1, "يرجى تحديد تقييم صحيح بين 1 و 5 نجوم").max(5, "يرجى تحديد تقييم صحيح بين 1 و 5 نجوم"),
+  comment: z.string().trim().max(1000, "التعليق طويل جداً"),
+});
 
 export interface ReviewItem {
   id: string;
@@ -12,15 +19,14 @@ export interface ReviewItem {
   comment?: string | null;
   created_at: string;
   users?: {
-    email?: string | null;
+    full_name?: string | null;
   } | null;
 }
 
 export async function submitServiceReviewAction(serviceId: string, rating: number, comment: string) {
   try {
-    if (!serviceId || rating < 1 || rating > 5) {
-      return { success: false, error: "يرجى تحديد تقييم صحيح بين 1 و 5 نجوم" };
-    }
+    const parsed = ReviewSchema.safeParse({ serviceId, rating, comment });
+    if (!parsed.success) return { success: false, error: parsed.error.issues[0]?.message || "بيانات التقييم غير صالحة" };
 
     const cookieStore = await cookies();
     const supabase = createServerClient(
@@ -48,7 +54,7 @@ export async function submitServiceReviewAction(serviceId: string, rating: numbe
       .from("bookings")
       .select("id")
       .eq("customer_id", user.id)
-      .eq("service_id", serviceId)
+      .eq("service_id", parsed.data.serviceId)
       .in("status", ["COMPLETED"])
       .limit(1)
       .maybeSingle();
@@ -59,19 +65,19 @@ export async function submitServiceReviewAction(serviceId: string, rating: numbe
 
     const { error } = await supabase.from("reviews").upsert(
       {
-        service_id: serviceId,
+        service_id: parsed.data.serviceId,
         customer_id: user.id,
-        rating,
-        comment,
+        rating: parsed.data.rating,
+        comment: parsed.data.comment,
       },
       { onConflict: "service_id,customer_id" }
     );
 
     if (error) {
-      return { success: false, error: error.message };
+      return { success: false, error: "تعذر حفظ التقييم حالياً" };
     }
 
-    revalidatePath(`/services/${serviceId}`);
+    revalidatePath(`/services/${parsed.data.serviceId}`);
     revalidatePath("/services");
     return { success: true };
   } catch {
@@ -95,9 +101,10 @@ export async function getServiceReviewsAction(serviceId: string) {
 
     const { data: reviews, error } = await supabase
       .from("reviews")
-      .select("*, users(full_name)")
+      .select("id, service_id, customer_id, rating, comment, created_at, users(full_name)")
       .eq("service_id", serviceId)
-      .order("created_at", { ascending: false });
+      .order("created_at", { ascending: false })
+      .limit(100);
 
     if (error) {
       return { success: true, reviews: [], averageRating: 0 };

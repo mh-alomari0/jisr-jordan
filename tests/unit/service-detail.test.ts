@@ -33,7 +33,7 @@ describe("Service Detail Unit Tests", () => {
   });
 
   it("ينبغي جلب تفاصيل الخدمة المتاحة بنجاح", async () => {
-    const res = await getServiceDetailAction("srv-100");
+    const res = await getServiceDetailAction("11111111-1111-4111-8111-111111111111");
 
     expect(res.success).toBe(true);
     expect(res.service?.title).toBe("صيانة التكييف");

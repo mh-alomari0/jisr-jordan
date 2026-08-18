@@ -3,6 +3,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
+import { z } from "zod";
 
 export interface AdminUserItem {
   id: string;
@@ -38,7 +39,7 @@ export async function getAdminUsersAction() {
       .eq("id", user.id)
       .single();
 
-    const role = profile?.role || user.app_metadata?.role;
+    const role = profile?.role;
     if (!["ADMIN", "SUPER_ADMIN"].includes(role || "")) {
       return { success: false, error: "غير مصرح لك بإدارة المستخدمين" };
     }
@@ -46,10 +47,11 @@ export async function getAdminUsersAction() {
     const { data: users, error } = await supabase
       .from("users")
       .select("id, email, full_name, phone, role, created_at")
-      .order("created_at", { ascending: false });
+      .order("created_at", { ascending: false })
+      .limit(100);
 
     if (error) {
-      return { success: false, error: error.message };
+      return { success: false, error: "تعذر تحميل قائمة المستخدمين" };
     }
 
     return { success: true, users: (users || []) as unknown as AdminUserItem[] };
@@ -60,6 +62,11 @@ export async function getAdminUsersAction() {
 
 export async function updateUserRoleAction(userId: string, newRole: "CUSTOMER" | "STAFF" | "ADMIN") {
   try {
+    const input = z.object({
+      userId: z.string().uuid(),
+      newRole: z.enum(["CUSTOMER", "STAFF", "ADMIN"]),
+    }).safeParse({ userId, newRole });
+    if (!input.success) return { success: false, error: "بيانات تعديل الصلاحية غير صالحة" };
     const cookieStore = await cookies();
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -87,7 +94,7 @@ export async function updateUserRoleAction(userId: string, newRole: "CUSTOMER" |
       .eq("id", user.id)
       .single();
 
-    const role = profile?.role || user.app_metadata?.role;
+    const role = profile?.role;
 
     // فقط SUPER_ADMIN يمكنه تغيير رتب المستخدمين
     if (role !== "SUPER_ADMIN") {
@@ -95,7 +102,7 @@ export async function updateUserRoleAction(userId: string, newRole: "CUSTOMER" |
     }
 
     // منع تعديل رتبة المستخدم لنفسه
-    if (userId === user.id) {
+    if (input.data.userId === user.id) {
       return { success: false, error: "لا يمكنك تعديل رتبتك الخاصة" };
     }
 
@@ -103,7 +110,7 @@ export async function updateUserRoleAction(userId: string, newRole: "CUSTOMER" |
     const { data: targetProfile } = await supabase
       .from("users")
       .select("role")
-      .eq("id", userId)
+      .eq("id", input.data.userId)
       .single();
 
     if (targetProfile?.role === "SUPER_ADMIN") {
@@ -112,11 +119,11 @@ export async function updateUserRoleAction(userId: string, newRole: "CUSTOMER" |
 
     const { error } = await supabase
       .from("users")
-      .update({ role: newRole, updated_at: new Date().toISOString() })
-      .eq("id", userId);
+      .update({ role: input.data.newRole, updated_at: new Date().toISOString() })
+      .eq("id", input.data.userId);
 
     if (error) {
-      return { success: false, error: error.message };
+      return { success: false, error: "تعذر تحديث رتبة المستخدم" };
     }
 
     revalidatePath("/admin/users");

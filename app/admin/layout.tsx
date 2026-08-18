@@ -1,10 +1,26 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
+import { createServerSupabaseClient } from "@/lib/supabase/server";
 
-export default function AdminLayout({
+export default async function AdminLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const supabase = await createServerSupabaseClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) redirect("/login?redirectTo=/admin");
+
+  const { data: profile } = await supabase
+    .from("users")
+    .select("role")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  if (!profile || !["ADMIN", "SUPER_ADMIN"].includes(profile.role)) {
+    redirect("/");
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col md:flex-row dir-rtl">
       {/* القائمة الجانبية للوحة التحكم */}

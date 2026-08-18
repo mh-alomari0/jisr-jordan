@@ -15,7 +15,7 @@ export default async function BookingDetailPage(props: { params: Promise<{ id: s
 
   const result = await getBookingDetailAction(id);
 
-  if (!result.success) {
+  if (!result.success || !result.booking) {
     if (result.code === "FORBIDDEN") {
       return <div className="max-w-3xl mx-auto py-12 px-4 text-center text-red-600"><p>غير مصرح لك بعرض هذا الحجز</p></div>;
     }

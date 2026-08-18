@@ -72,13 +72,13 @@ describe("Notifications System Unit Tests", () => {
   });
 
   it("ينبغي تحديث حالة الإشعار إلى مقروء بنجاح", async () => {
-    const res = await markNotificationAsReadAction("nt_1");
+    const res = await markNotificationAsReadAction("11111111-1111-4111-8111-111111111111");
     expect(res.success).toBe(true);
   });
 
   it("ينبغي إرسال إشعار جديد للنظام بنجاح", async () => {
     const res = await sendSystemNotificationAction(
-      "usr_notify_123",
+      "22222222-2222-4222-8222-222222222222",
       "تأكيد حجز",
       "تم تأكيد حجزك بنجاح",
       "BOOKING"

@@ -26,7 +26,7 @@ export async function searchServicesAction(params?: {
 
     let dbQuery = supabase
       .from("services")
-      .select("*")
+      .select("id, title, description, price, category, is_active, created_at")
       .eq("is_active", true);
 
     if (params?.category && params.category !== "ALL") {
@@ -45,7 +45,7 @@ export async function searchServicesAction(params?: {
       dbQuery = dbQuery.order("created_at", { ascending: false });
     }
 
-    const { data: services, error } = await dbQuery;
+    const { data: services, error } = await dbQuery.limit(100);
 
     if (error) {
       return { success: true, services: [] };

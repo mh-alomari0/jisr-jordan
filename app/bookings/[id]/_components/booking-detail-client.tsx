@@ -84,7 +84,9 @@ export default function BookingDetailClient({
   const service = booking.services;
   const provider = booking.users;
 
-  const cancellable = ["PENDING", "CONFIRMED", "ASSIGNED"].includes(booking.status);
+  const cancellable =
+    ["PENDING", "CONFIRMED", "ASSIGNED"].includes(booking.status) &&
+    payment?.status !== "PAID";
   const canCreateCOD =
     !payment && ["PENDING", "CONFIRMED"].includes(booking.status);
   const isCompleted = booking.status === "COMPLETED";

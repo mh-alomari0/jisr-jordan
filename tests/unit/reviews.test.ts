@@ -27,14 +27,20 @@ describe("Service Reviews Security Unit Tests", () => {
       },
     } as unknown as ReturnType<typeof createServerClient>);
 
-    const res = await submitServiceReviewAction("srv-123", 5, "ممتاز جداً");
+    const res = await submitServiceReviewAction("11111111-1111-4111-8111-111111111111", 5, "ممتاز جداً");
 
     expect(res.success).toBe(false);
     expect(res.error).toBe("يجب تسجيل الدخول لإضافة تقييم");
   });
 
   it("ينبغي رفض التقييمات خارج النطاق المسموح (أقل من 1 أو أكبر من 5)", async () => {
-    const res = await submitServiceReviewAction("srv-123", 10, "ممتاز جداً");
+    vi.mocked(createServerClient).mockReturnValue({
+      auth: {
+        getUser: vi.fn().mockResolvedValue({ data: { user: { id: "22222222-2222-4222-8222-222222222222" } }, error: null }),
+      },
+    } as unknown as ReturnType<typeof createServerClient>);
+
+    const res = await submitServiceReviewAction("11111111-1111-4111-8111-111111111111", 10, "ممتاز جداً");
 
     expect(res.success).toBe(false);
     expect(res.error).toBe("يرجى تحديد تقييم صحيح بين 1 و 5 نجوم");

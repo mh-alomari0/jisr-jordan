@@ -32,7 +32,7 @@ export default function ServiceReviews({
           rating,
           comment,
           created_at: new Date().toISOString(),
-          users: { email: "تقييمك الحالي" },
+          users: { full_name: "تقييمك الحالي" },
         },
         ...prev,
       ]);
@@ -73,6 +73,8 @@ export default function ServiceReviews({
         </div>
 
         <textarea
+          id="review-comment"
+          aria-label="ملاحظات التقييم"
           rows={3}
           placeholder="اكتب ملاحظاتك أو انطباعك عن الخدمة..."
           value={comment}
@@ -97,7 +99,7 @@ export default function ServiceReviews({
           reviews.map((rev) => (
             <div key={rev.id} className="border-b pb-3 text-xs space-y-1">
               <div className="flex justify-between items-center">
-                <span className="font-bold text-gray-800">{rev.users?.email || "عميل موثوق"}</span>
+                <span className="font-bold text-gray-800">{rev.users?.full_name || "عميل موثوق"}</span>
                 <span className="text-yellow-500 font-bold">{"★".repeat(rev.rating)}</span>
               </div>
               {rev.comment && <p className="text-gray-600">{rev.comment}</p>}

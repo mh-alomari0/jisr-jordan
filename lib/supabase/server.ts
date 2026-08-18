@@ -1,4 +1,5 @@
 import { createServerClient } from "@supabase/ssr";
+import { createClient as createSupabaseClient, type SupabaseClient } from "@supabase/supabase-js";
 import { cookies } from "next/headers";
 
 /**
@@ -40,12 +41,10 @@ export function createAdminSupabaseClient() {
     throw new Error("Missing SUPABASE_SERVICE_ROLE_KEY or NEXT_PUBLIC_SUPABASE_URL");
   }
 
-  return createServerClient(url, key, {
-    cookies: {
-      getAll() {
-        return [];
-      },
-      setAll() {},
+  return createSupabaseClient(url, key, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false,
     },
   });
 }
@@ -54,8 +53,9 @@ export function createAdminSupabaseClient() {
  * Helper: get the authenticated user or return null.
  * Centralizes the most common auth pattern used across server actions.
  */
-export async function getAuthenticatedUser(supabase: ReturnType<typeof createServerClient>) {
-  const { data: { user }, error } = await supabase.auth.getUser();
+export async function getAuthenticatedUser(supabase?: SupabaseClient) {
+  const client = supabase ?? await createServerSupabaseClient();
+  const { data: { user }, error } = await client.auth.getUser();
   if (error || !user) return null;
   return user;
 }
@@ -64,7 +64,7 @@ export async function getAuthenticatedUser(supabase: ReturnType<typeof createSer
  * Helper: verify the user has an admin role (ADMIN or SUPER_ADMIN).
  * Returns the role string or null if not admin.
  */
-export async function getUserRole(supabase: ReturnType<typeof createServerClient>, userId: string): Promise<string | null> {
+export async function getUserRole(supabase: SupabaseClient, userId: string): Promise<string | null> {
   const { data: profile } = await supabase
     .from("users")
     .select("role")

@@ -1,6 +1,6 @@
 "use server";
 
-import { createServerSupabaseClient, createAdminSupabaseClient, getAuthenticatedUser } from "@/lib/supabase/server";
+import { createServerSupabaseClient, getAuthenticatedUser } from "@/lib/supabase/server";
 import { logger } from "@/lib/logger";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
@@ -18,13 +18,12 @@ const ApplySchema = z.object({
  */
 export async function applyAsProviderAction(input: z.infer<typeof ApplySchema>) {
   try {
-    const user = await getAuthenticatedUser();
+    const supabase = await createServerSupabaseClient();
+    const user = await getAuthenticatedUser(supabase);
     if (!user) return { success: false, error: "يجب تسجيل الدخول أولاً" };
 
     const validated = ApplySchema.parse(input);
-    const adminClient = createAdminSupabaseClient();
-
-    const { data, error } = await adminClient.rpc("apply_as_provider", {
+    const { data, error } = await supabase.rpc("apply_as_provider", {
       p_user_id: user.id,
       p_bio: validated.bio,
       p_service_areas: validated.serviceAreas,
@@ -57,7 +56,7 @@ export async function applyAsProviderAction(input: z.infer<typeof ApplySchema>) 
     return { success: true };
   } catch (err) {
     if (err instanceof z.ZodError) {
-      return { success: false, error: err.errors[0]?.message || "بيانات غير صالحة" };
+      return { success: false, error: err.issues[0]?.message || "بيانات غير صالحة" };
     }
     logger.error("Provider application error", { context: "ProviderOnboarding", error: err });
     return { success: false, error: "حدث خطأ غير متوقع" };
@@ -69,10 +68,10 @@ export async function applyAsProviderAction(input: z.infer<typeof ApplySchema>) 
  */
 export async function getProviderApplicationStatusAction() {
   try {
-    const user = await getAuthenticatedUser();
+    const supabase = await createServerSupabaseClient();
+    const user = await getAuthenticatedUser(supabase);
     if (!user) return { success: false, error: "غير مصرح" };
 
-    const supabase = await createServerSupabaseClient();
     const { data: profile } = await supabase
       .from("provider_profiles")
       .select("application_status, is_verified, bio, service_areas, experience, applied_at, application_notes")
@@ -89,7 +88,7 @@ export async function getProviderApplicationStatusAction() {
       profile: profile || null,
       services: services || [],
     };
-  } catch (err) {
+  } catch {
     return { success: false, error: "حدث خطأ" };
   }
 }
@@ -104,10 +103,9 @@ export async function updateProviderProfileAction(input: {
   serviceIds?: string[];
 }) {
   try {
-    const user = await getAuthenticatedUser();
-    if (!user) return { success: false, error: "يجب تسجيل الدخول" };
-
     const supabase = await createServerSupabaseClient();
+    const user = await getAuthenticatedUser(supabase);
+    if (!user) return { success: false, error: "يجب تسجيل الدخول" };
 
     // Verify user is an approved provider
     const { data: profile } = await supabase
@@ -120,25 +118,28 @@ export async function updateProviderProfileAction(input: {
       return { success: false, error: "غير مصرح: يجب أن تكون مزود خدمة معتمد" };
     }
 
-    const adminClient = createAdminSupabaseClient();
-
-    if (input.bio !== undefined || input.serviceAreas !== undefined || input.experience !== undefined) {
-      const update: Record<string, unknown> = {};
-      if (input.bio !== undefined) update.bio = input.bio;
-      if (input.serviceAreas !== undefined) update.service_areas = input.serviceAreas;
-      if (input.experience !== undefined) update.experience = input.experience;
-      update.updated_at = new Date().toISOString();
-
-      await adminClient.from("provider_profiles").update(update).eq("user_id", user.id);
+    if (!input.bio || !input.serviceAreas || !input.serviceIds) {
+      return { success: false, error: "يجب إرسال النبذة والمناطق والخدمات كاملة" };
     }
 
-    if (input.serviceIds) {
-      await adminClient.from("provider_services").delete().eq("provider_id", user.id);
-      if (input.serviceIds.length > 0) {
-        await adminClient.from("provider_services").insert(
-          input.serviceIds.map((sid) => ({ provider_id: user.id, service_id: sid }))
-        );
-      }
+    const parsed = ApplySchema.safeParse({
+      bio: input.bio,
+      serviceAreas: input.serviceAreas,
+      experience: input.experience,
+      serviceIds: input.serviceIds,
+    });
+    if (!parsed.success) {
+      return { success: false, error: parsed.error.issues[0]?.message || "بيانات غير صالحة" };
+    }
+
+    const { data, error } = await supabase.rpc("update_provider_profile", {
+      p_bio: parsed.data.bio,
+      p_service_areas: parsed.data.serviceAreas,
+      p_experience: parsed.data.experience || null,
+      p_service_ids: parsed.data.serviceIds,
+    });
+    if (error || !data?.success) {
+      return { success: false, error: "تعذر تحديث ملف مقدم الخدمة" };
     }
 
     revalidatePath("/provider");

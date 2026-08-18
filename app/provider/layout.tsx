@@ -29,6 +29,12 @@ export default function ProviderLayout({
           >
             جدول أوقات العمل
           </Link>
+          <Link
+            href="/provider/profile"
+            className="p-2.5 rounded-lg hover:bg-gray-100 transition-colors"
+          >
+            الملف والخدمات المقدمة
+          </Link>
           <div className="pt-4 border-t">
             <Link
               href="/"

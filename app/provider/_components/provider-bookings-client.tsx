@@ -8,7 +8,7 @@ export default function ProviderBookingsClient({ initialBookings }: { initialBoo
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const [filterStatus, setFilterStatus] = useState<string>("ALL");
 
-  const handleStatusUpdate = async (bookingId: string, newStatus: "IN_PROGRESS" | "COMPLETED" | "CANCELLED") => {
+  const handleStatusUpdate = async (bookingId: string, newStatus: "IN_PROGRESS" | "COMPLETED") => {
     setLoadingId(bookingId);
     const res = await updateProviderBookingStatusAction(bookingId, newStatus);
     if (res.success) {
@@ -38,10 +38,10 @@ export default function ProviderBookingsClient({ initialBookings }: { initialBoo
         </button>
         <button
           type="button"
-          onClick={() => setFilterStatus("PENDING")}
-          className={`px-3 py-1.5 rounded-lg text-xs font-semibold ${filterStatus === "PENDING" ? "bg-black text-white" : "bg-gray-100 text-gray-700"}`}
+          onClick={() => setFilterStatus("ASSIGNED")}
+          className={`px-3 py-1.5 rounded-lg text-xs font-semibold ${filterStatus === "ASSIGNED" ? "bg-black text-white" : "bg-gray-100 text-gray-700"}`}
         >
-          قيد الانتظار
+          معيّنة لي
         </button>
         <button
           type="button"
@@ -83,7 +83,7 @@ export default function ProviderBookingsClient({ initialBookings }: { initialBoo
               </div>
 
               <div className="flex gap-2 pt-1">
-                {b.status === "PENDING" && (
+                {b.status === "ASSIGNED" && (
                   <button
                     type="button"
                     disabled={loadingId === b.id}

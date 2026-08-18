@@ -7,34 +7,7 @@ import {
   rejectProviderAction,
   suspendProviderAction,
 } from "@/lib/actions/admin-providers";
-
-interface AdminProvider {
-  id: string;
-  user_id: string;
-  bio: string | null;
-  service_areas: string[] | null;
-  experience: string | null;
-  application_status: string;
-  is_verified: boolean;
-  applied_at: string | null;
-  application_notes: string | null;
-  created_at: string;
-  users:
-    | {
-        id: string;
-        email: string;
-        full_name: string;
-        phone: string | null;
-        role: string;
-      }
-    | null;
-  provider_services:
-    | {
-        service_id: string;
-        services: { id: string; title: string } | null;
-      }[]
-    | null;
-}
+import type { AdminProvider } from "@/lib/actions/admin-providers";
 
 const STATUS_LABELS: Record<string, string> = {
   PENDING_VERIFICATION: "قيد المراجعة",

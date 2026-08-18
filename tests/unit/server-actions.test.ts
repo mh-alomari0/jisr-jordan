@@ -24,7 +24,7 @@ describe("Real Server Actions Integration & Security Tests", () => {
   });
 
   it("ينبغي جلب قائمة الخدمات المتاحة بنجاح من قاعدة البيانات عبر getServicesAction الحقيقية", async () => {
-    const mockOrder = vi.fn().mockResolvedValue({
+    const mockLimit = vi.fn().mockResolvedValue({
       data: [
         { id: "srv_1", title: "صيانة كهرباء", price: 30, description: "خدمة صيانة شاملة" },
         { id: "srv_2", title: "سباكة منزلية", price: 20, description: "تصليح وتسريب" },
@@ -33,14 +33,14 @@ describe("Real Server Actions Integration & Security Tests", () => {
     });
 
     const mockEq = vi.fn().mockReturnValue({
-      order: mockOrder,
+      order: vi.fn().mockReturnValue({ limit: mockLimit }),
     });
 
     vi.mocked(createServerClient).mockReturnValue({
       from: vi.fn().mockReturnValue({
         select: vi.fn().mockReturnValue({
           eq: mockEq,
-          order: mockOrder,
+          order: vi.fn().mockReturnValue({ limit: mockLimit }),
         }),
       }),
     } as unknown as ReturnType<typeof createServerClient>);
@@ -53,20 +53,20 @@ describe("Real Server Actions Integration & Security Tests", () => {
   });
 
   it("ينبغي معالجة خطأ قاعدة البيانات بشكل آمن وإرجاع success = false عند فشل الاستعلام", async () => {
-    const mockOrder = vi.fn().mockResolvedValue({
+    const mockLimit = vi.fn().mockResolvedValue({
       data: null,
       error: { message: "Database connection failed" },
     });
 
     const mockEq = vi.fn().mockReturnValue({
-      order: mockOrder,
+      order: vi.fn().mockReturnValue({ limit: mockLimit }),
     });
 
     vi.mocked(createServerClient).mockReturnValue({
       from: vi.fn().mockReturnValue({
         select: vi.fn().mockReturnValue({
           eq: mockEq,
-          order: mockOrder,
+          order: vi.fn().mockReturnValue({ limit: mockLimit }),
         }),
       }),
     } as unknown as ReturnType<typeof createServerClient>);

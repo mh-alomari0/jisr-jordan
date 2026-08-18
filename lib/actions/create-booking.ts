@@ -3,7 +3,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { CreateBookingSchema, type CreateBookingInput } from "@/lib/schemas/booking-schema";
-import { notificationService } from "@/lib/notifications";
+import { logger } from "@/lib/logger";
 
 export type ActionResponse<T> = {
   success: boolean;
@@ -84,26 +84,28 @@ export async function createBookingAction(
     }
 
     // 4. إرسال الإشعارات تلقائياً في الخلفية (Email, WhatsApp, In-App) دون تعطيل الاستجابة
-    notificationService
-      .dispatch({
-        recipient: {
-          userId: user.id,
-          email: user.email,
-          phone: validated.phone,
-        },
-        event: "BOOKING_CREATED",
-        details: {
-          bookingId: data.booking_id,
-          serviceTitle: "خدمة صيانة منزلية",
-          bookingDate: validated.bookingDate,
-          startTime: validated.startTime,
-          address: validated.address,
-        },
-        channels: ["EMAIL", "WHATSAPP", "IN_APP"],
-      })
-      .catch(() => {
-        // فشل التنبيه لا يعطل العملية التي نجحت في قاعدة البيانات
+    try {
+      const { error: notificationError } = await supabase.from("notifications").insert({
+        user_id: user.id,
+        title: `تم استلام طلب حجزك #${String(data.booking_id).slice(0, 8)}`,
+        message: `تم استلام حجز خدمة ${data.service_title || "منزلية"} بتاريخ ${validated.bookingDate} في ${validated.startTime}.`,
+        type: "BOOKING",
       });
+      if (notificationError) {
+        logger.warn("Booking created without in-app notification", {
+          context: "CreateBooking",
+          userId: user.id,
+          metadata: { bookingId: data.booking_id },
+        });
+      }
+    } catch (notificationError) {
+      logger.warn("Booking notification persistence failed", {
+        context: "CreateBooking",
+        userId: user.id,
+        metadata: { bookingId: data.booking_id },
+        error: notificationError,
+      });
+    }
 
     return {
       success: true,

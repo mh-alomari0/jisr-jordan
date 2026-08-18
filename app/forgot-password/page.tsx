@@ -21,16 +21,11 @@ export default function ForgotPasswordPage() {
         redirectTo: `${window.location.origin}/reset-password`,
       });
 
-      if (resetError) {
-        setError("تعذر إرسال رابط استعادة كلمة المرور. تحقق من البريد وكرر المحاولة.");
-        setLoading(false);
-        return;
-      }
-
+      // Keep the response identical for existing and unknown accounts.
+      void resetError;
       setSent(true);
       setLoading(false);
-    } catch (err) {
-      console.error("Reset Password Error:", err);
+    } catch {
       setError("حدث خطأ غير متوقع. حاول مرة أخرى.");
       setLoading(false);
     }
@@ -64,19 +59,20 @@ export default function ForgotPasswordPage() {
         ) : (
           <form onSubmit={handleReset} className="space-y-5">
             {error && (
-              <div className="bg-rose-50 border border-rose-200 text-rose-700 px-4 py-3 rounded-lg flex items-center gap-3 text-sm">
+              <div role="alert" aria-live="polite" className="bg-rose-50 border border-rose-200 text-rose-700 px-4 py-3 rounded-lg flex items-center gap-3 text-sm">
                 <AlertCircle className="w-5 h-5 shrink-0" />
                 <span>{error}</span>
               </div>
             )}
 
             <div>
-              <label className="block text-sm font-semibold text-neutral-text mb-2">
+              <label htmlFor="forgot-email" className="block text-sm font-semibold text-neutral-text mb-2">
                 البريد الإلكتروني
               </label>
               <div className="relative">
                 <Mail className="w-5 h-5 text-neutral-muted absolute right-3.5 top-1/2 -translate-y-1/2" />
                 <input
+                  id="forgot-email"
                   type="email"
                   required
                   value={email}

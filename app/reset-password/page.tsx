@@ -25,8 +25,8 @@ export default function ResetPasswordPage() {
       return;
     }
 
-    if (password.length < 6) {
-      setError("يجب أن تكون كلمة المرور مكونة من 6 خانات على الأقل.");
+    if (password.length < 8) {
+      setError("يجب أن تكون كلمة المرور مكونة من 8 خانات على الأقل.");
       return;
     }
 
@@ -48,8 +48,7 @@ export default function ResetPasswordPage() {
       setTimeout(() => {
         router.push("/login");
       }, 2000);
-    } catch (err) {
-      console.error("Update Password Error:", err);
+    } catch {
       setError("حدث خطأ غير متوقع. حاول مرة أخرى.");
       setLoading(false);
     }
@@ -74,19 +73,21 @@ export default function ResetPasswordPage() {
         ) : (
           <form onSubmit={handleUpdatePassword} className="space-y-4">
             {error && (
-              <div className="bg-rose-50 border border-rose-200 text-rose-700 px-4 py-3 rounded-lg flex items-center gap-3 text-sm">
+              <div role="alert" aria-live="polite" className="bg-rose-50 border border-rose-200 text-rose-700 px-4 py-3 rounded-lg flex items-center gap-3 text-sm">
                 <AlertCircle className="w-5 h-5 shrink-0" />
                 <span>{error}</span>
               </div>
             )}
 
             <div>
-              <label className="block text-sm font-semibold text-neutral-text mb-2">
+              <label htmlFor="reset-password" className="block text-sm font-semibold text-neutral-text mb-2">
                 كلمة المرور الجديدة
               </label>
               <div className="relative">
                 <Lock className="w-5 h-5 text-neutral-muted absolute right-3.5 top-1/2 -translate-y-1/2" />
                 <input
+                  id="reset-password"
+                  minLength={8}
                   type={showPassword ? "text" : "password"}
                   required
                   value={password}
@@ -106,12 +107,14 @@ export default function ResetPasswordPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-neutral-text mb-2">
+              <label htmlFor="reset-confirm-password" className="block text-sm font-semibold text-neutral-text mb-2">
                 تأكيد كلمة المرور الجديدة
               </label>
               <div className="relative">
                 <Lock className="w-5 h-5 text-neutral-muted absolute right-3.5 top-1/2 -translate-y-1/2" />
                 <input
+                  id="reset-confirm-password"
+                  minLength={8}
                   type={showConfirmPassword ? "text" : "password"}
                   required
                   value={confirmPassword}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { searchServicesAction, ServiceItem } from "@/lib/actions/services-search";
 
@@ -18,19 +18,35 @@ export default function ServicesClient({ initialServices }: { initialServices: S
   const [selectedCategory, setSelectedCategory] = useState("ALL");
   const [sortBy, setSortBy] = useState<"price_asc" | "price_desc" | "newest">("newest");
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const requestId = useRef(0);
 
   const handleFilterChange = async (
     query: string,
     category: string,
     sort: "price_asc" | "price_desc" | "newest"
   ) => {
+    const currentRequest = ++requestId.current;
     setLoading(true);
+    setError("");
     const res = await searchServicesAction({ query, category, sortBy: sort });
+    if (currentRequest !== requestId.current) return;
     if (res.success && res.services) {
       setServices(res.services);
+    } else {
+      setError(res.error || "تعذر البحث في الخدمات حالياً.");
     }
     setLoading(false);
   };
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      void handleFilterChange(searchQuery, selectedCategory, sortBy);
+    }, 350);
+    return () => window.clearTimeout(timer);
+  // Category and sorting trigger immediately in their own handlers.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchQuery]);
 
   return (
     <div className="space-y-6">
@@ -43,8 +59,8 @@ export default function ServicesClient({ initialServices }: { initialServices: S
             value={searchQuery}
             onChange={(e) => {
               setSearchQuery(e.target.value);
-              handleFilterChange(e.target.value, selectedCategory, sortBy);
             }}
+            aria-label="البحث في الخدمات"
             className="w-full md:w-1/2 border p-2.5 rounded-lg text-sm bg-white"
           />
 
@@ -90,6 +106,7 @@ export default function ServicesClient({ initialServices }: { initialServices: S
       </div>
 
       {/* قائمة الخدمات */}
+      {error && <p role="alert" className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-800">{error}</p>}
       {loading ? (
         <div className="p-8 text-center text-gray-500">جاري البحث عن الخدمات...</div>
       ) : services.length === 0 ? (

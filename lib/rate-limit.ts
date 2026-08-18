@@ -4,6 +4,12 @@ export interface RateLimitOptions {
   windowMs?: number;
 }
 
+/**
+ * Best-effort single-process limiter for development and burst reduction only.
+ * It is intentionally not presented as distributed/serverless enforcement.
+ * Replace this store with Redis/Upstash (or an equivalent atomic backend)
+ * before relying on it as a production abuse-control boundary.
+ */
 const actionTracker = new Map<string, { count: number; resetAt: number }>();
 
 export async function checkRateLimit(

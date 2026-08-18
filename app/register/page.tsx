@@ -28,8 +28,8 @@ export default function RegisterPage() {
       return;
     }
 
-    if (password.length < 6) {
-      setError("يجب أن تكون كلمة المرور مكونة من 6 خانات على الأقل.");
+    if (password.length < 8) {
+      setError("يجب أن تكون كلمة المرور مكونة من 8 خانات على الأقل.");
       return;
     }
 
@@ -46,20 +46,18 @@ export default function RegisterPage() {
         },
       });
 
-     if (authError) {
-  console.error("Supabase Auth Error:", authError);
-  setError(authError.message || "تعذر إنشاء الحساب. حاول مرة أخرى.");
-  setLoading(false);
-  return;
-}
+      if (authError) {
+        setError("تعذر إكمال التسجيل. تحقق من البيانات أو حاول تسجيل الدخول إن كان لديك حساب.");
+        setLoading(false);
+        return;
+      }
 
       setSuccess(true);
       setLoading(false);
       setTimeout(() => {
         router.push("/login");
       }, 2000);
-    } catch (err) {
-      console.error("Register Error:", err);
+    } catch {
       setError("حدث خطأ غير متوقع. حاول مرة أخرى.");
       setLoading(false);
     }
@@ -84,19 +82,20 @@ export default function RegisterPage() {
         ) : (
           <form onSubmit={handleRegister} className="space-y-4">
             {error && (
-              <div className="bg-rose-50 border border-rose-200 text-rose-700 px-4 py-3 rounded-lg flex items-center gap-3 text-sm">
+              <div role="alert" aria-live="polite" className="bg-rose-50 border border-rose-200 text-rose-700 px-4 py-3 rounded-lg flex items-center gap-3 text-sm">
                 <AlertCircle className="w-5 h-5 shrink-0" />
                 <span>{error}</span>
               </div>
             )}
 
             <div>
-              <label className="block text-sm font-semibold text-neutral-text mb-2">
+              <label htmlFor="register-name" className="block text-sm font-semibold text-neutral-text mb-2">
                 الاسم الكامل
               </label>
               <div className="relative">
                 <User className="w-5 h-5 text-neutral-muted absolute right-3.5 top-1/2 -translate-y-1/2" />
                 <input
+                  id="register-name"
                   type="text"
                   required
                   value={fullName}
@@ -108,12 +107,13 @@ export default function RegisterPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-neutral-text mb-2">
+              <label htmlFor="register-email" className="block text-sm font-semibold text-neutral-text mb-2">
                 البريد الإلكتروني
               </label>
               <div className="relative">
                 <Mail className="w-5 h-5 text-neutral-muted absolute right-3.5 top-1/2 -translate-y-1/2" />
                 <input
+                  id="register-email"
                   type="email"
                   required
                   value={email}
@@ -125,12 +125,14 @@ export default function RegisterPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-neutral-text mb-2">
+              <label htmlFor="register-password" className="block text-sm font-semibold text-neutral-text mb-2">
                 كلمة المرور
               </label>
               <div className="relative">
                 <Lock className="w-5 h-5 text-neutral-muted absolute right-3.5 top-1/2 -translate-y-1/2" />
                 <input
+                  id="register-password"
+                  minLength={8}
                   type={showPassword ? "text" : "password"}
                   required
                   value={password}
@@ -150,12 +152,14 @@ export default function RegisterPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-neutral-text mb-2">
+              <label htmlFor="register-confirm-password" className="block text-sm font-semibold text-neutral-text mb-2">
                 تأكيد كلمة المرور
               </label>
               <div className="relative">
                 <Lock className="w-5 h-5 text-neutral-muted absolute right-3.5 top-1/2 -translate-y-1/2" />
                 <input
+                  id="register-confirm-password"
+                  minLength={8}
                   type={showConfirmPassword ? "text" : "password"}
                   required
                   value={confirmPassword}

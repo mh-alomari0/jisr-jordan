@@ -3,6 +3,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { logger } from "@/lib/logger";
+import { unstable_rethrow } from "next/navigation";
 
 export interface ServiceItem {
   id: string;
@@ -35,9 +36,10 @@ export async function getServicesAction(): Promise<{
 
     const { data, error } = await supabase
       .from("services")
-      .select("*")
+      .select("id, title, description, price, category, is_active, created_at")
       .eq("is_active", true)
-      .order("title", { ascending: true });
+      .order("title", { ascending: true })
+      .limit(100);
 
     if (error) {
       logger.error(`Failed to fetch services: ${error.message}`, { context: "ServicesAction" });
@@ -46,6 +48,7 @@ export async function getServicesAction(): Promise<{
 
     return { success: true, services: data as ServiceItem[] };
   } catch (err) {
+    unstable_rethrow(err);
     logger.error("Internal error fetching services", { context: "ServicesAction", error: err });
     return { success: false, error: "حدث خطأ غير متوقع أثناء تحميل الخدمات" };
   }

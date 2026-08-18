@@ -13,11 +13,13 @@ vi.mock("@supabase/ssr", () => ({
     from: vi.fn().mockReturnValue({
       select: vi.fn().mockReturnValue({
         eq: vi.fn().mockReturnValue({
-          order: vi.fn().mockResolvedValue({
-            data: [
-              { id: "srv-1", title: "صيانة كهرباء", price: 25, is_active: true },
-            ],
-            error: null,
+          order: vi.fn().mockReturnValue({
+            limit: vi.fn().mockResolvedValue({
+              data: [
+                { id: "srv-1", title: "صيانة كهرباء", price: 25, is_active: true },
+              ],
+              error: null,
+            }),
           }),
         }),
       }),

@@ -5,7 +5,13 @@ import Link from "next/link";
 import { Menu, X } from "lucide-react";
 import NotificationsBell from "./notifications-bell";
 
-export default function Navbar({ userRole }: { userRole?: string | null }) {
+export default function Navbar({
+  userRole,
+  isAuthenticated = false,
+}: {
+  userRole?: string | null;
+  isAuthenticated?: boolean;
+}) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const isAdmin = ["ADMIN", "SUPER_ADMIN"].includes(userRole || "");
   const isProvider = ["STAFF", "ADMIN", "SUPER_ADMIN"].includes(userRole || "");
@@ -28,6 +34,11 @@ export default function Navbar({ userRole }: { userRole?: string | null }) {
           بوابة المزودين
         </Link>
       )}
+      {isAuthenticated && !isProvider && (
+        <Link href="/provider/apply" className="text-emerald-700 font-semibold hover:underline" onClick={() => setMobileOpen(false)}>
+          انضم كمقدم خدمة
+        </Link>
+      )}
     </>
   );
 
@@ -45,13 +56,26 @@ export default function Navbar({ userRole }: { userRole?: string | null }) {
         </div>
 
         <div className="flex items-center gap-3">
-          <NotificationsBell />
-          <Link
-            href="/profile"
-            className="hidden sm:inline-block text-xs bg-gray-100 hover:bg-gray-200 px-3 py-1.5 rounded-lg font-medium transition-colors"
-          >
-            الملف الشخصي
-          </Link>
+          {isAuthenticated ? (
+            <>
+              <NotificationsBell />
+              <Link
+                href="/profile"
+                className="hidden sm:inline-block text-xs bg-gray-100 hover:bg-gray-200 px-3 py-1.5 rounded-lg font-medium transition-colors"
+              >
+                الملف الشخصي
+              </Link>
+            </>
+          ) : (
+            <div className="hidden sm:flex items-center gap-2">
+              <Link href="/login" className="text-sm font-semibold text-slate-700 hover:text-sky-700">
+                تسجيل الدخول
+              </Link>
+              <Link href="/register" className="rounded-lg bg-sky-600 px-3 py-2 text-sm font-semibold text-white hover:bg-sky-700">
+                إنشاء حساب
+              </Link>
+            </div>
+          )}
 
           {/* زر القائمة للجوال */}
           <button
@@ -59,6 +83,8 @@ export default function Navbar({ userRole }: { userRole?: string | null }) {
             className="md:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors"
             onClick={() => setMobileOpen(!mobileOpen)}
             aria-label={mobileOpen ? "إغلاق القائمة" : "فتح القائمة"}
+            aria-expanded={mobileOpen}
+            aria-controls="mobile-navigation"
           >
             {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
@@ -67,16 +93,23 @@ export default function Navbar({ userRole }: { userRole?: string | null }) {
 
       {/* قائمة الجوال */}
       {mobileOpen && (
-        <div className="md:hidden border-t bg-white shadow-lg">
-          <nav className="container mx-auto px-4 py-4 flex flex-col gap-3 text-sm font-medium">
+        <div id="mobile-navigation" className="md:hidden border-t bg-white shadow-lg">
+          <nav aria-label="التنقل على الهاتف" className="container mx-auto px-4 py-4 flex flex-col gap-3 text-sm font-medium">
             {navLinks}
-            <Link
-              href="/profile"
-              className="text-xs bg-gray-100 hover:bg-gray-200 px-3 py-2 rounded-lg font-medium transition-colors text-center"
-              onClick={() => setMobileOpen(false)}
-            >
-              الملف الشخصي
-            </Link>
+            {isAuthenticated ? (
+              <Link
+                href="/profile"
+                className="text-xs bg-gray-100 hover:bg-gray-200 px-3 py-2 rounded-lg font-medium transition-colors text-center"
+                onClick={() => setMobileOpen(false)}
+              >
+                الملف الشخصي
+              </Link>
+            ) : (
+              <>
+                <Link href="/login" onClick={() => setMobileOpen(false)}>تسجيل الدخول</Link>
+                <Link href="/register" onClick={() => setMobileOpen(false)}>إنشاء حساب</Link>
+              </>
+            )}
           </nav>
         </div>
       )}

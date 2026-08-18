@@ -1,7 +1,6 @@
 "use server";
 
-import { createServerClient } from "@supabase/ssr";
-import { cookies } from "next/headers";
+import { createServerSupabaseClient, getUserRole, isAdminRole } from "@/lib/supabase/server";
 
 export interface DashboardStats {
   totalRevenue: number;
@@ -12,65 +11,25 @@ export interface DashboardStats {
 
 export async function getAdminDashboardStatsAction() {
   try {
-    const cookieStore = await cookies();
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          getAll: () => cookieStore.getAll(),
-          setAll: () => {},
-        },
-      }
-    );
-
+    const supabase = await createServerSupabaseClient();
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      return { success: false, error: "غير مصرح بالوصول" };
-    }
+    if (!user) return { success: false, error: "غير مصرح بالوصول" };
 
-    const { data: profile } = await supabase
-      .from("users")
-      .select("role")
-      .eq("id", user.id)
-      .single();
-
-    const role = profile?.role || user.app_metadata?.role;
-    if (!["ADMIN", "SUPER_ADMIN"].includes(role || "")) {
+    if (!isAdminRole(await getUserRole(supabase, user.id))) {
       return { success: false, error: "غير مصرح لك بالوصول لإحصائيات اللوحة" };
     }
 
-    const [bookingsRes, usersRes, paymentsRes] = await Promise.all([
-      supabase.from("bookings").select("status"),
-      supabase.from("users").select("id", { count: "exact", head: true }),
-      supabase.from("payments").select("amount").eq("status", "PAID"),
-    ]);
-
-    const bookings = bookingsRes.data || [];
-    const totalUsersCount = usersRes.count || 0;
-
-    // Revenue from actual payments, not service list price
-    const payments = paymentsRes.data || [];
-    const totalRevenue = payments.reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
-
-    let completedBookingsCount = 0;
-    let pendingBookingsCount = 0;
-
-    bookings.forEach((b) => {
-      if (b.status === "COMPLETED") {
-        completedBookingsCount += 1;
-      } else if (b.status === "PENDING" || b.status === "IN_PROGRESS") {
-        pendingBookingsCount += 1;
-      }
-    });
+    const { data, error } = await supabase.rpc("get_admin_dashboard_metrics");
+    if (error || !data) {
+      return { success: false, error: "فشل تحميل إحصائيات لوحة التحكم" };
+    }
 
     const stats: DashboardStats = {
-      totalRevenue,
-      completedBookingsCount,
-      pendingBookingsCount,
-      totalUsersCount,
+      totalRevenue: Number(data.totalRevenue) || 0,
+      completedBookingsCount: Number(data.completedBookingsCount) || 0,
+      pendingBookingsCount: Number(data.pendingBookingsCount) || 0,
+      totalUsersCount: Number(data.totalUsersCount) || 0,
     };
-
     return { success: true, stats };
   } catch {
     return { success: false, error: "فشل تحميل إحصائيات لوحة التحكم" };

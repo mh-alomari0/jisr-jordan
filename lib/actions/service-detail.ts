@@ -6,7 +6,7 @@ import { ServiceItem } from "./services-search";
 
 export async function getServiceDetailAction(serviceId: string) {
   try {
-    if (!serviceId) {
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(serviceId)) {
       return { success: false, error: "معرف الخدمة غير صالح" };
     }
 
@@ -24,7 +24,7 @@ export async function getServiceDetailAction(serviceId: string) {
 
     const { data: service, error } = await supabase
       .from("services")
-      .select("*")
+      .select("id, title, description, price, category, is_active, created_at")
       .eq("id", serviceId)
       .eq("is_active", true)
       .single();

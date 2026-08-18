@@ -56,8 +56,8 @@ export async function updateSession(request: NextRequest) {
       .eq("id", user.id)
       .single();
 
-    const userRole = profile?.role || user.app_metadata?.role;
-    const allowedRoles = ["ADMIN", "SUPER_ADMIN", "STAFF"];
+    const userRole = profile?.role;
+    const allowedRoles = ["ADMIN", "SUPER_ADMIN"];
 
     if (!userRole || !allowedRoles.includes(userRole)) {
       const url = request.nextUrl.clone();

@@ -1,95 +1,49 @@
 "use server";
 
-import { createServerClient } from "@supabase/ssr";
-import { cookies } from "next/headers";
-import crypto from "crypto";
+import { z } from "zod";
+import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { getPaymentGatewayAdapter } from "@/lib/payment-gateway";
 
+const BookingIdSchema = z.string().uuid();
+
+/**
+ * Electronic payments intentionally fail closed until a real gateway adapter,
+ * credentials, callback contract, and reconciliation process are configured.
+ * Cash on delivery is implemented separately in cod-payment.ts.
+ */
 export async function createPaymentIntentAction(bookingId: string) {
-  try {
-    const cookieStore = await cookies();
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          getAll: () => cookieStore.getAll(),
-          setAll: () => {},
-        },
-      }
-    );
-
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      return { success: false, error: "غير مصرح بالوصول" };
-    }
-
-    // 1. جلب السعر الحقيقي للخدمة المربوطة بالحجز من السيرفر
-    const { data: booking, error: bookingErr } = await supabase
-      .from("bookings")
-      .select("id, customer_id, services(price)")
-      .eq("id", bookingId)
-      .single();
-
-    if (bookingErr || !booking) {
-      return { success: false, error: "الحجز غير موجود أو تعذر جلب بياناته" };
-    }
-
-    if (booking.customer_id !== user.id) {
-      return { success: false, error: "غير مصرح لك بإنشاء طلب دفع لهذا الحجز" };
-    }
-
-    const price = (booking.services as unknown as { price: number })?.price || 0;
-    if (price <= 0) {
-      return { success: false, error: "قيمة الخدمة غير صالحة لمعالجة الدفع" };
-    }
-
-    const idempotencyKey = `pay_intent_${bookingId}_${user.id}`;
-    const transactionId = `TXN_${Date.now()}_${crypto.randomBytes(4).toString("hex")}`;
-
-    // 2. تسجيل سجل الدفع المبدئي بحالة PENDING
-    const { data: payment, error: paymentErr } = await supabase
-      .from("payments")
-      .upsert(
-        {
-          booking_id: bookingId,
-          customer_id: user.id,
-          amount: price,
-          currency: "JOD",
-          status: "PENDING",
-          transaction_id: transactionId,
-          idempotency_key: idempotencyKey,
-        },
-        { onConflict: "idempotency_key" }
-      )
-      .select()
-      .single();
-
-    if (paymentErr) {
-      return { success: false, error: "فشل تسجيل سجل الدفع" };
-    }
-
-    // 3. توليد توقيع HMAC المشفر — فشل فوري إذا كان المفتاح غير مُعدّ
-    const secret = process.env.PAYMENT_GATEWAY_SECRET;
-    if (!secret) {
-      return { success: false, error: "خطأ في تهيئة الخادم: مفتاح بوابة الدفع غير مُعَد" };
-    }
-    const signature = crypto
-      .createHmac("sha256", secret)
-      .update(`${bookingId}:${transactionId}`)
-      .digest("hex");
-
-    return {
-      success: true,
-      paymentIntent: {
-        paymentId: payment.id,
-        bookingId,
-        amount: price,
-        currency: "JOD",
-        transactionId,
-        signature,
-      },
-    };
-  } catch {
-    return { success: false, error: "حدث خطأ أثناء إعداد نية الدفع" };
+  const parsedId = BookingIdSchema.safeParse(bookingId);
+  if (!parsedId.success) {
+    return { success: false, code: "INVALID_BOOKING_ID", error: "معرف الحجز غير صالح" };
   }
+
+  const supabase = await createServerSupabaseClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    return { success: false, code: "UNAUTHORIZED", error: "غير مصرح بالوصول" };
+  }
+
+  const { data: booking } = await supabase
+    .from("bookings")
+    .select("id, customer_id")
+    .eq("id", parsedId.data)
+    .maybeSingle();
+
+  if (!booking || booking.customer_id !== user.id) {
+    return { success: false, code: "FORBIDDEN", error: "الحجز غير موجود أو لا يخص حسابك" };
+  }
+
+  if (!getPaymentGatewayAdapter()) {
+    return {
+      success: false,
+      code: "ONLINE_PAYMENT_NOT_CONFIGURED",
+      error: "الدفع الإلكتروني غير متاح حالياً. يمكنك اختيار الدفع عند إكمال الخدمة.",
+    };
+  }
+
+  return {
+    success: false,
+    code: "ONLINE_PAYMENT_NOT_CONFIGURED",
+    error: "الدفع الإلكتروني غير متاح حالياً.",
+  };
 }

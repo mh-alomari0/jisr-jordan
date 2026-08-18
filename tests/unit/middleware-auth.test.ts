@@ -90,4 +90,26 @@ describe("Real Auth Guard & Middleware Unit Tests", () => {
     expect(res.status).toBe(200);
     expect(res.headers.get("location")).toBeNull();
   });
+
+  it("ينبغي منع مقدم الخدمة (STAFF) من دخول لوحة الإدارة", async () => {
+    vi.mocked(createServerClient).mockReturnValue({
+      auth: {
+        getUser: vi.fn().mockResolvedValue({
+          data: { user: { id: "staff-123", email: "staff@test.com" } },
+          error: null,
+        }),
+      },
+      from: vi.fn().mockReturnValue({
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            single: vi.fn().mockResolvedValue({ data: { role: "STAFF" }, error: null }),
+          }),
+        }),
+      }),
+    } as unknown as ReturnType<typeof createServerClient>);
+
+    const res = await updateSession(new NextRequest("http://localhost:3000/admin"));
+    expect(res.status).toBe(307);
+    expect(res.headers.get("location")).toBe("http://localhost:3000/");
+  });
 });

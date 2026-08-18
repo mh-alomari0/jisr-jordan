@@ -1,19 +1,14 @@
 "use client";
 
-import React, { useEffect } from "react";
+import React from "react";
 import { AlertOctagon, RotateCcw } from "lucide-react";
 
 export default function GlobalError({
-  error,
   reset,
 }: {
   error: Error & { digest?: string };
   reset: () => void;
 }) {
-  useEffect(() => {
-    console.error("Uncaught app error:", error);
-  }, [error]);
-
   return (
     <div className="min-h-[60vh] flex items-center justify-center px-4">
       <div className="max-w-md w-full bg-white p-8 rounded-2xl border border-slate-200 shadow-sm text-center space-y-4">
@@ -22,7 +17,7 @@ export default function GlobalError({
         </div>
         <h2 className="text-xl font-bold text-slate-900">حدث خطأ غير متوقع</h2>
         <p className="text-sm text-slate-500">
-          نعتذر، تعذر إكمال العملية الحالية. تم تسجيل الخطأ لإصلاحه فوراً.
+          نعتذر، تعذر إكمال العملية الحالية. يرجى المحاولة مرة أخرى.
         </p>
         <button
           onClick={() => reset()}

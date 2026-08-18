@@ -1,33 +1,59 @@
 "use server";
 
-import { createAdminSupabaseClient, getAuthenticatedUser, isAdminRole } from "@/lib/supabase/server";
+import { createServerSupabaseClient, getAuthenticatedUser, getUserRole, isAdminRole } from "@/lib/supabase/server";
 import { logger } from "@/lib/logger";
 import { revalidatePath } from "next/cache";
-import { notificationService } from "@/lib/notifications";
+import { unstable_rethrow } from "next/navigation";
+
+export interface AdminProvider {
+  id: string;
+  user_id: string;
+  bio: string | null;
+  service_areas: string[] | null;
+  experience: string | null;
+  application_status: string;
+  is_verified: boolean;
+  applied_at: string | null;
+  application_notes: string | null;
+  created_at: string;
+  users: { id: string; email: string; full_name: string; phone: string | null; role: string } | null;
+  provider_services: { service_id: string; services: { id: string; title: string } | null }[] | null;
+}
 
 /**
  * List all provider applications/profiles for admin.
  */
 export async function getAdminProvidersAction() {
   try {
-    const user = await getAuthenticatedUser();
+    const supabase = await createServerSupabaseClient();
+    const user = await getAuthenticatedUser(supabase);
     if (!user) return { success: false, error: "غير مصرح" };
-    if (!(await isAdminRole())) return { success: false, error: "غير مصرح: للمسؤولين فقط" };
+    if (!isAdminRole(await getUserRole(supabase, user.id))) return { success: false, error: "غير مصرح: للمسؤولين فقط" };
 
-    const adminClient = createAdminSupabaseClient();
-
-    const { data: profiles, error } = await adminClient
+    const { data: profiles, error } = await supabase
       .from("provider_profiles")
-      .select("*, users(id, email, full_name, phone, role), provider_services(service_id, services(id, title))")
-      .order("applied_at", { ascending: false, nullsFirst: false });
+      .select("id, user_id, bio, experience, service_areas, is_verified, application_status, application_notes, applied_at, created_at, users(id, email, full_name, phone, role), provider_services(service_id, services(id, title))")
+      .order("applied_at", { ascending: false, nullsFirst: false })
+      .limit(100);
 
     if (error) {
       logger.error("Failed to fetch admin providers", { context: "AdminProviders", error });
       return { success: false, error: "تعذر تحميل قائمة مقدمي الخدمة" };
     }
 
-    return { success: true, providers: profiles || [] };
+    const normalized = (profiles || []).map((profile) => ({
+      ...profile,
+      users: Array.isArray(profile.users) ? profile.users[0] || null : profile.users,
+      provider_services: (profile.provider_services || []).map((providerService) => ({
+        ...providerService,
+        services: Array.isArray(providerService.services)
+          ? providerService.services[0] || null
+          : providerService.services,
+      })),
+    })) as unknown as AdminProvider[];
+    return { success: true, providers: normalized };
   } catch (err) {
+    unstable_rethrow(err);
     logger.error("Admin providers error", { context: "AdminProviders", error: err });
     return { success: false, error: "حدث خطأ غير متوقع" };
   }
@@ -39,59 +65,30 @@ export async function getAdminProvidersAction() {
  */
 export async function approveProviderAction(userId: string) {
   try {
-    const admin = await getAuthenticatedUser();
+    const supabase = await createServerSupabaseClient();
+    const admin = await getAuthenticatedUser(supabase);
     if (!admin) return { success: false, error: "غير مصرح" };
-    if (!(await isAdminRole())) return { success: false, error: "غير مصرح: للمسؤولين فقط" };
+    if (!isAdminRole(await getUserRole(supabase, admin.id))) return { success: false, error: "غير مصرح: للمسؤولين فقط" };
 
-    const adminClient = createAdminSupabaseClient();
+    const { data, error } = await supabase.rpc("review_provider_application", {
+      p_provider_id: userId,
+      p_actor_id: admin.id,
+      p_decision: "APPROVE",
+      p_reason: null,
+    });
 
-    // Verify the provider exists and is pending
-    const { data: profile } = await adminClient
-      .from("provider_profiles")
-      .select("id, application_status, user_id")
-      .eq("user_id", userId)
-      .single();
-
-    if (!profile) return { success: false, error: "مزود الخدمة غير موجود" };
-    if (profile.application_status === "APPROVED") return { success: false, error: "تم اعتماده بالفعل" };
-
-    // Approve the provider
-    const { error: updateError } = await adminClient
-      .from("provider_profiles")
-      .update({
-        application_status: "APPROVED",
-        is_verified: true,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("user_id", userId);
-
-    if (updateError) {
-      logger.error("Failed to approve provider", { context: "AdminProviders", error: updateError });
+    if (error || !data?.success) {
+      logger.error("Failed to approve provider", { context: "AdminProviders", error });
       return { success: false, error: "فشل اعتماد مزود الخدمة" };
     }
 
-    // Update user role to STAFF
-    await adminClient
-      .from("users")
-      .update({ role: "STAFF" })
-      .eq("id", userId);
-
-    // Audit log
-    await adminClient.from("audit_logs").insert({
-      actor_id: admin.id,
-      action: "PROVIDER_APPROVED",
-      entity_type: "provider_profile",
-      entity_id: profile.id,
-      metadata: { provider_user_id: userId, approved_by: admin.id },
-    });
-
     // Notify the provider
-    notificationService.dispatch({
-      recipient: { userId },
-      event: "PROVIDER_APPROVED",
-      details: {},
-      channels: ["IN_APP"],
-    }).catch(() => {});
+    await supabase.from("notifications").insert({
+      user_id: userId,
+      title: "تم اعتمادك كمقدم خدمة",
+      message: "تهانينا، تم اعتماد طلبك. يمكنك الآن استخدام بوابة مقدمي الخدمة وإدارة مواعيدك.",
+      type: "SUCCESS",
+    });
 
     logger.info("Provider approved", {
       context: "AdminProviders",
@@ -111,37 +108,29 @@ export async function approveProviderAction(userId: string) {
  */
 export async function rejectProviderAction(userId: string, reason: string) {
   try {
-    const admin = await getAuthenticatedUser();
+    const supabase = await createServerSupabaseClient();
+    const admin = await getAuthenticatedUser(supabase);
     if (!admin) return { success: false, error: "غير مصرح" };
-    if (!(await isAdminRole())) return { success: false, error: "غير مصرح: للمسؤولين فقط" };
+    if (!isAdminRole(await getUserRole(supabase, admin.id))) return { success: false, error: "غير مصرح: للمسؤولين فقط" };
 
-    const adminClient = createAdminSupabaseClient();
-
-    const { error } = await adminClient
-      .from("provider_profiles")
-      .update({
-        application_status: "REJECTED",
-        application_notes: reason || null,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("user_id", userId);
-
-    if (error) return { success: false, error: "فشل رفض الطلب" };
-
-    await adminClient.from("audit_logs").insert({
-      actor_id: admin.id,
-      action: "PROVIDER_REJECTED",
-      entity_type: "provider_profile",
-      entity_id: userId,
-      metadata: { provider_user_id: userId, rejected_by: admin.id, reason },
+    const normalizedReason = reason.trim().slice(0, 500);
+    const { data, error } = await supabase.rpc("review_provider_application", {
+      p_provider_id: userId,
+      p_actor_id: admin.id,
+      p_decision: "REJECT",
+      p_reason: normalizedReason || null,
     });
 
-    notificationService.dispatch({
-      recipient: { userId },
-      event: "PROVIDER_REJECTED",
-      details: { reason },
-      channels: ["IN_APP"],
-    }).catch(() => {});
+    if (error || !data?.success) return { success: false, error: "فشل رفض الطلب" };
+
+    await supabase.from("notifications").insert({
+      user_id: userId,
+      title: "تحديث طلب الانضمام كمقدم خدمة",
+      message: normalizedReason
+        ? `تعذر اعتماد طلبك حاليًا. السبب: ${normalizedReason}`
+        : "تعذر اعتماد طلبك حاليًا. يمكنك تحديث بياناتك وإعادة التقديم.",
+      type: "WARNING",
+    });
 
     revalidatePath("/admin/providers");
     return { success: true };
@@ -156,28 +145,19 @@ export async function rejectProviderAction(userId: string, reason: string) {
  */
 export async function suspendProviderAction(userId: string) {
   try {
-    const admin = await getAuthenticatedUser();
+    const supabase = await createServerSupabaseClient();
+    const admin = await getAuthenticatedUser(supabase);
     if (!admin) return { success: false, error: "غير مصرح" };
-    if (!(await isAdminRole())) return { success: false, error: "غير مصرح: للمسؤولين فقط" };
+    if (!isAdminRole(await getUserRole(supabase, admin.id))) return { success: false, error: "غير مصرح: للمسؤولين فقط" };
 
-    const adminClient = createAdminSupabaseClient();
-
-    await adminClient
-      .from("provider_profiles")
-      .update({
-        application_status: "SUSPENDED",
-        is_verified: false,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("user_id", userId);
-
-    await adminClient.from("audit_logs").insert({
-      actor_id: admin.id,
-      action: "PROVIDER_SUSPENDED",
-      entity_type: "provider_profile",
-      entity_id: userId,
-      metadata: { provider_user_id: userId, suspended_by: admin.id },
+    const { data, error } = await supabase.rpc("review_provider_application", {
+      p_provider_id: userId,
+      p_actor_id: admin.id,
+      p_decision: "SUSPEND",
+      p_reason: null,
     });
+
+    if (error || !data?.success) return { success: false, error: "فشل إيقاف مزود الخدمة" };
 
     revalidatePath("/admin/providers");
     return { success: true };
@@ -192,13 +172,12 @@ export async function suspendProviderAction(userId: string) {
  */
 export async function assignProviderToBookingAction(bookingId: string, providerId: string) {
   try {
-    const admin = await getAuthenticatedUser();
+    const supabase = await createServerSupabaseClient();
+    const admin = await getAuthenticatedUser(supabase);
     if (!admin) return { success: false, error: "غير مصرح" };
-    if (!(await isAdminRole())) return { success: false, error: "غير مصرح: للمسؤولين فقط" };
+    if (!isAdminRole(await getUserRole(supabase, admin.id))) return { success: false, error: "غير مصرح: للمسؤولين فقط" };
 
-    const adminClient = createAdminSupabaseClient();
-
-    const { data, error } = await adminClient.rpc("assign_provider_to_booking", {
+    const { data, error } = await supabase.rpc("assign_provider_to_booking", {
       p_booking_id: bookingId,
       p_provider_id: providerId,
       p_assigned_by: admin.id,
@@ -215,29 +194,26 @@ export async function assignProviderToBookingAction(bookingId: string, providerI
         INVALID_STATUS: "حالة الحجز لا تسمح بالتعيين",
         PROVIDER_NOT_FOUND: "مزود الخدمة غير موجود",
         PROVIDER_NOT_VERIFIED: "مزود الخدمة غير معتمد",
+        PROVIDER_NOT_ELIGIBLE: "مزود الخدمة لا يقدم الخدمة المطلوبة",
+        PROVIDER_UNAVAILABLE: "مزود الخدمة غير متاح في هذا الموعد",
         SCHEDULE_CONFLICT: "تعارض في المواعيد — مزود الخدمة لديه حجز متقاطع",
       };
       return { success: false, error: errorMap[data.error] || data.error };
     }
 
     // Notify provider of new assignment
-    const { data: booking } = await adminClient
+    const { data: booking } = await supabase
       .from("bookings")
-      .select("id, booking_date, start_time, services(title)")
+      .select("id, booking_date, start_time, address, service_title")
       .eq("id", bookingId)
       .single();
 
-    notificationService.dispatch({
-      recipient: { userId: providerId },
-      event: "BOOKING_ASSIGNED",
-      details: {
-        bookingId,
-        bookingDate: booking?.booking_date,
-        startTime: booking?.start_time,
-        serviceTitle: (booking?.services as { title: string } | null)?.title || "",
-      },
-      channels: ["IN_APP"],
-    }).catch(() => {});
+    await supabase.from("notifications").insert({
+      user_id: providerId,
+      title: `تم تعيين حجز جديد لك #${bookingId.slice(0, 8)}`,
+      message: `خدمة ${booking?.service_title || "منزلية"} بتاريخ ${booking?.booking_date || "غير محدد"} في ${booking?.start_time || "وقت غير محدد"}.`,
+      type: "BOOKING",
+    });
 
     logger.info("Provider assigned to booking", {
       context: "ProviderAssignment",
@@ -258,14 +234,13 @@ export async function assignProviderToBookingAction(bookingId: string, providerI
  */
 export async function getEligibleProvidersForBookingAction(bookingId: string) {
   try {
-    const user = await getAuthenticatedUser();
+    const supabase = await createServerSupabaseClient();
+    const user = await getAuthenticatedUser(supabase);
     if (!user) return { success: false, error: "غير مصرح" };
-    if (!(await isAdminRole())) return { success: false, error: "غير مصرح" };
-
-    const adminClient = createAdminSupabaseClient();
+    if (!isAdminRole(await getUserRole(supabase, user.id))) return { success: false, error: "غير مصرح" };
 
     // Get the booking's service and date
-    const { data: booking } = await adminClient
+    const { data: booking } = await supabase
       .from("bookings")
       .select("id, service_id, booking_date, start_time, end_time, status")
       .eq("id", bookingId)
@@ -277,17 +252,30 @@ export async function getEligibleProvidersForBookingAction(bookingId: string) {
     }
 
     // Find verified providers who offer this service
-    const { data: providers } = await adminClient
+    const { data: providers } = await supabase
       .from("provider_services")
       .select("provider_id, provider_profiles(user_id, is_verified, application_status, bio), users(full_name, phone)")
       .eq("service_id", booking.service_id)
       .eq("is_active", true);
 
-    const eligible = (providers || []).filter((p: {
-      provider_profiles: { is_verified: boolean; application_status: string } | null;
-    }) => {
-      const prof = p.provider_profiles;
+    const eligible = (providers || []).filter((p) => {
+      const prof = Array.isArray(p.provider_profiles)
+        ? p.provider_profiles[0]
+        : p.provider_profiles;
       return prof && prof.is_verified && prof.application_status === "APPROVED";
+    }).map((provider) => {
+      const profile = Array.isArray(provider.provider_profiles)
+        ? provider.provider_profiles[0] || null
+        : provider.provider_profiles;
+      const providerUser = Array.isArray(provider.users)
+        ? provider.users[0] || null
+        : provider.users;
+      return {
+        providerId: provider.provider_id,
+        fullName: providerUser?.full_name || "مقدم خدمة",
+        phone: providerUser?.phone || null,
+        bio: profile?.bio || null,
+      };
     });
 
     return { success: true, providers: eligible, booking };

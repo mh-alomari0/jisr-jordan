@@ -9,7 +9,10 @@ import { LogIn, Mail, Lock, AlertCircle, Loader2, Eye, EyeOff } from "lucide-rea
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const redirectTo = searchParams.get("redirect") || "/";
+  const requestedRedirect = searchParams.get("redirectTo") || searchParams.get("redirect");
+  const redirectTo = requestedRedirect?.startsWith("/") && !requestedRedirect.startsWith("//")
+    ? requestedRedirect
+    : "/";
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -36,8 +39,7 @@ function LoginForm() {
 
       router.push(redirectTo);
       router.refresh();
-    } catch (err) {
-      console.error("Login Error:", err);
+    } catch {
       setError("حدث خطأ غير متوقع. حاول مرة أخرى.");
       setLoading(false);
     }
@@ -46,19 +48,20 @@ function LoginForm() {
   return (
     <form onSubmit={handleLogin} className="space-y-5">
       {error && (
-        <div className="bg-rose-50 border border-rose-200 text-rose-700 px-4 py-3 rounded-lg flex items-center gap-3 text-sm">
+        <div role="alert" aria-live="polite" className="bg-rose-50 border border-rose-200 text-rose-700 px-4 py-3 rounded-lg flex items-center gap-3 text-sm">
           <AlertCircle className="w-5 h-5 shrink-0" />
           <span>{error}</span>
         </div>
       )}
 
       <div>
-        <label className="block text-sm font-semibold text-neutral-text mb-2">
+        <label htmlFor="login-email" className="block text-sm font-semibold text-neutral-text mb-2">
           البريد الإلكتروني
         </label>
         <div className="relative">
           <Mail className="w-5 h-5 text-neutral-muted absolute right-3.5 top-1/2 -translate-y-1/2" />
           <input
+            id="login-email"
             type="email"
             required
             value={email}
@@ -71,7 +74,7 @@ function LoginForm() {
 
       <div>
         <div className="flex items-center justify-between mb-2">
-          <label className="block text-sm font-semibold text-neutral-text">
+          <label htmlFor="login-password" className="block text-sm font-semibold text-neutral-text">
             كلمة المرور
           </label>
           <Link
@@ -84,6 +87,7 @@ function LoginForm() {
         <div className="relative">
           <Lock className="w-5 h-5 text-neutral-muted absolute right-3.5 top-1/2 -translate-y-1/2" />
           <input
+            id="login-password"
             type={showPassword ? "text" : "password"}
             required
             value={password}

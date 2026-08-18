@@ -1,74 +1,18 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
-import { paymentService } from "@/lib/payments";
-import { logger } from "@/lib/logger";
-import { validateStatusTransition } from "@/lib/booking-state-machine";
+import { getPaymentGatewayAdapter } from "@/lib/payment-gateway";
 
-export async function POST(request: Request) {
-  try {
-    const rawBody = await request.text();
-    const signature = request.headers.get("x-signature") || "";
-    const secret = process.env.PAYMENT_WEBHOOK_SECRET;
-
-    if (!secret) {
-      logger.error("Missing PAYMENT_WEBHOOK_SECRET environment variable", { context: "PaymentWebhook" });
-      return NextResponse.json({ error: "Server Configuration Error" }, { status: 500 });
-    }
-
-    const isValid = paymentService.verifyWebhookSignature(rawBody, signature, secret);
-    if (!isValid) {
-      logger.warn("Invalid webhook signature received", { context: "PaymentWebhook" });
-      return NextResponse.json({ error: "Invalid Signature" }, { status: 401 });
-    }
-
-    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-
-    // Fail-Fast: يرفض العمل بدون مفتاح الأدمن المباشر بدلاً من الانزلاق لـ Anon Key
-    if (!serviceRoleKey || !supabaseUrl) {
-      logger.error("CRITICAL: Missing SUPABASE_SERVICE_ROLE_KEY for payment confirmation", { context: "PaymentWebhook" });
-      return NextResponse.json({ error: "Server Security Misconfiguration" }, { status: 500 });
-    }
-
-    const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey);
-    const body = JSON.parse(rawBody);
-
-    if (body.bookingId && body.status === "SUCCESS") {
-      // Fetch current status for state machine validation + idempotency
-      const { data: booking } = await supabaseAdmin
-        .from("bookings")
-        .select("id, status")
-        .eq("id", body.bookingId)
-        .single();
-
-      if (!booking) {
-        logger.warn(`Webhook received for nonexistent booking: ${body.bookingId}`, { context: "PaymentWebhook" });
-        return NextResponse.json({ received: true, status: "BOOKING_NOT_FOUND" });
-      }
-
-      // Idempotency: if already CONFIRMED or beyond, skip
-      if (booking.status !== "PENDING") {
-        const transition = validateStatusTransition(booking.status, "CONFIRMED");
-        if (!transition.valid) {
-          logger.info(`Booking ${booking.id} already past PENDING (${booking.status}), skipping confirmation`, { context: "PaymentWebhook" });
-          return NextResponse.json({ received: true, status: "ALREADY_PROCESSED" });
-        }
-      }
-
-      const { error } = await supabaseAdmin
-        .from("bookings")
-        .update({ status: "CONFIRMED", payment_status: "PAID" })
-        .eq("id", body.bookingId);
-
-      if (error) {
-        logger.error(`Failed to update booking status: ${error.message}`, { context: "PaymentWebhook" });
-        return NextResponse.json({ error: "Database Update Failed" }, { status: 500 });
-      }
-    }
-
-    return NextResponse.json({ received: true, status: "PROCESSED" });
-  } catch (err) {
-    logger.error("Error processing payment webhook", { context: "PaymentWebhook", error: err });
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+/**
+ * A webhook must never mutate bookings until a real gateway adapter verifies
+ * the provider signature, event identity, transaction identity, and replay
+ * protection. The current deployment therefore fails closed.
+ */
+export async function POST() {
+  if (!getPaymentGatewayAdapter()) {
+    return NextResponse.json(
+      { error: "Payment webhook adapter is not configured" },
+      { status: 501 }
+    );
   }
+
+  return NextResponse.json({ error: "Not implemented" }, { status: 501 });
 }

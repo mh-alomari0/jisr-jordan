@@ -4,6 +4,7 @@ import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { validateStatusTransition } from "@/lib/booking-state-machine";
+import { enrichBookingsWithServices } from "@/lib/booking-data";
 
 export interface ProviderBookingItem {
   id: string;
@@ -44,22 +45,35 @@ export async function getProviderBookingsAction() {
       .eq("id", user.id)
       .single();
 
-    const role = profile?.role || user.app_metadata?.role;
+    const role = profile?.role;
     if (!["STAFF", "ADMIN", "SUPER_ADMIN"].includes(role || "")) {
       return { success: false, error: "حسابك غير مسجل كمزود خدمة" };
     }
 
-    const { data: bookings, error } = await supabase
-      .from("bookings")
-      .select("*, services(title, price)")
-      .eq("provider_id", user.id)
-      .order("created_at", { ascending: false });
-
-    if (error) {
-      return { success: false, error: error.message };
+    if (role === "STAFF") {
+      const { data: providerProfile } = await supabase
+        .from("provider_profiles")
+        .select("is_verified, application_status")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (!providerProfile?.is_verified || providerProfile.application_status !== "APPROVED") {
+        return { success: false, error: "حساب مقدم الخدمة غير معتمد أو موقوف" };
+      }
     }
 
-    return { success: true, bookings: (bookings || []) as unknown as ProviderBookingItem[] };
+    const { data: bookings, error } = await supabase
+      .from("bookings")
+      .select("id, customer_id, provider_id, service_id, service_title, booking_date, booking_time, start_time, end_time, status, notes, phone, address, payment_status, created_at, updated_at")
+      .eq("provider_id", user.id)
+      .order("created_at", { ascending: false })
+      .limit(100);
+
+    if (error) {
+      return { success: false, error: "تعذر تحميل طلبات مقدم الخدمة" };
+    }
+
+    const enriched = await enrichBookingsWithServices(supabase, bookings || []);
+    return { success: true, bookings: enriched as unknown as ProviderBookingItem[] };
   } catch {
     return { success: false, error: "فشل جلب طلبات المزود" };
   }
@@ -67,7 +81,7 @@ export async function getProviderBookingsAction() {
 
 export async function updateProviderBookingStatusAction(
   bookingId: string,
-  newStatus: "IN_PROGRESS" | "COMPLETED" | "CANCELLED"
+  newStatus: "IN_PROGRESS" | "COMPLETED"
 ) {
   try {
     const cookieStore = await cookies();
@@ -97,9 +111,20 @@ export async function updateProviderBookingStatusAction(
       .eq("id", user.id)
       .single();
 
-    const role = profile?.role || user.app_metadata?.role;
+    const role = profile?.role;
     if (!["STAFF", "ADMIN", "SUPER_ADMIN"].includes(role || "")) {
       return { success: false, error: "غير مصرح للمستخدم بتحديث طلبات المزودين" };
+    }
+
+    if (role === "STAFF") {
+      const { data: providerProfile } = await supabase
+        .from("provider_profiles")
+        .select("is_verified, application_status")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (!providerProfile?.is_verified || providerProfile.application_status !== "APPROVED") {
+        return { success: false, error: "حساب مقدم الخدمة غير معتمد أو موقوف" };
+      }
     }
 
     // جلب حالة الحجز الحالية للتحقق من صحة الانتقال
@@ -119,17 +144,13 @@ export async function updateProviderBookingStatusAction(
       return { success: false, error: transition.error };
     }
 
-    const { error } = await supabase
-      .from("bookings")
-      .update({
-        status: newStatus,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", bookingId)
-      .eq("provider_id", user.id);
+    const { data, error } = await supabase.rpc("transition_booking_status", {
+      p_booking_id: bookingId,
+      p_new_status: newStatus,
+    });
 
-    if (error) {
-      return { success: false, error: error.message };
+    if (error || !data?.success) {
+      return { success: false, error: "تعذر تنفيذ الانتقال المطلوب للحجز" };
     }
 
     revalidatePath("/provider");

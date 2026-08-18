@@ -10,11 +10,13 @@ vi.mock("next/headers", () => ({
 
 vi.mock("@supabase/ssr", () => ({
   createServerClient: vi.fn().mockReturnValue({
-    from: vi.fn().mockReturnValue({
-      select: vi.fn().mockReturnValue({
-        eq: vi.fn().mockResolvedValue({ count: 12, error: null }),
-        in: vi.fn().mockResolvedValue({ count: 4, error: null }),
-      }),
+    rpc: vi.fn().mockResolvedValue({
+      data: {
+        completedBookingsCount: 12,
+        activeServicesCount: 8,
+        activeProvidersCount: 4,
+      },
+      error: null,
     }),
   }),
 }));

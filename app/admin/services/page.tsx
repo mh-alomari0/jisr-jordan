@@ -21,8 +21,9 @@ export default async function AdminServicesPage() {
 
   const { data: services } = await supabase
     .from("services")
-    .select("*")
-    .order("created_at", { ascending: false });
+    .select("id, title, description, price, category, is_active")
+    .order("created_at", { ascending: false })
+    .limit(100);
 
   return (
     <div className="container mx-auto p-6 space-y-6 dir-rtl">

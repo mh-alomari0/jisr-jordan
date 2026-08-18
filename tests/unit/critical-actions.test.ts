@@ -14,10 +14,6 @@ vi.mock("@supabase/ssr", () => ({
   createServerClient: vi.fn(),
 }));
 
-vi.mock("@/lib/notifications", () => ({
-  notificationService: { dispatch: vi.fn().mockResolvedValue({ success: true }) },
-}));
-
 const validBookingInput = {
   serviceId: "123e4567-e89b-12d3-a456-426614174000",
   bookingDate: "2026-09-01",

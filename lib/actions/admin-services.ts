@@ -3,6 +3,15 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
+import { z } from "zod";
+
+const ServiceSchema = z.object({
+  title: z.string().trim().min(3, "اسم الخدمة قصير جداً").max(120),
+  description: z.string().trim().max(2000),
+  price: z.number().finite().positive("السعر يجب أن يكون أكبر من صفر").max(10000),
+  category: z.enum(["ELECTRICITY", "PLUMBING", "CLEANING", "HVAC", "GENERAL"]).default("GENERAL"),
+});
+const ServiceIdSchema = z.string().uuid();
 
 async function getAdminSupabase() {
   const cookieStore = await cookies();
@@ -30,7 +39,7 @@ async function getAdminSupabase() {
     .eq("id", user.id)
     .single();
 
-  const role = profile?.role || user.app_metadata?.role;
+  const role = profile?.role;
   return { supabase, user, role };
 }
 
@@ -38,6 +47,7 @@ export async function createServiceAction(formData: {
   title: string;
   description: string;
   price: number;
+  category?: "ELECTRICITY" | "PLUMBING" | "CLEANING" | "HVAC" | "GENERAL";
 }) {
   try {
     const { supabase, role } = await getAdminSupabase();
@@ -45,18 +55,18 @@ export async function createServiceAction(formData: {
       return { success: false, error: "غير مصرح لك بإضافة خدمات جديدة" };
     }
 
-    if (!formData.title || formData.price <= 0) {
-      return { success: false, error: "يرجى كتابة عنوان الخدمة وتحديد سعر صحيح" };
-    }
+    const parsed = ServiceSchema.safeParse(formData);
+    if (!parsed.success) return { success: false, error: parsed.error.issues[0]?.message || "بيانات الخدمة غير صالحة" };
 
     const { error } = await supabase.from("services").insert({
-      title: formData.title,
-      description: formData.description,
-      price: formData.price,
+      title: parsed.data.title,
+      description: parsed.data.description,
+      price: parsed.data.price,
+      category: parsed.data.category,
       is_active: true,
     });
 
-    if (error) return { success: false, error: error.message };
+    if (error) return { success: false, error: "تعذر إضافة الخدمة" };
 
     revalidatePath("/admin/services");
     revalidatePath("/services");
@@ -73,12 +83,20 @@ export async function toggleServiceStatusAction(serviceId: string, currentStatus
       return { success: false, error: "غير مصرح بالوصول" };
     }
 
-    const { error } = await supabase
+    if (!ServiceIdSchema.safeParse(serviceId).success) {
+      return { success: false, error: "معرف الخدمة غير صالح" };
+    }
+
+    const { data, error } = await supabase
       .from("services")
       .update({ is_active: !currentStatus })
-      .eq("id", serviceId);
+      .eq("id", serviceId)
+      .eq("is_active", currentStatus)
+      .select("id")
+      .maybeSingle();
 
-    if (error) return { success: false, error: error.message };
+    if (error) return { success: false, error: "تعذر تغيير حالة الخدمة" };
+    if (!data) return { success: false, error: "تم تعديل حالة الخدمة من جلسة أخرى؛ حدّث الصفحة" };
 
     revalidatePath("/admin/services");
     revalidatePath("/services");

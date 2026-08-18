@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useCallback } from "react";
 import { getAdminPaymentsAction } from "@/lib/actions/admin-payments";
 
 interface AdminPayment {
@@ -88,13 +88,13 @@ export default function AdminPaymentsClient({
   const [loading, setLoading] = useState(false);
 
   const fetchPayments = useCallback(
-    async (pageNum: number) => {
+    async (pageNum: number, status: string, method: string) => {
       setLoading(true);
       const res = await getAdminPaymentsAction({
         page: pageNum,
         limit: 20,
-        status: statusFilter !== "ALL" ? statusFilter : undefined,
-        method: methodFilter !== "ALL" ? methodFilter : undefined,
+        status: status !== "ALL" ? status : undefined,
+        method: method !== "ALL" ? method : undefined,
       });
       if (res.success) {
         setPayments(res.payments || []);
@@ -106,17 +106,12 @@ export default function AdminPaymentsClient({
       }
       setLoading(false);
     },
-    [statusFilter, methodFilter]
+    []
   );
-
-  useEffect(() => {
-    fetchPayments(1);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [statusFilter, methodFilter]);
 
   const handlePageChange = (newPage: number) => {
     if (newPage < 1 || newPage > totalPages) return;
-    fetchPayments(newPage);
+    void fetchPayments(newPage, statusFilter, methodFilter);
   };
 
   return (
@@ -127,7 +122,11 @@ export default function AdminPaymentsClient({
           <label className="text-xs font-semibold text-gray-600">الحالة</label>
           <select
             value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
+            onChange={(e) => {
+              const value = e.target.value;
+              setStatusFilter(value);
+              void fetchPayments(1, value, methodFilter);
+            }}
             className="border rounded-lg p-2 text-sm bg-white min-w-[140px]"
           >
             {STATUS_FILTERS.map((s) => (
@@ -143,7 +142,11 @@ export default function AdminPaymentsClient({
           </label>
           <select
             value={methodFilter}
-            onChange={(e) => setMethodFilter(e.target.value)}
+            onChange={(e) => {
+              const value = e.target.value;
+              setMethodFilter(value);
+              void fetchPayments(1, statusFilter, value);
+            }}
             className="border rounded-lg p-2 text-sm bg-white min-w-[140px]"
           >
             {METHOD_FILTERS.map((m) => (

@@ -47,13 +47,13 @@ export default async function RootLayout({
       .select("role")
       .eq("id", user.id)
       .single();
-    userRole = profile?.role || user.app_metadata?.role || "CUSTOMER";
+    userRole = profile?.role || "CUSTOMER";
   }
 
   return (
     <html lang="ar" dir="rtl" className={cairo.variable}>
       <body className="min-h-screen bg-gray-50 flex flex-col font-cairo antialiased">
-        <Navbar userRole={userRole} />
+        <Navbar userRole={userRole} isAuthenticated={!!user} />
         <main className="flex-1">{children}</main>
         <Footer />
       </body>
