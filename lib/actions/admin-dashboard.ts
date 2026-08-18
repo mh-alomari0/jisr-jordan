@@ -40,23 +40,25 @@ export async function getAdminDashboardStatsAction() {
       return { success: false, error: "غير مصرح لك بالوصول لإحصائيات اللوحة" };
     }
 
-    const [bookingsRes, usersRes] = await Promise.all([
-      supabase.from("bookings").select("status, services(price)"),
+    const [bookingsRes, usersRes, paymentsRes] = await Promise.all([
+      supabase.from("bookings").select("status"),
       supabase.from("users").select("id", { count: "exact", head: true }),
+      supabase.from("payments").select("amount").eq("status", "PAID"),
     ]);
 
     const bookings = bookingsRes.data || [];
     const totalUsersCount = usersRes.count || 0;
 
-    let totalRevenue = 0;
+    // Revenue from actual payments, not service list price
+    const payments = paymentsRes.data || [];
+    const totalRevenue = payments.reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
+
     let completedBookingsCount = 0;
     let pendingBookingsCount = 0;
 
     bookings.forEach((b) => {
       if (b.status === "COMPLETED") {
         completedBookingsCount += 1;
-        const servicePrice = (b.services as unknown as { price?: number })?.price || 0;
-        totalRevenue += servicePrice;
       } else if (b.status === "PENDING" || b.status === "IN_PROGRESS") {
         pendingBookingsCount += 1;
       }

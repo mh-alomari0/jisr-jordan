@@ -137,24 +137,26 @@ export const TIME_SLOTS = [
 
 export function getBookingStatusLabel(status: string): string {
   const statusMap: Record<string, string> = {
-    pending: "قيد الانتظار",
-    accepted: "مقبول",
-    assigned: "تم تعيين الفني",
-    in_progress: "قيد التنفيذ",
-    completed: "مكتمل",
-    cancelled: "ملغى"
+    PENDING: "قيد الانتظار",
+    CONFIRMED: "مؤكد",
+    ASSIGNED: "تم تعيين الفني",
+    IN_PROGRESS: "قيد التنفيذ",
+    COMPLETED: "مكتمل",
+    CANCELLED: "ملغى",
+    REFUNDED: "مسترد"
   };
   return statusMap[status] || status;
 }
 
 export function getBookingStatusStyle(status: string): string {
   const styleMap: Record<string, string> = {
-    pending: "bg-amber-100 text-amber-800 border-amber-300",
-    accepted: "bg-blue-100 text-blue-800 border-blue-300",
-    assigned: "bg-indigo-100 text-indigo-800 border-indigo-300",
-    in_progress: "bg-sky-100 text-sky-800 border-sky-300",
-    completed: "bg-emerald-100 text-emerald-800 border-emerald-300",
-    cancelled: "bg-rose-100 text-rose-800 border-rose-300"
+    PENDING: "bg-amber-100 text-amber-800 border-amber-300",
+    CONFIRMED: "bg-blue-100 text-blue-800 border-blue-300",
+    ASSIGNED: "bg-indigo-100 text-indigo-800 border-indigo-300",
+    IN_PROGRESS: "bg-sky-100 text-sky-800 border-sky-300",
+    COMPLETED: "bg-emerald-100 text-emerald-800 border-emerald-300",
+    CANCELLED: "bg-rose-100 text-rose-800 border-rose-300",
+    REFUNDED: "bg-purple-100 text-purple-800 border-purple-300"
   };
   return styleMap[status] || "bg-gray-100 text-gray-800 border-gray-300";
 }

@@ -3,6 +3,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
+import { validateStatusTransition } from "@/lib/booking-state-machine";
 
 export interface AdminBookingItem {
   id: string;
@@ -104,6 +105,22 @@ export async function updateAdminBookingStatusAction(
     const role = profile?.role || user.app_metadata?.role;
     if (!["ADMIN", "SUPER_ADMIN"].includes(role || "")) {
       return { success: false, error: "غير مصرح لك بتحديث حالة الحجوزات" };
+    }
+
+    // جلب حالة الحجز الحالية للتحقق من صحة الانتقال
+    const { data: booking, error: fetchErr } = await supabase
+      .from("bookings")
+      .select("id, status")
+      .eq("id", bookingId)
+      .single();
+
+    if (fetchErr || !booking) {
+      return { success: false, error: "الحجز غير موجود" };
+    }
+
+    const transition = validateStatusTransition(booking.status, newStatus);
+    if (!transition.valid) {
+      return { success: false, error: transition.error };
     }
 
     const { error } = await supabase

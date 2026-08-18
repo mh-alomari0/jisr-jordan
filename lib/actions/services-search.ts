@@ -2,16 +2,9 @@
 
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
+import type { ServiceItem } from "@/lib/actions/services";
 
-export interface ServiceItem {
-  id: string;
-  title: string;
-  description?: string | null;
-  price: number;
-  category?: string | null;
-  is_active: boolean;
-  created_at?: string | null;
-}
+export type { ServiceItem };
 
 export async function searchServicesAction(params?: {
   query?: string;

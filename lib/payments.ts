@@ -2,7 +2,7 @@ import crypto from "crypto";
 import { logger } from "@/lib/logger";
 
 export type PaymentMethod = "CASH_ON_DELIVERY" | "EFAWATEERCOM" | "CREDIT_CARD";
-export type PaymentStatus = "PENDING" | "PAID" | "FAILED" | "REFUNDED";
+export type PaymentStatus = "PENDING" | "PROCESSING" | "PAID" | "FAILED" | "REFUNDED";
 
 export interface InitializePaymentInput {
   bookingId: string;

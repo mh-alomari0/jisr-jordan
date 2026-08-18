@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { createServerClient } from "@supabase/ssr";
-import { getProviderBookingsAction } from "@/lib/actions/provider";
+import { getProviderBookingsAction } from "@/lib/actions/provider-bookings";
 
 vi.mock("next/headers", () => ({
   cookies: vi.fn().mockResolvedValue({

@@ -1,4 +1,4 @@
-import { getAuditLogsAction, AuditLogItem } from "@/lib/actions/admin-logs";
+import { getAuditLogsAction, AuditLogItem } from "@/lib/actions/get-audit-logs";
 
 export const metadata = {
   title: "سجلات النظام والأمان | لوحة التحكم",
@@ -45,7 +45,7 @@ export default async function AdminAuditLogsPage() {
               logs.map((log) => (
                 <tr key={log.id} className="border-b">
                   <td className="p-4 font-semibold text-gray-900">{log.action}</td>
-                  <td className="p-4 text-gray-600">{log.target_resource || "غير محدد"}</td>
+                  <td className="p-4 text-gray-600">{log.target || "غير محدد"}</td>
                   <td className="p-4 text-xs font-mono">{log.actor_id || "النظام تلقائياً"}</td>
                   <td className="p-4 text-xs text-gray-500">{log.created_at || "غير معروف"}</td>
                 </tr>

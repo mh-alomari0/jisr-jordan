@@ -113,6 +113,23 @@ export async function sendSystemNotificationAction(
       }
     );
 
+    // التحقق من هوية المستخدم وصلاحياته (فقط المسؤولين يمكنهم إرسال إشعارات نظامية)
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return { success: false, error: "غير مصرح بالوصول" };
+    }
+
+    const { data: profile } = await supabase
+      .from("users")
+      .select("role")
+      .eq("id", user.id)
+      .single();
+
+    const role = profile?.role;
+    if (!role || !["ADMIN", "SUPER_ADMIN"].includes(role)) {
+      return { success: false, error: "غير مصرح: هذه العملية مخصصة للمسؤولين فقط" };
+    }
+
     const { error } = await supabase.from("notifications").insert({
       user_id: userId,
       title,

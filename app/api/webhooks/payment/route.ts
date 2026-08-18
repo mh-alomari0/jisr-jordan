@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { paymentService } from "@/lib/payments";
 import { logger } from "@/lib/logger";
+import { validateStatusTransition } from "@/lib/booking-state-machine";
 
 export async function POST(request: Request) {
   try {
@@ -33,9 +34,30 @@ export async function POST(request: Request) {
     const body = JSON.parse(rawBody);
 
     if (body.bookingId && body.status === "SUCCESS") {
+      // Fetch current status for state machine validation + idempotency
+      const { data: booking } = await supabaseAdmin
+        .from("bookings")
+        .select("id, status")
+        .eq("id", body.bookingId)
+        .single();
+
+      if (!booking) {
+        logger.warn(`Webhook received for nonexistent booking: ${body.bookingId}`, { context: "PaymentWebhook" });
+        return NextResponse.json({ received: true, status: "BOOKING_NOT_FOUND" });
+      }
+
+      // Idempotency: if already CONFIRMED or beyond, skip
+      if (booking.status !== "PENDING") {
+        const transition = validateStatusTransition(booking.status, "CONFIRMED");
+        if (!transition.valid) {
+          logger.info(`Booking ${booking.id} already past PENDING (${booking.status}), skipping confirmation`, { context: "PaymentWebhook" });
+          return NextResponse.json({ received: true, status: "ALREADY_PROCESSED" });
+        }
+      }
+
       const { error } = await supabaseAdmin
         .from("bookings")
-        .update({ status: "CONFIRMED" })
+        .update({ status: "CONFIRMED", payment_status: "PAID" })
         .eq("id", body.bookingId);
 
       if (error) {

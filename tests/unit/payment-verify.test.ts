@@ -16,6 +16,7 @@ vi.mock("@supabase/ssr", () => ({
 describe("Payment Verify API Security Tests", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    process.env.PAYMENT_GATEWAY_SECRET = "test_verify_secret";
   });
 
   it("ينبغي رفض الطلب بكود 400 إذا كانت بيانات الدفع غير كاملة", async () => {

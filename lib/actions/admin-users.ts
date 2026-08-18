@@ -58,7 +58,7 @@ export async function getAdminUsersAction() {
   }
 }
 
-export async function updateUserRoleAction(userId: string, newRole: "USER" | "STAFF" | "ADMIN") {
+export async function updateUserRoleAction(userId: string, newRole: "CUSTOMER" | "STAFF" | "ADMIN") {
   try {
     const cookieStore = await cookies();
     const supabase = createServerClient(
@@ -88,8 +88,26 @@ export async function updateUserRoleAction(userId: string, newRole: "USER" | "ST
       .single();
 
     const role = profile?.role || user.app_metadata?.role;
-    if (!["ADMIN", "SUPER_ADMIN"].includes(role || "")) {
-      return { success: false, error: "غير مصرح لك بتحديث صلاحيات المستخدمين" };
+
+    // فقط SUPER_ADMIN يمكنه تغيير رتب المستخدمين
+    if (role !== "SUPER_ADMIN") {
+      return { success: false, error: "غير مصرح: هذه العملية مخصصة للمسؤول الأعلى فقط" };
+    }
+
+    // منع تعديل رتبة المستخدم لنفسه
+    if (userId === user.id) {
+      return { success: false, error: "لا يمكنك تعديل رتبتك الخاصة" };
+    }
+
+    // منع تعديل رتبة SUPER_ADMIN آخر
+    const { data: targetProfile } = await supabase
+      .from("users")
+      .select("role")
+      .eq("id", userId)
+      .single();
+
+    if (targetProfile?.role === "SUPER_ADMIN") {
+      return { success: false, error: "لا يمكن تعديل رتبة المسؤول الأعلى" };
     }
 
     const { error } = await supabase

@@ -34,6 +34,18 @@ export async function updateProviderScheduleAction(slots: ScheduleSlot[]) {
       return { success: false, error: "غير مصرح بالوصول" };
     }
 
+    // التحقق من أن المستخدم مزود خدمة / موظف / مسؤول
+    const { data: profile } = await supabase
+      .from("users")
+      .select("role")
+      .eq("id", user.id)
+      .single();
+
+    const role = profile?.role || user.app_metadata?.role;
+    if (!["STAFF", "ADMIN", "SUPER_ADMIN"].includes(role || "")) {
+      return { success: false, error: "غير مصرح لك بتعديل جدول المواعيد" };
+    }
+
     const payload = slots.map((slot) => ({
       provider_id: user.id,
       day_of_week: slot.day_of_week,
@@ -75,6 +87,18 @@ export async function getProviderScheduleAction() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
       return { success: false, error: "غير مصرح بالوصول" };
+    }
+
+    // التحقق من أن المستخدم مزود خدمة / موظف / مسؤول
+    const { data: profile } = await supabase
+      .from("users")
+      .select("role")
+      .eq("id", user.id)
+      .single();
+
+    const role = profile?.role || user.app_metadata?.role;
+    if (!["STAFF", "ADMIN", "SUPER_ADMIN"].includes(role || "")) {
+      return { success: false, error: "غير مصرح لك بالوصول لجدول المواعيد" };
     }
 
     const { data: schedule, error } = await supabase

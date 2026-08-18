@@ -3,6 +3,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
+import { CANCELLABLE_STATUSES, validateStatusTransition } from "@/lib/booking-state-machine";
 
 export async function getCustomerBookingsAction() {
   try {
@@ -62,13 +63,29 @@ export async function cancelCustomerBookingAction(bookingId: string) {
       return { success: false, error: "غير مصرح بالوصول" };
     }
 
-    // السماح للعميل بإلغاء حجز الخاص به فقط إذا كان في حالة PENDING
+    // جلب حالة الحجز الحالية للتحقق من صحة الإلغاء
+    const { data: booking, error: fetchErr } = await supabase
+      .from("bookings")
+      .select("id, status")
+      .eq("id", bookingId)
+      .eq("customer_id", user.id)
+      .single();
+
+    if (fetchErr || !booking) {
+      return { success: false, error: "الحجز غير موجود أو لا ينتمي إليك" };
+    }
+
+    const transition = validateStatusTransition(booking.status, "CANCELLED");
+    if (!transition.valid) {
+      return { success: false, error: transition.error };
+    }
+
     const { error } = await supabase
       .from("bookings")
       .update({ status: "CANCELLED", updated_at: new Date().toISOString() })
       .eq("id", bookingId)
       .eq("customer_id", user.id)
-      .eq("status", "PENDING");
+      .in("status", CANCELLABLE_STATUSES);
 
     if (error) {
       return { success: false, error: error.message };

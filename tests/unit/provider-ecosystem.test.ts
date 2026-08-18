@@ -1,5 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { updateProviderScheduleAction } from "@/lib/actions/provider";
+import { updateProviderScheduleAction } from "@/lib/actions/provider-schedule";
+
+vi.mock("next/cache", () => ({
+  revalidatePath: vi.fn(),
+}));
 
 vi.mock("next/headers", () => ({
   cookies: vi.fn().mockResolvedValue({
@@ -16,8 +20,19 @@ vi.mock("@supabase/ssr", () => ({
         error: null,
       }),
     },
-    from: vi.fn().mockReturnValue({
-      upsert: vi.fn().mockResolvedValue({ error: null }),
+    from: vi.fn().mockImplementation((table: string) => {
+      if (table === "users") {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              single: vi.fn().mockResolvedValue({ data: { role: "STAFF" }, error: null }),
+            }),
+          }),
+        };
+      }
+      return {
+        upsert: vi.fn().mockResolvedValue({ error: null }),
+      };
     }),
   }),
 }));
@@ -29,11 +44,10 @@ describe("Provider Ecosystem Unit Tests", () => {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = "test-key";
   });
 
-  it("ينبغي تحديث جدول عمل المزود ومناطق التغطية بنجاح", async () => {
-    const res = await updateProviderScheduleAction({
-      serviceAreas: ["عمان", "الزرقاء"],
-      workingHours: { mon: true, fri: false },
-    });
+  it("ينبغي تحديث جدول عمل المزود بنجاح", async () => {
+    const res = await updateProviderScheduleAction([
+      { day_of_week: 1, start_time: "09:00", end_time: "17:00", is_active: true },
+    ]);
 
     expect(res.success).toBe(true);
   });

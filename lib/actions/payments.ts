@@ -68,8 +68,11 @@ export async function createPaymentIntentAction(bookingId: string) {
       return { success: false, error: "فشل تسجيل سجل الدفع" };
     }
 
-    // 3. توليد توقيع HMAC المشفر
-    const secret = process.env.PAYMENT_GATEWAY_SECRET || "test_secret_key";
+    // 3. توليد توقيع HMAC المشفر — فشل فوري إذا كان المفتاح غير مُعدّ
+    const secret = process.env.PAYMENT_GATEWAY_SECRET;
+    if (!secret) {
+      return { success: false, error: "خطأ في تهيئة الخادم: مفتاح بوابة الدفع غير مُعَد" };
+    }
     const signature = crypto
       .createHmac("sha256", secret)
       .update(`${bookingId}:${transactionId}:${price}`)

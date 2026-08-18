@@ -2,59 +2,10 @@
 
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
+import { validateStatusTransition } from "@/lib/booking-state-machine";
 
-export type BookingStatus =
-  | "PENDING"
-  | "CONFIRMED"
-  | "ASSIGNED"
-  | "IN_PROGRESS"
-  | "COMPLETED"
-  | "CANCELLED"
-  | "REFUNDED";
-
-export async function updateProviderScheduleAction(formData: {
-  serviceAreas: string[];
-  workingHours: Record<string, boolean>;
-}) {
-  try {
-    const cookieStore = await cookies();
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          getAll: () => cookieStore.getAll(),
-          setAll: () => {},
-        },
-      }
-    );
-
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) {
-      return { success: false, error: "غير مصرح بالوصول" };
-    }
-
-    const { error } = await supabase.from("provider_profiles").upsert(
-      {
-        user_id: user.id,
-        service_areas: formData.serviceAreas,
-        working_hours: formData.workingHours,
-        updated_at: new Date().toISOString(),
-      },
-      { onConflict: "user_id" }
-    );
-
-    if (error) {
-      return { success: false, error: "فشل تحديث جدول وإعدادات المزود" };
-    }
-
-    return { success: true };
-  } catch {
-    return { success: false, error: "حدث خطأ أثناء حفظ الإعدادات" };
-  }
-}
+export type { BookingStatus } from "@/lib/booking-state-machine";
+import type { BookingStatus } from "@/lib/booking-state-machine";
 
 export async function updateBookingStatusAction(
   bookingId: string,
@@ -80,13 +31,35 @@ export async function updateBookingStatusAction(
       return { success: false, error: "غير مصرح بالوصول" };
     }
 
+    // التحقق من أن المستخدم هو مزود الخدمة المعين لهذا الحجز
+    const { data: booking, error: fetchErr } = await supabase
+      .from("bookings")
+      .select("id, provider_id, status")
+      .eq("id", bookingId)
+      .single();
+
+    if (fetchErr || !booking) {
+      return { success: false, error: "الحجز غير موجود" };
+    }
+
+    if (booking.provider_id !== user.id) {
+      return { success: false, error: "غير مصرح لك بتحديث حالة هذا الحجز" };
+    }
+
+    // التحقق من صحة انتقال حالة الحجز
+    const transition = validateStatusTransition(booking.status, status);
+    if (!transition.valid) {
+      return { success: false, error: transition.error };
+    }
+
     const { error } = await supabase
       .from("bookings")
       .update({
         status,
         updated_at: new Date().toISOString(),
       })
-      .eq("id", bookingId);
+      .eq("id", bookingId)
+      .eq("provider_id", user.id);
 
     if (error) {
       return { success: false, error: "فشل تحديث حالة الحجز" };
@@ -95,42 +68,5 @@ export async function updateBookingStatusAction(
     return { success: true };
   } catch {
     return { success: false, error: "حدث خطأ أثناء تحديث حالة الحجز" };
-  }
-}
-
-export async function getProviderBookingsAction() {
-  try {
-    const cookieStore = await cookies();
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          getAll: () => cookieStore.getAll(),
-          setAll: () => {},
-        },
-      }
-    );
-
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) {
-      return { success: false, error: "غير مصرح بالوصول", bookings: [] };
-    }
-
-    const { data: bookings, error } = await supabase
-      .from("bookings")
-      .select("*, services(title, price), users!customer_id(full_name, email)")
-      .or(`provider_id.eq.${user.id},customer_id.eq.${user.id}`)
-      .order("created_at", { ascending: false });
-
-    if (error) {
-      return { success: false, error: "فشل جلب حجوزات المزود", bookings: [] };
-    }
-
-    return { success: true, bookings: bookings || [] };
-  } catch {
-    return { success: false, error: "حدث خطأ أثناء جلب الحجوزات", bookings: [] };
   }
 }

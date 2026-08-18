@@ -48,7 +48,7 @@ export async function getUserProfileAction() {
       full_name: profile?.full_name || "",
       phone: profile?.phone || "",
       address: profile?.address || "",
-      role: profile?.role || "USER",
+      role: profile?.role || "CUSTOMER",
     };
 
     return { success: true, profile: profileData };

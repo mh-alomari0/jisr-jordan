@@ -4,9 +4,7 @@ import crypto from "crypto";
 export async function POST(req: NextRequest) {
   try {
     // استخدام مفتاح افتراضي آمن حصراً لبيئة الاختبار المباشرة (Vitest)
-    const secret =
-      process.env.PAYMENT_GATEWAY_SECRET ||
-      (process.env.NODE_ENV === "test" ? "test_secret_key" : "");
+    const secret = process.env.PAYMENT_GATEWAY_SECRET;
 
     if (!secret) {
       return NextResponse.json(

@@ -20,25 +20,40 @@ vi.mock("@supabase/ssr", () => ({
         error: null,
       }),
     },
-    from: vi.fn().mockReturnValue({
-      select: vi.fn().mockReturnValue({
-        eq: vi.fn().mockReturnValue({
-          order: vi.fn().mockReturnValue({
-            limit: vi.fn().mockResolvedValue({
-              data: [
-                { id: "nt_1", title: "تم تأكيد الحجز", is_read: false },
-              ],
-              error: null,
+    from: vi.fn().mockImplementation((table: string) => {
+      if (table === "users") {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              single: vi.fn().mockResolvedValue({
+                data: { role: "ADMIN" },
+                error: null,
+              }),
+            }),
+          }),
+        };
+      }
+      // notifications table
+      return {
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            order: vi.fn().mockReturnValue({
+              limit: vi.fn().mockResolvedValue({
+                data: [
+                  { id: "nt_1", title: "تم تأكيد الحجز", is_read: false },
+                ],
+                error: null,
+              }),
             }),
           }),
         }),
-      }),
-      update: vi.fn().mockReturnValue({
-        eq: vi.fn().mockReturnValue({
-          eq: vi.fn().mockResolvedValue({ error: null }),
+        update: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            eq: vi.fn().mockResolvedValue({ error: null }),
+          }),
         }),
-      }),
-      insert: vi.fn().mockResolvedValue({ error: null }),
+        insert: vi.fn().mockResolvedValue({ error: null }),
+      };
     }),
   }),
 }));

@@ -8,7 +8,7 @@ export default function AdminUsersClient({ initialUsers }: { initialUsers: Admin
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
 
-  const handleRoleChange = async (userId: string, newRole: "USER" | "STAFF" | "ADMIN") => {
+  const handleRoleChange = async (userId: string, newRole: "CUSTOMER" | "STAFF" | "ADMIN") => {
     setLoadingId(userId);
     const res = await updateUserRoleAction(userId, newRole);
     if (res.success) {
@@ -70,10 +70,10 @@ export default function AdminUsersClient({ initialUsers }: { initialUsers: Admin
                     <select
                       disabled={loadingId === u.id}
                       value={u.role}
-                      onChange={(e) => handleRoleChange(u.id, e.target.value as "USER" | "STAFF" | "ADMIN")}
+                      onChange={(e) => handleRoleChange(u.id, e.target.value as "CUSTOMER" | "STAFF" | "ADMIN")}
                       className="border rounded p-1.5 text-xs bg-white disabled:opacity-50"
                     >
-                      <option value="USER">عميل (USER)</option>
+                      <option value="CUSTOMER">عميل (CUSTOMER)</option>
                       <option value="STAFF">مزود خدمة (STAFF)</option>
                       <option value="ADMIN">مدير نظام (ADMIN)</option>
                     </select>

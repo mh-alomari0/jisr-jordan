@@ -7,7 +7,7 @@ import { revalidatePath } from "next/cache";
 export interface ReviewItem {
   id: string;
   service_id: string;
-  user_id: string;
+  customer_id: string;
   rating: number;
   comment?: string | null;
   created_at: string;
@@ -43,15 +43,28 @@ export async function submitServiceReviewAction(serviceId: string, rating: numbe
       return { success: false, error: "يجب تسجيل الدخول لإضافة تقييم" };
     }
 
+    // التحقق من أن المستخدم قد حجز هذه الخدمة سابقاً (منع التقييمات العشوائية)
+    const { data: pastBooking } = await supabase
+      .from("bookings")
+      .select("id")
+      .eq("customer_id", user.id)
+      .eq("service_id", serviceId)
+      .in("status", ["COMPLETED"])
+      .limit(1)
+      .maybeSingle();
+
+    if (!pastBooking) {
+      return { success: false, error: "لا يمكنك تقييم خدمة لم تستخدمها" };
+    }
+
     const { error } = await supabase.from("reviews").upsert(
       {
         service_id: serviceId,
-        user_id: user.id,
+        customer_id: user.id,
         rating,
         comment,
-        updated_at: new Date().toISOString(),
       },
-      { onConflict: "service_id,user_id" }
+      { onConflict: "service_id,customer_id" }
     );
 
     if (error) {

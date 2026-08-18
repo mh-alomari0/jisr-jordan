@@ -3,6 +3,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
+import { validateStatusTransition } from "@/lib/booking-state-machine";
 
 export interface ProviderBookingItem {
   id: string;
@@ -51,6 +52,7 @@ export async function getProviderBookingsAction() {
     const { data: bookings, error } = await supabase
       .from("bookings")
       .select("*, services(title, price)")
+      .eq("provider_id", user.id)
       .order("created_at", { ascending: false });
 
     if (error) {
@@ -100,14 +102,31 @@ export async function updateProviderBookingStatusAction(
       return { success: false, error: "غير مصرح للمستخدم بتحديث طلبات المزودين" };
     }
 
+    // جلب حالة الحجز الحالية للتحقق من صحة الانتقال
+    const { data: booking, error: fetchErr } = await supabase
+      .from("bookings")
+      .select("id, status")
+      .eq("id", bookingId)
+      .eq("provider_id", user.id)
+      .single();
+
+    if (fetchErr || !booking) {
+      return { success: false, error: "الحجز غير موجود أو لا ينتمي لهذا المزود" };
+    }
+
+    const transition = validateStatusTransition(booking.status, newStatus);
+    if (!transition.valid) {
+      return { success: false, error: transition.error };
+    }
+
     const { error } = await supabase
       .from("bookings")
       .update({
         status: newStatus,
-        provider_id: user.id,
         updated_at: new Date().toISOString(),
       })
-      .eq("id", bookingId);
+      .eq("id", bookingId)
+      .eq("provider_id", user.id);
 
     if (error) {
       return { success: false, error: error.message };

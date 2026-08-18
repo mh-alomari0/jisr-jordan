@@ -28,7 +28,7 @@ export default function ServiceReviews({
         {
           id: Date.now().toString(),
           service_id: serviceId,
-          user_id: "current-user",
+          customer_id: "current-user",
           rating,
           comment,
           created_at: new Date().toISOString(),

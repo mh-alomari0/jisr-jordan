@@ -1,9 +1,16 @@
 import type { Metadata } from "next";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
+import { Cairo } from "next/font/google";
 import Navbar from "@/components/navbar";
 import Footer from "@/components/footer";
 import "./globals.css";
+
+const cairo = Cairo({
+  subsets: ["arabic", "latin"],
+  variable: "--font-cairo",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   title: "جسر الأردن | منصة الخدمات والصيانة المركزية",
@@ -22,7 +29,11 @@ export default async function RootLayout({
     {
       cookies: {
         getAll: () => cookieStore.getAll(),
-        setAll: () => {},
+        setAll: (cookiesToSet) => {
+          cookiesToSet.forEach(({ name, value, options }) =>
+            cookieStore.set(name, value, options)
+          );
+        },
       },
     }
   );
@@ -36,12 +47,12 @@ export default async function RootLayout({
       .select("role")
       .eq("id", user.id)
       .single();
-    userRole = profile?.role || user.app_metadata?.role || "USER";
+    userRole = profile?.role || user.app_metadata?.role || "CUSTOMER";
   }
 
   return (
-    <html lang="ar" dir="rtl">
-      <body className="min-h-screen bg-gray-50 flex flex-col font-sans antialiased">
+    <html lang="ar" dir="rtl" className={cairo.variable}>
+      <body className="min-h-screen bg-gray-50 flex flex-col font-cairo antialiased">
         <Navbar userRole={userRole} />
         <main className="flex-1">{children}</main>
         <Footer />

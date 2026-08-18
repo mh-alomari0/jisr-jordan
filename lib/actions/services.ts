@@ -9,7 +9,7 @@ export interface ServiceItem {
   title: string;
   description: string | null;
   price: number;
-  category: string;
+  category: string | null;
   is_active: boolean;
   created_at: string;
 }

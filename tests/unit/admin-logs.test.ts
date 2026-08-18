@@ -1,6 +1,14 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { createServerClient } from "@supabase/ssr";
-import { getAuditLogsAction } from "@/lib/actions/admin-logs";
+import { getAuditLogsAction } from "@/lib/actions/get-audit-logs";
+
+vi.mock("@/lib/logger", () => ({
+  logger: {
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+  },
+}));
 
 vi.mock("next/headers", () => ({
   cookies: vi.fn().mockResolvedValue({
@@ -40,6 +48,6 @@ describe("Admin Audit Logs Security Tests", () => {
     const res = await getAuditLogsAction();
 
     expect(res.success).toBe(false);
-    expect(res.error).toBe("غير مصرح لك باستعراض سجلات النظام الحساسة");
+    expect(res.error).toBe("غير مصرح: هذه الصفحة مخصصة للمسؤولين فقط");
   });
 });

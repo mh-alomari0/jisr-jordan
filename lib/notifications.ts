@@ -1,4 +1,5 @@
 import { logger } from "@/lib/logger";
+import { createAdminSupabaseClient } from "@/lib/supabase/server";
 
 export type NotificationChannel = "EMAIL" | "WHATSAPP" | "IN_APP";
 
@@ -128,7 +129,29 @@ class UnifiedNotificationService {
     if (!payload.recipient.userId) return false;
 
     try {
-      logger.info(`In-App notification recorded for user ${payload.recipient.userId}`, {
+      const supabase = createAdminSupabaseClient();
+
+      const title = this.getSubjectForEvent(payload.event, payload.details.bookingId);
+      const message = this.buildInAppMessage(payload);
+
+      const type = this.getNotificationTypeForEvent(payload.event);
+
+      const { error } = await supabase.from("notifications").insert({
+        user_id: payload.recipient.userId,
+        title,
+        message,
+        type,
+      });
+
+      if (error) {
+        logger.error(`Failed to persist In-App notification: ${error.message}`, {
+          context: "NotificationService",
+          metadata: { userId: payload.recipient.userId, event: payload.event },
+        });
+        return false;
+      }
+
+      logger.info(`In-App notification persisted for user ${payload.recipient.userId}`, {
         context: "NotificationService",
         metadata: { event: payload.event },
       });
@@ -142,6 +165,19 @@ class UnifiedNotificationService {
     }
   }
 
+  private getNotificationTypeForEvent(event: NotificationEventType): "INFO" | "SUCCESS" | "WARNING" | "BOOKING" | "PAYMENT" {
+    switch (event) {
+      case "BOOKING_CREATED":
+      case "BOOKING_CONFIRMED":
+      case "BOOKING_CANCELLED":
+        return "BOOKING";
+      case "PASSWORD_RESET":
+        return "INFO";
+      default:
+        return "INFO";
+    }
+  }
+
   private getSubjectForEvent(event: NotificationEventType, bookingId: string): string {
     switch (event) {
       case "BOOKING_CREATED":
@@ -152,6 +188,20 @@ class UnifiedNotificationService {
         return `إلغاء الحجز - رقم الحجز #${bookingId.slice(0, 8)}`;
       default:
         return `تحديث بشأن طلبك في منصة جسر`;
+    }
+  }
+
+  private buildInAppMessage(payload: SendNotificationPayload): string {
+    const { details, event } = payload;
+    switch (event) {
+      case "BOOKING_CREATED":
+        return `تم استلام طلب حجز خدمة (${details.serviceTitle}) بنجاح. الموعد: ${details.bookingDate} - ${details.startTime}`;
+      case "BOOKING_CONFIRMED":
+        return `تم تأكيد حجز خدمة (${details.serviceTitle}). الموعد: ${details.bookingDate} - ${details.startTime}`;
+      case "BOOKING_CANCELLED":
+        return `تم إلغاء حجز خدمة (${details.serviceTitle}).`;
+      default:
+        return `تحديث بشأن حجز خدمة (${details.serviceTitle}).`;
     }
   }
 
