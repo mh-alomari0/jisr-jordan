@@ -82,14 +82,15 @@ class UnifiedNotificationService {
       // جهّز القالب والتفاصيل - جاهز للربط مع Resend / SendGrid / Supabase Email
       const subject = this.getSubjectForEvent(payload.event, payload.details.bookingId);
       
-      logger.info(`Email dispatched to ${payload.recipient.email}`, {
+      const maskedEmail = payload.recipient.email.replace(/(.{2})(.*)(@.*)/, '$1***$3');
+      logger.info(`Email dispatched to ${maskedEmail}`, {
         context: "NotificationService",
         metadata: { subject, event: payload.event },
       });
 
       return true;
     } catch (err) {
-      logger.error(`Failed to send Email to ${payload.recipient.email}`, {
+      logger.error("Failed to send Email notification", {
         context: "NotificationService",
         error: err,
       });
@@ -107,14 +108,15 @@ class UnifiedNotificationService {
       // جهّز النص - جاهز للربط مع Unifonic / Twilio / WhatsApp Business API
       const message = this.buildWhatsAppMessage(payload);
 
-      logger.info(`WhatsApp message dispatched to ${payload.recipient.phone}`, {
+      const maskedPhone = payload.recipient.phone.replace(/(\d{3})\d{6}(\d{1})/, '$1******$2');
+      logger.info(`WhatsApp message dispatched to ${maskedPhone}`, {
         context: "NotificationService",
         metadata: { event: payload.event, length: message.length },
       });
 
       return true;
     } catch (err) {
-      logger.error(`Failed to send WhatsApp to ${payload.recipient.phone}`, {
+      logger.error("Failed to send WhatsApp notification", {
         context: "NotificationService",
         error: err,
       });

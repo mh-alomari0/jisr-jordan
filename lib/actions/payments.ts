@@ -75,7 +75,7 @@ export async function createPaymentIntentAction(bookingId: string) {
     }
     const signature = crypto
       .createHmac("sha256", secret)
-      .update(`${bookingId}:${transactionId}:${price}`)
+      .update(`${bookingId}:${transactionId}`)
       .digest("hex");
 
     return {

@@ -36,6 +36,18 @@ export default function AdminLayout({
             تتبع وإدارة الحجوزات
           </Link>
           <Link
+            href="/admin/providers"
+            className="p-2.5 rounded-lg hover:bg-gray-100 transition-colors"
+          >
+            إدارة مقدمي الخدمة
+          </Link>
+          <Link
+            href="/admin/payments"
+            className="p-2.5 rounded-lg hover:bg-gray-100 transition-colors"
+          >
+            سجل المدفوعات
+          </Link>
+          <Link
             href="/admin/audit-logs"
             className="p-2.5 rounded-lg hover:bg-gray-100 transition-colors text-red-700"
           >

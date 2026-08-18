@@ -95,7 +95,7 @@ export async function getServiceReviewsAction(serviceId: string) {
 
     const { data: reviews, error } = await supabase
       .from("reviews")
-      .select("*, users(email)")
+      .select("*, users(full_name)")
       .eq("service_id", serviceId)
       .order("created_at", { ascending: false });
 

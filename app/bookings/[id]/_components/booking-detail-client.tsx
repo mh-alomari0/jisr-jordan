@@ -1,0 +1,336 @@
+"use client";
+
+import { useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import {
+  getBookingStatusLabel,
+  getBookingStatusStyle,
+} from "@/lib/constants";
+import { cancelCustomerBookingAction } from "@/lib/actions/customer-bookings";
+import { createCODPaymentAction } from "@/lib/actions/cod-payment";
+
+interface BookingDetail {
+  id: string;
+  status: string;
+  booking_date: string;
+  start_time: string;
+  end_time: string;
+  address: string;
+  phone: string;
+  notes: string | null;
+  service_id: string;
+  payment_status: string | null;
+  created_at: string;
+  services: { id: string; title: string; price: number; category: string } | null;
+  users: { full_name: string; phone: string } | null; // provider info
+}
+
+interface PaymentInfo {
+  id: string;
+  amount: number;
+  currency: string;
+  payment_method: string;
+  status: string;
+}
+
+interface Props {
+  booking: BookingDetail;
+  payment: PaymentInfo | null;
+  hasReviewed: boolean;
+}
+
+function formatDate(dateStr: string): string {
+  if (!dateStr) return "غير محدد";
+  const d = new Date(dateStr.includes("T") ? dateStr : `${dateStr}T00:00:00`);
+  if (isNaN(d.getTime())) return dateStr;
+  return d.toLocaleDateString("ar-JO", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+}
+
+function getPaymentMethodLabel(method: string): string {
+  const map: Record<string, string> = {
+    CASH_ON_DELIVERY: "الدفع عند الاستلام",
+    CARD: "بطاقة",
+  };
+  return map[method] || method;
+}
+
+function getPaymentStatusLabel(status: string): string {
+  const map: Record<string, string> = {
+    PENDING: "قيد الانتظار",
+    PAID: "مدفوع",
+    PAY_ON_COMPLETION: "يُدفع عند الإكمال",
+    FAILED: "فشل",
+    REFUNDED: "مسترد",
+  };
+  return map[status] || status;
+}
+
+export default function BookingDetailClient({
+  booking,
+  payment,
+  hasReviewed,
+}: Props) {
+  const router = useRouter();
+  const [cancelLoading, setCancelLoading] = useState(false);
+  const [codLoading, setCodLoading] = useState(false);
+  const [actionError, setActionError] = useState("");
+
+  const service = booking.services;
+  const provider = booking.users;
+
+  const cancellable = ["PENDING", "CONFIRMED", "ASSIGNED"].includes(booking.status);
+  const canCreateCOD =
+    !payment && ["PENDING", "CONFIRMED"].includes(booking.status);
+  const isCompleted = booking.status === "COMPLETED";
+
+  async function handleCancel() {
+    if (!confirm("هل أنت متأكد من إلغاء هذا الحجز؟")) return;
+    setCancelLoading(true);
+    setActionError("");
+    const res = await cancelCustomerBookingAction(booking.id);
+    if (res.success) {
+      router.refresh();
+    } else {
+      setActionError(res.error || "تعذر إلغاء الحجز");
+    }
+    setCancelLoading(false);
+  }
+
+  async function handleCOD() {
+    setCodLoading(true);
+    setActionError("");
+    const res = await createCODPaymentAction(booking.id);
+    if (res.success) {
+      router.refresh();
+    } else {
+      setActionError(res.error || "تعذر إنشاء طلب الدفع");
+    }
+    setCodLoading(false);
+  }
+
+  return (
+    <div className="bg-white border border-slate-200 rounded-2xl shadow-sm dir-rtl text-right">
+      {/* 1. Status header */}
+      <div className="p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100">
+        <div>
+          <h1 className="text-xl font-bold text-slate-900">تفاصيل الحجز</h1>
+          <p className="text-xs text-slate-500 mt-1 dir-ltr text-left">
+            #{booking.id.slice(0, 8)}
+          </p>
+        </div>
+        <span
+          className={`inline-flex self-start px-3 py-1.5 rounded-full text-sm font-bold border ${getBookingStatusStyle(
+            booking.status
+          )}`}
+        >
+          {getBookingStatusLabel(booking.status)}
+        </span>
+      </div>
+
+      {/* 2. Service info */}
+      <div className="p-6 border-b border-slate-100">
+        <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">
+          الخدمة
+        </h2>
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <p className="text-base font-bold text-slate-900">
+              {service?.title || "خدمة غير محددة"}
+            </p>
+            {service?.category && (
+              <p className="text-xs text-slate-500 mt-1">{service.category}</p>
+            )}
+          </div>
+          {typeof service?.price === "number" && (
+            <div className="text-left dir-ltr shrink-0">
+              <span className="text-lg font-bold text-emerald-700">
+                {service.price}
+              </span>
+              <span className="text-xs text-slate-500 mr-1">د.أ</span>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* 3 & 4. Date, time, location, contact */}
+      <div className="p-6 border-b border-slate-100">
+        <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">
+          الموعد والموقع
+        </h2>
+        <dl className="space-y-3 text-sm">
+          <div className="flex justify-between gap-4">
+            <dt className="text-slate-500 font-medium">التاريخ</dt>
+            <dd className="text-slate-900">{formatDate(booking.booking_date)}</dd>
+          </div>
+          <div className="flex justify-between gap-4">
+            <dt className="text-slate-500 font-medium">الوقت</dt>
+            <dd className="text-slate-900 dir-ltr">
+              {booking.start_time || "غير محدد"}
+              {booking.end_time ? ` - ${booking.end_time}` : ""}
+            </dd>
+          </div>
+          <div className="flex justify-between gap-4">
+            <dt className="text-slate-500 font-medium">العنوان</dt>
+            <dd className="text-slate-900 max-w-[70%] text-left">
+              {booking.address || "غير محدد"}
+            </dd>
+          </div>
+          <div className="flex justify-between gap-4">
+            <dt className="text-slate-500 font-medium">هاتف التواصل</dt>
+            <dd className="text-slate-900 dir-ltr" dir="ltr">
+              {booking.phone || "غير محدد"}
+            </dd>
+          </div>
+        </dl>
+      </div>
+
+      {/* 5. Provider info */}
+      <div className="p-6 border-b border-slate-100">
+        <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">
+          مقدم الخدمة
+        </h2>
+        {provider ? (
+          <dl className="space-y-3 text-sm">
+            <div className="flex justify-between gap-4">
+              <dt className="text-slate-500 font-medium">الاسم</dt>
+              <dd className="text-slate-900">{provider.full_name || "غير متوفر"}</dd>
+            </div>
+            <div className="flex justify-between gap-4">
+              <dt className="text-slate-500 font-medium">الهاتف</dt>
+              <dd className="text-slate-900 dir-ltr" dir="ltr">
+                {provider.phone || "غير متوفر"}
+              </dd>
+            </div>
+          </dl>
+        ) : (
+          <p className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2.5">
+            لم يتم تعيين مقدم خدمة بعد
+          </p>
+        )}
+      </div>
+
+      {/* 6. Payment info */}
+      <div className="p-6 border-b border-slate-100">
+        <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">
+          الدفع
+        </h2>
+        {payment ? (
+          <dl className="space-y-3 text-sm">
+            <div className="flex justify-between gap-4">
+              <dt className="text-slate-500 font-medium">المبلغ</dt>
+              <dd className="text-slate-900 dir-ltr" dir="ltr">
+                <span className="font-bold">{payment.amount}</span>
+                <span className="text-slate-500 mr-1">{payment.currency}</span>
+              </dd>
+            </div>
+            <div className="flex justify-between gap-4">
+              <dt className="text-slate-500 font-medium">طريقة الدفع</dt>
+              <dd className="text-slate-900">
+                {getPaymentMethodLabel(payment.payment_method)}
+              </dd>
+            </div>
+            <div className="flex justify-between gap-4">
+              <dt className="text-slate-500 font-medium">حالة الدفع</dt>
+              <dd className="text-slate-900">
+                {getPaymentStatusLabel(payment.status)}
+              </dd>
+            </div>
+          </dl>
+        ) : (
+          <p className="text-sm text-slate-500">
+            لم يتم إنشاء طلب دفع لهذا الحجز بعد.
+          </p>
+        )}
+      </div>
+
+      {/* 7. Notes */}
+      {booking.notes && (
+        <div className="p-6 border-b border-slate-100">
+          <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">
+            ملاحظات
+          </h2>
+          <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">
+            {booking.notes}
+          </p>
+        </div>
+      )}
+
+      {/* 8. Actions */}
+      <div className="p-6 space-y-3">
+        {actionError && (
+          <div
+            className="bg-rose-50 border border-rose-200 text-rose-700 text-sm rounded-lg p-3"
+            role="alert"
+          >
+            {actionError}
+          </div>
+        )}
+
+        <div className="flex flex-wrap gap-2">
+          {/* Review */}
+          {isCompleted && !hasReviewed && (
+            <Link
+              href={`/services/${booking.service_id}`}
+              className="flex-1 min-w-[140px] text-center bg-emerald-600 hover:bg-emerald-700 text-white py-2.5 rounded-lg text-sm font-semibold transition-colors"
+            >
+              قيّم الخدمة
+            </Link>
+          )}
+
+          {/* Book again */}
+          {isCompleted && (
+            <Link
+              href={`/booking?serviceId=${booking.service_id}`}
+              className="flex-1 min-w-[140px] text-center bg-slate-900 hover:bg-slate-800 text-white py-2.5 rounded-lg text-sm font-semibold transition-colors"
+            >
+              حجز مرة أخرى
+            </Link>
+          )}
+
+          {/* Cancel */}
+          {cancellable && (
+            <button
+              type="button"
+              onClick={handleCancel}
+              disabled={cancelLoading}
+              className="flex-1 min-w-[140px] bg-white border border-rose-300 text-rose-700 hover:bg-rose-50 disabled:opacity-50 py-2.5 rounded-lg text-sm font-semibold transition-colors"
+            >
+              {cancelLoading ? "جاري الإلغاء..." : "إلغاء الحجز"}
+            </button>
+          )}
+
+          {/* Cash on delivery */}
+          {canCreateCOD && (
+            <button
+              type="button"
+              onClick={handleCOD}
+              disabled={codLoading}
+              className="flex-1 min-w-[140px] bg-sky-600 hover:bg-sky-700 text-white disabled:opacity-50 py-2.5 rounded-lg text-sm font-semibold transition-colors"
+            >
+              {codLoading ? "جاري المعالجة..." : "الدفع عند الاستلام"}
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* 9. Back link */}
+      <div className="px-6 pb-6">
+        <Link
+          href="/bookings"
+          className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-600 hover:text-slate-900 transition-colors"
+        >
+          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+          </svg>
+          <span>العودة للحجوزات</span>
+        </Link>
+      </div>
+    </div>
+  );
+}
