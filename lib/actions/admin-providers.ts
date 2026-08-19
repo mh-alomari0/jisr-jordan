@@ -145,7 +145,7 @@ export async function getAdminProvidersAction(page = 1) {
       };
     }
 
-    const rawProfiles = (profileRows || []) as ProviderProfileRow[];
+    const rawProfiles = (profileRows || []) as unknown as ProviderProfileRow[];
     const hasMore = rawProfiles.length > pageSize;
     const visibleProfiles = rawProfiles.slice(0, pageSize);
 
@@ -198,9 +198,9 @@ export async function getAdminProvidersAction(page = 1) {
       };
     }
 
-    const users = (userRows || []) as AdminUserRow[];
+    const users = (userRows || []) as unknown as AdminUserRow[];
     const providerServices =
-      (providerServiceRows || []) as ProviderServiceRow[];
+      (providerServiceRows || []) as unknown as ProviderServiceRow[];
 
     const serviceIds = [
       ...new Set(
@@ -230,7 +230,7 @@ export async function getAdminProvidersAction(page = 1) {
         };
       }
 
-      services = (serviceRows || []) as ServiceRow[];
+      services = (serviceRows || []) as unknown as ServiceRow[];
     }
 
     const userById = new Map(users.map((user) => [user.id, user]));
