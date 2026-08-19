@@ -56,35 +56,35 @@ export default function ResetPasswordPage() {
 
   return (
     <div className="min-h-[80vh] flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full bg-white p-8 rounded-card border border-neutral-border shadow-xl">
+      <div className="w-full max-w-md border-y border-theme bg-surface p-6 sm:rounded-card sm:border sm:p-8">
         <div className="text-center mb-8">
-          <h1 className="text-2xl font-black text-neutral-text">تعيين كلمة مرور جديدة</h1>
-          <p className="text-sm text-neutral-muted mt-2">
+          <h1 className="text-2xl font-black">تعيين كلمة مرور جديدة</h1>
+          <p className="mt-2 text-sm text-muted">
             أدخل كلمة المرور الجديدة لحسابك
           </p>
         </div>
 
         {success ? (
-          <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 p-6 rounded-card text-center space-y-3">
-            <CheckCircle2 className="w-12 h-12 text-emerald-600 mx-auto" />
+          <div className="space-y-3 border border-[rgb(var(--success)/0.35)] bg-[rgb(var(--success)/0.1)] p-6 text-center">
+            <CheckCircle2 className="mx-auto h-12 w-12 text-[rgb(var(--success))]" />
             <h3 className="font-bold text-lg">تم تحديث كلمة المرور بنجاح!</h3>
             <p className="text-sm">جاري تحويلك لصفحة تسجيل الدخول...</p>
           </div>
         ) : (
           <form onSubmit={handleUpdatePassword} className="space-y-4">
             {error && (
-              <div role="alert" aria-live="polite" className="bg-rose-50 border border-rose-200 text-rose-700 px-4 py-3 rounded-lg flex items-center gap-3 text-sm">
+              <div role="alert" aria-live="polite" className="flex items-center gap-3 border border-[rgb(var(--danger)/0.35)] bg-[rgb(var(--danger)/0.1)] px-4 py-3 text-sm text-[rgb(var(--danger))]">
                 <AlertCircle className="w-5 h-5 shrink-0" />
                 <span>{error}</span>
               </div>
             )}
 
             <div>
-              <label htmlFor="reset-password" className="block text-sm font-semibold text-neutral-text mb-2">
+              <label htmlFor="reset-password" className="mb-2 block text-sm font-semibold">
                 كلمة المرور الجديدة
               </label>
               <div className="relative">
-                <Lock className="w-5 h-5 text-neutral-muted absolute right-3.5 top-1/2 -translate-y-1/2" />
+                <Lock className="absolute right-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-muted" />
                 <input
                   id="reset-password"
                   minLength={8}
@@ -93,12 +93,12 @@ export default function ResetPasswordPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full pr-11 pl-11 py-3 bg-neutral-surface border border-neutral-border rounded-btn focus:outline-none focus:border-primary text-sm font-medium"
+                  className="form-field px-11"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-muted hover:text-neutral-text transition-colors"
+                  className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted hover:text-[rgb(var(--text-main))]"
                   aria-label={showPassword ? "إخفاء كلمة المرور" : "إظهار كلمة المرور"}
                 >
                   {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
@@ -107,11 +107,11 @@ export default function ResetPasswordPage() {
             </div>
 
             <div>
-              <label htmlFor="reset-confirm-password" className="block text-sm font-semibold text-neutral-text mb-2">
+              <label htmlFor="reset-confirm-password" className="mb-2 block text-sm font-semibold">
                 تأكيد كلمة المرور الجديدة
               </label>
               <div className="relative">
-                <Lock className="w-5 h-5 text-neutral-muted absolute right-3.5 top-1/2 -translate-y-1/2" />
+                <Lock className="absolute right-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-muted" />
                 <input
                   id="reset-confirm-password"
                   minLength={8}
@@ -120,12 +120,12 @@ export default function ResetPasswordPage() {
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full pr-11 pl-11 py-3 bg-neutral-surface border border-neutral-border rounded-btn focus:outline-none focus:border-primary text-sm font-medium"
+                  className="form-field px-11"
                 />
                 <button
                   type="button"
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  className="absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-muted hover:text-neutral-text transition-colors"
+                  className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted hover:text-[rgb(var(--text-main))]"
                   aria-label={showConfirmPassword ? "إخفاء كلمة المرور" : "إظهار كلمة المرور"}
                 >
                   {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
@@ -136,7 +136,7 @@ export default function ResetPasswordPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-primary text-white font-bold py-3.5 rounded-btn hover:bg-primary-hover transition-colors flex items-center justify-center gap-2 shadow-md disabled:opacity-50 mt-2"
+              className="brand-button mt-2 w-full gap-2"
             >
               {loading ? (
                 <Loader2 className="w-5 h-5 animate-spin" />

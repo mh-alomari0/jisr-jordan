@@ -3,11 +3,11 @@ import { expect, test } from "@playwright/test";
 test.describe("Universal marketplace public discovery", () => {
   test("home exposes database-driven mega categories and search conversion", async ({ page }) => {
     await page.goto("/");
-    await expect(page.getByRole("heading", { name: /أي خدمة تحتاجها/ })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "استكشف حسب المجال" })).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1, name: /على إيش اليوم.*بتدور/ })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "اكتشف حسب المجال" })).toBeVisible();
     await expect(page.getByRole("link", { name: "التقنية والبرمجة" })).toBeVisible();
     await page.getByRole("search").last().getByRole("searchbox").fill("مبرمج متجر");
-    await page.getByRole("search").last().getByRole("button", { name: "ابحث" }).click();
+    await page.getByRole("search").last().getByRole("button", { name: "بحث" }).click();
     await expect(page).toHaveURL(/\/discover\?q=/);
     await expect(page.getByRole("heading", { name: "استكشف سوق جسر الأردن" })).toBeVisible();
   });
@@ -15,10 +15,18 @@ test.describe("Universal marketplace public discovery", () => {
   test("discover supports result scopes and adaptive filters", async ({ page }) => {
     await page.goto("/discover");
     await expect(page.getByRole("navigation", { name: "نوع نتيجة البحث" })).toBeVisible();
-    await expect(page.getByRole("link", { name: "الخدمات", exact: true })).toBeVisible();
+    await expect(page.getByRole("navigation", { name: "نوع نتيجة البحث" }).getByRole("link", { name: "الخدمات", exact: true })).toBeVisible();
     await expect(page.getByLabel("المجال")).toBeVisible();
     await expect(page.getByLabel("طريقة تقديم الخدمة")).toBeVisible();
     await expect(page.getByLabel("نظام التسعير")).toBeVisible();
+  });
+
+  test("service type leads to provider comparison without a platform-controlled price", async ({ page }) => {
+    await page.goto("/service-types/10000000-0000-4000-8000-000000000001");
+    await expect(page.getByRole("heading", { name: "كشف وإصلاح تسربات المياه" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "مقدمو الخدمة" })).toBeVisible();
+    await expect(page.getByText("السعر يشمل")).toHaveCount(0);
+    await expect(page.locator('select[name="sort"]:visible')).toBeVisible();
   });
 
   test("mobile navigation remains usable at 320px without horizontal page overflow", async ({ page }) => {
@@ -42,4 +50,3 @@ test.describe("Universal marketplace public discovery", () => {
     await expect(page.locator("html")).toHaveAttribute("data-theme", /light|dark/);
   });
 });
-

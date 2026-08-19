@@ -164,6 +164,36 @@ export async function moderateProviderContentAction(postId: string, decision: "A
   }
 }
 
+export async function getAdminContentReportsAction(page = 1, status = "OPEN") {
+  try {
+    const { supabase, user, role } = await adminContext();
+    if (!user || !isAdminRole(role)) return { success: false as const, error: "غير مصرح", reports: [] };
+    const safePage = Math.max(1, Math.floor(page)); const pageSize = 25;
+    let query = supabase.from("marketplace_content_reports")
+      .select("id, reporter_id, target_type, target_id, reason, details, status, reviewed_by, reviewed_at, created_at")
+      .order("created_at", { ascending: false }).range((safePage - 1) * pageSize, safePage * pageSize);
+    if (["OPEN", "REVIEWING", "RESOLVED", "DISMISSED"].includes(status)) query = query.eq("status", status);
+    const { data, error } = await query;
+    if (error) return { success: false as const, error: "تعذر تحميل بلاغات المحتوى", reports: [] };
+    return { success: true as const, reports: (data || []).slice(0, pageSize), hasMore: (data || []).length > pageSize };
+  } catch { return { success: false as const, error: "تعذر تحميل بلاغات المحتوى", reports: [] }; }
+}
+
+export async function updateAdminContentReportAction(reportId: string, status: "REVIEWING" | "RESOLVED" | "DISMISSED") {
+  if (!IdSchema.safeParse(reportId).success) return { success: false as const, error: "معرف البلاغ غير صالح" };
+  try {
+    const { supabase, user, role } = await adminContext();
+    if (!user || !isAdminRole(role)) return { success: false as const, error: "غير مصرح" };
+    const { data, error } = await supabase.from("marketplace_content_reports")
+      .update({ status, reviewed_by: user.id, reviewed_at: new Date().toISOString() })
+      .eq("id", reportId).select("id").maybeSingle();
+    if (error || !data) return { success: false as const, error: "تعذر تحديث البلاغ" };
+    await supabase.from("audit_logs").insert({ actor_id: user.id, action: "CONTENT_REPORT_UPDATED", target: reportId, metadata: { status } });
+    revalidatePath("/admin/content");
+    return { success: true as const };
+  } catch { return { success: false as const, error: "تعذر تحديث البلاغ" }; }
+}
+
 export async function getAdminQuoteRequestsAction(page = 1) {
   try {
     const { supabase, user, role } = await adminContext();
@@ -234,4 +264,3 @@ export async function updateCommissionObligationAction(commissionId: string, sta
     return { success: false as const, error: "تعذر تحديث العمولة" };
   }
 }
-

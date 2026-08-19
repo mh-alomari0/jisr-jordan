@@ -10,7 +10,8 @@ export interface NotificationItem {
   user_id: string;
   title: string;
   message: string;
-  type: "INFO" | "SUCCESS" | "WARNING" | "BOOKING" | "PAYMENT";
+  type: "INFO" | "SUCCESS" | "WARNING" | "BOOKING" | "PAYMENT" | "MESSAGE" | "REVIEW" | "SECURITY" | "PROVIDER";
+  action_url: string | null;
   is_read: boolean;
   created_at: string;
 }
@@ -43,8 +44,9 @@ export async function getUserNotificationsAction(): Promise<{
 
     const { data: notifications, error } = await supabase
       .from("notifications")
-      .select("id, user_id, title, message, type, is_read, created_at")
+      .select("id, user_id, title, message, type, action_url, is_read, created_at")
       .eq("user_id", user.id)
+      .eq("visible_in_app", true)
       .order("created_at", { ascending: false })
       .limit(20);
 

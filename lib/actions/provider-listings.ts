@@ -6,9 +6,12 @@ import { z } from "zod";
 import { createServerSupabaseClient, getAuthenticatedUser } from "@/lib/supabase/server";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { logger } from "@/lib/logger";
+import { detectContactSignals, PREBOOKING_CONTACT_WARNING } from "@/lib/anti-circumvention";
+import { recordBlockedContactAttempt } from "@/lib/contact-protection-server";
 import type { ServiceListing } from "@/lib/marketplace";
 
 const ListingInputSchema = z.object({
+  serviceTypeId: z.string().uuid("نوع الخدمة غير صالح"),
   title: z.string().trim().min(3, "عنوان العرض قصير جداً").max(120),
   shortDescription: z.string().trim().min(10, "أضف وصفاً مختصراً أوضح").max(240),
   description: z.string().trim().min(20, "أضف تفاصيل كافية عن الخدمة").max(4000),
@@ -61,17 +64,23 @@ export async function createProviderListingAction(input: z.input<typeof ListingI
     const supabase = await createServerSupabaseClient();
     const user = await getAuthenticatedUser(supabase);
     if (!user) return { success: false as const, error: "يجب تسجيل الدخول" };
+    const contactSignals = detectContactSignals(`${parsed.data.title} ${parsed.data.shortDescription} ${parsed.data.description}`);
+    if (contactSignals.length) { await recordBlockedContactAttempt(supabase, "LISTING", null, contactSignals); return { success: false as const, error: PREBOOKING_CONTACT_WARNING }; }
     const rate = await checkRateLimit(`listing:create:${user.id}`, { limit: 10, windowMs: 60 * 60_000 });
     if (!rate.success) return { success: false as const, error: rate.error };
     if (!(await approvedProvider(supabase, user.id))) return { success: false as const, error: "لا يمكن إنشاء عرض قبل اعتماد حساب مقدم الخدمة" };
     const { data: category } = await supabase.from("service_categories")
       .select("id, parent_id, is_active").eq("id", parsed.data.categoryId).eq("is_active", true).maybeSingle();
     if (!category?.parent_id) return { success: false as const, error: "اختر تصنيفاً فرعياً صالحاً" };
+    const { data: serviceType } = await supabase.from("services").select("id")
+      .eq("id", parsed.data.serviceTypeId).eq("category_id", parsed.data.categoryId).eq("is_active", true).maybeSingle();
+    if (!serviceType) return { success: false as const, error: "اختر نوع خدمة تابعاً للتصنيف المحدد" };
 
     const slug = `service-${randomUUID().replaceAll("-", "").slice(0, 16)}`;
     const remoteAvailable = ["REMOTE", "HYBRID"].includes(parsed.data.deliveryType);
     const { data, error } = await supabase.from("service_listings").insert({
       provider_id: user.id,
+      legacy_service_id: parsed.data.serviceTypeId,
       category_id: parsed.data.categoryId,
       slug,
       title: parsed.data.title,
@@ -105,6 +114,8 @@ export async function updateProviderListingAction(listingId: string, input: z.in
     const supabase = await createServerSupabaseClient();
     const user = await getAuthenticatedUser(supabase);
     if (!user) return { success: false as const, error: "يجب تسجيل الدخول" };
+    const contactSignals = detectContactSignals(`${parsed.data.title} ${parsed.data.shortDescription} ${parsed.data.description}`);
+    if (contactSignals.length) { await recordBlockedContactAttempt(supabase, "LISTING", listingId, contactSignals); return { success: false as const, error: PREBOOKING_CONTACT_WARNING }; }
     const { data: current } = await supabase.from("service_listings").select("id, status")
       .eq("id", listingId).eq("provider_id", user.id).maybeSingle();
     if (!current) return { success: false as const, error: "العرض غير موجود" };
@@ -112,8 +123,12 @@ export async function updateProviderListingAction(listingId: string, input: z.in
     const { data: category } = await supabase.from("service_categories")
       .select("id, parent_id").eq("id", parsed.data.categoryId).eq("is_active", true).maybeSingle();
     if (!category?.parent_id) return { success: false as const, error: "اختر تصنيفاً فرعياً صالحاً" };
+    const { data: serviceType } = await supabase.from("services").select("id")
+      .eq("id", parsed.data.serviceTypeId).eq("category_id", parsed.data.categoryId).eq("is_active", true).maybeSingle();
+    if (!serviceType) return { success: false as const, error: "اختر نوع خدمة تابعاً للتصنيف المحدد" };
     const remoteAvailable = ["REMOTE", "HYBRID"].includes(parsed.data.deliveryType);
     const { error } = await supabase.from("service_listings").update({
+      legacy_service_id: parsed.data.serviceTypeId,
       category_id: parsed.data.categoryId,
       title: parsed.data.title,
       short_description: parsed.data.shortDescription,
@@ -146,6 +161,7 @@ export async function setProviderListingPublicationAction(listingId: string, pub
     if (!rate.success) return { success: false as const, error: rate.error };
     const { data, error } = await supabase.rpc("set_listing_publication", { p_listing_id: listingId, p_publish: publish });
     if (error || !data?.success) {
+      if (error?.message?.includes("LISTING_SERVICE_TYPE_REQUIRED")) return { success: false as const, error: "اختر نوع خدمة صالحاً قبل النشر" };
       const messages: Record<string, string> = {
         LISTING_NOT_FOUND: "العرض غير موجود أو لا يخص حسابك",
         PROVIDER_NOT_APPROVED: "حساب مقدم الخدمة غير معتمد",
@@ -176,4 +192,3 @@ export async function deleteProviderListingAction(listingId: string) {
     return { success: false as const, error: "تعذر حذف العرض" };
   }
 }
-

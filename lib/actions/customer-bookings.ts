@@ -91,9 +91,11 @@ export async function cancelCustomerBookingAction(bookingId: string) {
     });
 
     if (error || !data?.success) {
-      const message = data?.error === "PAID_BOOKING_REQUIRES_REFUND"
-        ? "لا يمكن إلغاء حجز مدفوع تلقائياً؛ تواصل مع الدعم لإجراء الاسترداد"
-        : "تعذر إلغاء الحجز في حالته الحالية";
+      const message = error?.message?.includes("CANCELLATION_REQUIRES_ADMIN_REVIEW")
+        ? "بعد إظهار بيانات التواصل، يحتاج الإلغاء إلى مراجعة الإدارة لحماية حقوق الطرفين والعمولة"
+        : data?.error === "PAID_BOOKING_REQUIRES_REFUND"
+          ? "لا يمكن إلغاء حجز مدفوع تلقائياً؛ تواصل مع الدعم لإجراء الاسترداد"
+          : "تعذر إلغاء الحجز في حالته الحالية";
       return { success: false, error: message };
     }
 

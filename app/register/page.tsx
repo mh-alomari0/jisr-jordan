@@ -65,39 +65,40 @@ export default function RegisterPage() {
 
   return (
     <div className="min-h-[85vh] flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full bg-white p-8 rounded-card border border-neutral-border shadow-xl">
+      <div className="w-full max-w-md border-y border-theme bg-surface p-6 sm:rounded-card sm:border sm:p-8">
         <div className="text-center mb-8">
-          <h1 className="text-2xl font-black text-neutral-text">إنشاء حساب جديد</h1>
-          <p className="text-sm text-neutral-muted mt-2">
+          <h1 className="text-2xl font-black">إنشاء حساب جديد</h1>
+          <p className="mt-2 text-sm text-muted">
             انضم لمنصة جسر واحجز جميع خدمات صيانة منزلك بسهولة
           </p>
         </div>
 
         {success ? (
-          <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 p-6 rounded-card text-center space-y-3">
-            <CheckCircle2 className="w-12 h-12 text-emerald-600 mx-auto" />
+          <div className="space-y-3 border border-[rgb(var(--success)/0.35)] bg-[rgb(var(--success)/0.1)] p-6 text-center text-[rgb(var(--text-main))]">
+            <CheckCircle2 className="mx-auto h-12 w-12 text-[rgb(var(--success))]" />
             <h3 className="font-bold text-lg">تم إنشاء الحساب بنجاح!</h3>
             <p className="text-sm">
               {requiresConfirmation
-                ? "تفقّد بريدك الإلكتروني واضغط رابط التأكيد قبل تسجيل الدخول."
+                ? "تفقّد بريدك الإلكتروني واتبع تعليمات التأكيد. إذا وصل رمز من 6 أرقام يمكنك إدخاله هنا."
                 : "جاري تحويلك لصفحة تسجيل الدخول..."}
             </p>
+            {requiresConfirmation && <Link href="/login/otp?mode=signup" className="secondary-button mt-3 w-full">تأكيد الحساب برمز البريد</Link>}
           </div>
         ) : (
           <form onSubmit={handleRegister} className="space-y-4">
             {error && (
-              <div role="alert" aria-live="polite" className="bg-rose-50 border border-rose-200 text-rose-700 px-4 py-3 rounded-lg flex items-center gap-3 text-sm">
+              <div role="alert" aria-live="polite" className="flex items-center gap-3 border border-[rgb(var(--danger)/0.35)] bg-[rgb(var(--danger)/0.1)] px-4 py-3 text-sm text-[rgb(var(--danger))]">
                 <AlertCircle className="w-5 h-5 shrink-0" />
                 <span>{error}</span>
               </div>
             )}
 
             <div>
-              <label htmlFor="register-name" className="block text-sm font-semibold text-neutral-text mb-2">
+              <label htmlFor="register-name" className="mb-2 block text-sm font-semibold">
                 الاسم الكامل
               </label>
               <div className="relative">
-                <User className="w-5 h-5 text-neutral-muted absolute right-3.5 top-1/2 -translate-y-1/2" />
+                <User className="absolute right-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-muted" />
                 <input
                   id="register-name"
                   type="text"
@@ -105,17 +106,17 @@ export default function RegisterPage() {
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
                   placeholder="محمد العمري"
-                  className="w-full pr-11 pl-4 py-3 bg-neutral-surface border border-neutral-border rounded-btn focus:outline-none focus:border-primary text-sm font-medium"
+                  className="form-field pe-11"
                 />
               </div>
             </div>
 
             <div>
-              <label htmlFor="register-email" className="block text-sm font-semibold text-neutral-text mb-2">
+              <label htmlFor="register-email" className="mb-2 block text-sm font-semibold">
                 البريد الإلكتروني
               </label>
               <div className="relative">
-                <Mail className="w-5 h-5 text-neutral-muted absolute right-3.5 top-1/2 -translate-y-1/2" />
+                <Mail className="absolute right-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-muted" />
                 <input
                   id="register-email"
                   type="email"
@@ -123,17 +124,17 @@ export default function RegisterPage() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="name@example.com"
-                  className="w-full pr-11 pl-4 py-3 bg-neutral-surface border border-neutral-border rounded-btn focus:outline-none focus:border-primary text-sm font-medium"
+                  className="form-field pe-11"
                 />
               </div>
             </div>
 
             <div>
-              <label htmlFor="register-password" className="block text-sm font-semibold text-neutral-text mb-2">
+              <label htmlFor="register-password" className="mb-2 block text-sm font-semibold">
                 كلمة المرور
               </label>
               <div className="relative">
-                <Lock className="w-5 h-5 text-neutral-muted absolute right-3.5 top-1/2 -translate-y-1/2" />
+                <Lock className="absolute right-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-muted" />
                 <input
                   id="register-password"
                   minLength={8}
@@ -142,12 +143,12 @@ export default function RegisterPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full pr-11 pl-11 py-3 bg-neutral-surface border border-neutral-border rounded-btn focus:outline-none focus:border-primary text-sm font-medium"
+                  className="form-field px-11"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-muted hover:text-neutral-text transition-colors"
+                  className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted hover:text-[rgb(var(--text-main))]"
                   aria-label={showPassword ? "إخفاء كلمة المرور" : "إظهار كلمة المرور"}
                 >
                   {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
@@ -156,11 +157,11 @@ export default function RegisterPage() {
             </div>
 
             <div>
-              <label htmlFor="register-confirm-password" className="block text-sm font-semibold text-neutral-text mb-2">
+              <label htmlFor="register-confirm-password" className="mb-2 block text-sm font-semibold">
                 تأكيد كلمة المرور
               </label>
               <div className="relative">
-                <Lock className="w-5 h-5 text-neutral-muted absolute right-3.5 top-1/2 -translate-y-1/2" />
+                <Lock className="absolute right-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-muted" />
                 <input
                   id="register-confirm-password"
                   minLength={8}
@@ -169,12 +170,12 @@ export default function RegisterPage() {
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full pr-11 pl-11 py-3 bg-neutral-surface border border-neutral-border rounded-btn focus:outline-none focus:border-primary text-sm font-medium"
+                  className="form-field px-11"
                 />
                 <button
                   type="button"
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  className="absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-muted hover:text-neutral-text transition-colors"
+                  className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted hover:text-[rgb(var(--text-main))]"
                   aria-label={showConfirmPassword ? "إخفاء كلمة المرور" : "إظهار كلمة المرور"}
                 >
                   {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
@@ -185,7 +186,7 @@ export default function RegisterPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-primary text-white font-bold py-3.5 rounded-btn hover:bg-primary-hover transition-colors flex items-center justify-center gap-2 shadow-md disabled:opacity-50 mt-2"
+              className="brand-button mt-2 w-full gap-2"
             >
               {loading ? (
                 <Loader2 className="w-5 h-5 animate-spin" />
@@ -199,10 +200,10 @@ export default function RegisterPage() {
           </form>
         )}
 
-        <div className="mt-8 pt-6 border-t border-neutral-border text-center">
-          <p className="text-sm text-neutral-muted">
+        <div className="mt-8 border-t border-theme pt-6 text-center">
+          <p className="text-sm text-muted">
             لديك حساب بالفعل؟{" "}
-            <Link href="/login" className="text-primary font-bold hover:underline">
+            <Link href="/login" className="font-bold text-brand hover:underline">
               سجّل دخولك الآن
             </Link>
           </p>

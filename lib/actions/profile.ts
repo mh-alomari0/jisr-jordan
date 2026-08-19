@@ -18,6 +18,10 @@ export interface UserProfileData {
   phone?: string | null;
   address?: string | null;
   role: string;
+  avatar_path?: string | null;
+  cover_path?: string | null;
+  avatar_url?: string | null;
+  cover_url?: string | null;
 }
 
 export async function getUserProfileAction() {
@@ -41,7 +45,7 @@ export async function getUserProfileAction() {
 
     const { data: profile, error } = await supabase
       .from("users")
-      .select("id, email, full_name, phone, address, role")
+      .select("id, email, full_name, phone, address, role, avatar_path, cover_path")
       .eq("id", user.id)
       .single();
 
@@ -49,6 +53,10 @@ export async function getUserProfileAction() {
       return { success: false, error: "تعذر تحميل الملف الشخصي" };
     }
 
+    const [avatarSigned, coverSigned] = await Promise.all([
+      profile?.avatar_path ? supabase.storage.from("profile-private").createSignedUrl(profile.avatar_path, 3600) : Promise.resolve({ data: null }),
+      profile?.cover_path ? supabase.storage.from("profile-private").createSignedUrl(profile.cover_path, 3600) : Promise.resolve({ data: null }),
+    ]);
     const profileData: UserProfileData = {
       id: user.id,
       email: user.email || "",
@@ -56,6 +64,8 @@ export async function getUserProfileAction() {
       phone: profile?.phone || "",
       address: profile?.address || "",
       role: profile?.role || "CUSTOMER",
+      avatar_path: profile?.avatar_path || null, cover_path: profile?.cover_path || null,
+      avatar_url: avatarSigned.data?.signedUrl || null, cover_url: coverSigned.data?.signedUrl || null,
     };
 
     return { success: true, profile: profileData };

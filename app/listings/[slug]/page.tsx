@@ -6,6 +6,7 @@ import { notFound } from "next/navigation";
 import { getListingBySlugAction } from "@/lib/actions/marketplace-discovery";
 import { deliveryTypeLabels, formatListingPrice, pricingModelLabels } from "@/lib/marketplace";
 import ListingActionsClient from "./_components/listing-actions-client";
+import MessageProviderButton from "@/components/marketplace/message-provider-button";
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
@@ -81,7 +82,7 @@ export default async function ListingPage({ params }: { params: Promise<{ slug: 
               <div className="rounded-xl bg-surface-muted p-3"><strong className="block text-base">{completed}</strong><span className="text-muted">طلبات مكتملة</span></div>
               <div className="rounded-xl bg-surface-muted p-3"><strong className="flex items-center justify-center gap-1 text-base">{rating || "—"}<Star className="h-3.5 w-3.5 text-[rgb(var(--warning))]" /></strong><span className="text-muted">{reviewCount} تقييم</span></div>
             </div>
-            <Link href={"/providers/" + listing.provider_id} className="secondary-button mt-4 w-full">عرض الملف المهني</Link>
+            <div className="mt-4 grid grid-cols-2 gap-2"><Link href={"/providers/" + listing.provider_id} className="secondary-button w-full">عرض الملف المهني</Link><MessageProviderButton providerId={listing.provider_id} listingId={listing.id} className="secondary-button w-full" /></div>
           </section>
           <ListingActionsClient listingId={listing.id} deliveryType={listing.delivery_type} pricingModel={listing.pricing_model} />
           <div className="surface-card p-4 text-[11px] leading-6 text-muted">

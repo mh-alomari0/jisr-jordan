@@ -5,6 +5,8 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { createServerSupabaseClient, getAuthenticatedUser } from "@/lib/supabase/server";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { detectContactSignals, PREBOOKING_CONTACT_WARNING } from "@/lib/anti-circumvention";
+import { recordBlockedContactAttempt } from "@/lib/contact-protection-server";
 
 const PostSchema = z.object({
   content: z.string().trim().min(3, "أضف محتوى واضحاً للمنشور").max(3000),
@@ -42,6 +44,8 @@ export async function createProviderPostAction(input: z.input<typeof PostSchema>
   try {
     const { supabase, user } = await requireProvider();
     if (!user) return { success: false as const, error: "حساب مقدم الخدمة غير معتمد" };
+    const contactSignals = detectContactSignals(parsed.data.content);
+    if (contactSignals.length) { await recordBlockedContactAttempt(supabase, "POST", null, contactSignals); return { success: false as const, error: PREBOOKING_CONTACT_WARNING }; }
     const rate = await checkRateLimit(`post:create:${user.id}`, { limit: 20, windowMs: 60 * 60_000 });
     if (!rate.success) return { success: false as const, error: rate.error };
     if (parsed.data.listingId) {
@@ -181,4 +185,3 @@ export async function confirmMarketplaceImageUploadAction(mediaId: string) {
     return { success: false as const, error: "تعذر اعتماد الصورة" };
   }
 }
-

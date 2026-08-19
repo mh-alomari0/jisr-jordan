@@ -11,8 +11,9 @@ test("homepage and live service catalog remain usable at launch viewports", asyn
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBe(true);
 
     await page.goto("/services");
-    await expect(page.getByRole("heading", { level: 1, name: "خدمات الصيانة المنزلية" })).toBeVisible();
-    await expect(page.getByRole("link", { name: "حجز الخدمة الآن" })).toHaveCount(16);
+    await expect(page.getByRole("heading", { level: 1, name: "ما نوع الخدمة التي تحتاجها؟" })).toBeVisible();
+    await expect(page.locator('a[href^="/service-types/"]')).toHaveCount(16);
+    await expect(page.getByText(/د\.أ/)).toHaveCount(0);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBe(true);
   }
 });

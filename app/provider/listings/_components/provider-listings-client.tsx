@@ -6,14 +6,14 @@ import { ImagePlus, Pencil, Plus, Send, Trash2 } from "lucide-react";
 import { supabase } from "@/lib/supabase/client";
 import { confirmMarketplaceImageUploadAction, prepareMarketplaceImageUploadAction } from "@/lib/actions/provider-content";
 import { createProviderListingAction, deleteProviderListingAction, setProviderListingPublicationAction, updateProviderListingAction } from "@/lib/actions/provider-listings";
-import { deliveryTypeLabels, listingStatusLabels, pricingModelLabels, type MarketplaceCategory, type ServiceListing } from "@/lib/marketplace";
+import { deliveryTypeLabels, listingStatusLabels, pricingModelLabels, type MarketplaceCategory, type ServiceListing, type ServiceTypeDefinition } from "@/lib/marketplace";
 
 const empty = {
-  title: "", shortDescription: "", description: "", categoryId: "", deliveryType: "ON_SITE",
+  serviceTypeId: "", title: "", shortDescription: "", description: "", categoryId: "", deliveryType: "ON_SITE",
   pricingModel: "FIXED", basePrice: "", estimatedDurationMinutes: "60", serviceAreas: "عمّان",
 };
 
-export default function ProviderListingsClient({ listings, categories }: { listings: ServiceListing[]; categories: MarketplaceCategory[] }) {
+export default function ProviderListingsClient({ listings, categories, serviceTypes }: { listings: ServiceListing[]; categories: MarketplaceCategory[]; serviceTypes: ServiceTypeDefinition[] }) {
   const router = useRouter();
   const [form, setForm] = useState(empty);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -25,6 +25,7 @@ export default function ProviderListingsClient({ listings, categories }: { listi
   const edit = (listing: ServiceListing) => {
     setEditingId(listing.id);
     setForm({
+      serviceTypeId: listing.legacy_service_id || "",
       title: listing.title,
       shortDescription: listing.short_description,
       description: listing.description,
@@ -41,6 +42,7 @@ export default function ProviderListingsClient({ listings, categories }: { listi
   const submit = async () => {
     setPending(true); setMessage("");
     const payload = {
+      serviceTypeId: form.serviceTypeId,
       title: form.title,
       shortDescription: form.shortDescription,
       description: form.description,
@@ -89,6 +91,7 @@ export default function ProviderListingsClient({ listings, categories }: { listi
           {editingId && <button type="button" onClick={reset} className="secondary-button !min-h-9 !px-3">إلغاء التعديل</button>}
         </div>
         <div className="mt-5 grid gap-4 sm:grid-cols-2">
+          <label className="text-xs font-bold sm:col-span-2">نوع الخدمة في دليل جسر<select value={form.serviceTypeId} onChange={(event) => { const selected = serviceTypes.find((item) => item.id === event.target.value); setForm((current) => ({ ...current, serviceTypeId: event.target.value, categoryId: selected?.category_id || current.categoryId })); }} className="form-field mt-1.5"><option value="">اختر نوع الخدمة الذي تقدمه</option>{serviceTypes.map((service) => <option key={service.id} value={service.id}>{service.parent_category_name} — {service.title}</option>)}</select></label>
           <label className="text-xs font-bold sm:col-span-2">عنوان العرض<input value={form.title} onChange={(event) => field("title", event.target.value)} maxLength={120} className="form-field mt-1.5" /></label>
           <label className="text-xs font-bold sm:col-span-2">وصف مختصر<input value={form.shortDescription} onChange={(event) => field("shortDescription", event.target.value)} maxLength={240} className="form-field mt-1.5" /></label>
           <label className="text-xs font-bold sm:col-span-2">التفاصيل<textarea value={form.description} onChange={(event) => field("description", event.target.value)} maxLength={4000} rows={5} className="form-field mt-1.5" /></label>

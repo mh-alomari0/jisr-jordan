@@ -2,7 +2,7 @@
 
 import { z } from "zod";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
-import type { MarketplaceCategory, MarketplaceSearchResult, ServiceListing } from "@/lib/marketplace";
+import type { MarketplaceCategory, MarketplaceSearchResult, ServiceListing, ServiceProviderResult, ServiceTypeDefinition } from "@/lib/marketplace";
 
 const SearchSchema = z.object({
   query: z.string().trim().max(120).default(""),
@@ -38,6 +38,102 @@ export async function getMarketplaceCategoriesAction() {
     return { success: true as const, categories: parents, flatCategories: categories };
   } catch {
     return { success: false as const, error: "تعذر تحميل تصنيفات الخدمات", categories: [] as MarketplaceCategory[] };
+  }
+}
+
+export async function getHomeServiceTaxonomyAction() {
+  try {
+    const supabase = await createServerSupabaseClient();
+    const [{ data: categories, error: categoryError }, { data: services, error: serviceError }] = await Promise.all([
+      supabase.from("service_categories")
+        .select("id, parent_id, slug, name_ar, description_ar, display_order")
+        .eq("is_active", true).order("display_order"),
+      supabase.from("services")
+        .select("id, title, description, category_id")
+        .eq("is_active", true).order("title").limit(200),
+    ]);
+    if (categoryError || serviceError) return { success: false as const, categories: [] };
+    const categoryRows = (categories || []) as Array<{ id: string; parent_id: string | null; slug: string; name_ar: string; description_ar: string | null; display_order: number }>;
+    const byId = new Map(categoryRows.map((item) => [item.id, item]));
+    const serviceRows = (services || []).map((service) => {
+      const child = service.category_id ? byId.get(service.category_id) : null;
+      const parent = child?.parent_id ? byId.get(child.parent_id) : child;
+      return {
+        id: service.id,
+        title: service.title,
+        description: service.description,
+        category_id: child?.id || null,
+        category_name: child?.name_ar || null,
+        parent_category_id: parent?.id || null,
+        parent_category_name: parent?.name_ar || null,
+      } satisfies ServiceTypeDefinition;
+    });
+    const grouped = categoryRows.filter((item) => !item.parent_id).map((parent) => ({
+      ...parent,
+      serviceTypes: serviceRows.filter((service) => service.parent_category_id === parent.id),
+    }));
+    return { success: true as const, categories: grouped };
+  } catch {
+    return { success: false as const, categories: [] };
+  }
+}
+
+const ProviderSortSchema = z.enum(["RATING_DESC", "EXPERIENCE_DESC", "EXPERIENCE_ASC", "PRICE_ASC", "PRICE_DESC", "COMPLETED_DESC", "COMPLETED_ASC", "AVAILABLE_FIRST"]);
+
+export async function getServiceTypeAction(serviceId: string) {
+  if (!z.string().uuid().safeParse(serviceId).success) return { success: false as const, error: "نوع الخدمة غير موجود" };
+  try {
+    const supabase = await createServerSupabaseClient();
+    const { data, error } = await supabase.from("services")
+      .select("id, title, description, category_id, service_categories(id, name_ar, parent_id)")
+      .eq("id", serviceId).eq("is_active", true).maybeSingle();
+    if (error || !data) return { success: false as const, error: "نوع الخدمة غير موجود" };
+    return { success: true as const, service: data };
+  } catch {
+    return { success: false as const, error: "تعذر تحميل نوع الخدمة" };
+  }
+}
+
+export async function getServiceTypeProvidersAction(input: {
+  serviceId: string; sort?: string; serviceArea?: string | null; pricingModel?: string | null;
+  minPrice?: number | null; maxPrice?: number | null; minRating?: number | null;
+  minExperience?: number | null; remoteOnly?: boolean; availableToday?: boolean; page?: number;
+}) {
+  const parsed = z.object({
+    serviceId: z.string().uuid(), sort: ProviderSortSchema.default("RATING_DESC"),
+    serviceArea: z.string().trim().min(2).max(80).nullable().default(null),
+    pricingModel: z.enum(["FIXED", "STARTING_FROM", "HOURLY", "PER_SESSION", "QUOTE_REQUIRED"]).nullable().default(null),
+    minPrice: z.number().nonnegative().max(1_000_000).nullable().default(null),
+    maxPrice: z.number().positive().max(1_000_000).nullable().default(null),
+    minRating: z.number().min(0).max(5).nullable().default(null),
+    minExperience: z.number().int().min(0).max(80).nullable().default(null),
+    remoteOnly: z.boolean().default(false), availableToday: z.boolean().default(false),
+    page: z.number().int().min(1).max(500).default(1),
+  }).safeParse(input);
+  if (!parsed.success || (parsed.data.minPrice != null && parsed.data.maxPrice != null && parsed.data.minPrice > parsed.data.maxPrice)) {
+    return { success: false as const, error: "مرشحات مقدمي الخدمة غير صالحة", providers: [] as ServiceProviderResult[] };
+  }
+  try {
+    const supabase = await createServerSupabaseClient();
+    const pageSize = 24;
+    const { data, error } = await supabase.rpc("get_service_provider_listings", {
+      p_service_id: parsed.data.serviceId, p_sort: parsed.data.sort,
+      p_service_area: parsed.data.serviceArea, p_pricing_model: parsed.data.pricingModel,
+      p_min_price: parsed.data.minPrice, p_max_price: parsed.data.maxPrice,
+      p_min_rating: parsed.data.minRating, p_min_experience: parsed.data.minExperience,
+      p_remote_only: parsed.data.remoteOnly, p_available_today: parsed.data.availableToday,
+      p_limit: pageSize, p_offset: (parsed.data.page - 1) * pageSize,
+    });
+    if (error) return { success: false as const, error: "تعذر تحميل مقدمي الخدمة", providers: [] as ServiceProviderResult[] };
+    const origin = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
+    const providers = ((data || []) as ServiceProviderResult[]).map((item) => ({
+      ...item,
+      image_path: mediaUrl(origin, item.image_path),
+      provider_avatar_path: mediaUrl(origin, item.provider_avatar_path),
+    }));
+    return { success: true as const, providers, page: parsed.data.page, hasMore: providers.length === pageSize };
+  } catch {
+    return { success: false as const, error: "تعذر تحميل مقدمي الخدمة", providers: [] as ServiceProviderResult[] };
   }
 }
 
@@ -106,9 +202,14 @@ export async function getPublicProviderAction(providerId: string) {
     const supabase = await createServerSupabaseClient();
     const { data, error } = await supabase.rpc("get_public_provider_profile", { p_provider_id: providerId });
     if (error || !data) return { success: false as const, error: "مقدم الخدمة غير موجود أو غير متاح" };
-    return { success: true as const, provider: data as Record<string, unknown> };
+    const provider = data as Record<string, unknown>;
+    const origin = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
+    provider.avatar_path = mediaUrl(origin, typeof provider.avatar_path === "string" ? provider.avatar_path : null);
+    provider.cover_path = mediaUrl(origin, typeof provider.cover_path === "string" ? provider.cover_path : null);
+    if (Array.isArray(provider.listings)) provider.listings = provider.listings.map((listing) => ({ ...listing, image_path: mediaUrl(origin, typeof listing.image_path === "string" ? listing.image_path : null) }));
+    if (Array.isArray(provider.posts)) provider.posts = provider.posts.map((post: Record<string, unknown>) => ({ ...post, media: Array.isArray(post.media) ? post.media.map((item: Record<string, unknown>) => ({ ...item, path: mediaUrl(origin, typeof item.path === "string" ? item.path : null) })) : [] }));
+    return { success: true as const, provider };
   } catch {
     return { success: false as const, error: "تعذر تحميل ملف مقدم الخدمة" };
   }
 }
-

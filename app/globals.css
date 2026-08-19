@@ -4,30 +4,38 @@
 
 :root,
 [data-theme="light"] {
-  --primary: 200 74 47;
-  --primary-strong: 157 52 34;
-  --primary-soft: 253 235 229;
-  --canvas: 250 247 242;
+  --primary: 14 150 159;
+  --primary-strong: 7 105 114;
+  --primary-soft: 225 247 246;
+  --canvas: 249 250 248;
   --surface: 255 255 255;
-  --surface-muted: 245 239 232;
-  --text-main: 49 42 38;
-  --text-muted: 107 94 86;
-  --border: 226 216 207;
+  --surface-muted: 241 246 244;
+  --text-main: 25 43 44;
+  --text-muted: 91 111 111;
+  --border: 218 230 227;
   --success: 34 139 94;
   --warning: 202 124 31;
   --danger: 190 48 48;
-  --shadow: 64 45 35;
+  --shadow: 16 65 67;
+  --category-home: 244 126 54;
+  --category-tech: 41 132 214;
+  --category-education: 113 78 208;
+  --category-design: 13 166 162;
+  --category-business: 43 151 91;
+  --category-events: 228 83 101;
+  --category-maintenance: 229 157 32;
+  --category-other: 92 103 118;
 }
 [data-theme="dark"] {
-  --primary: 232 112 82;
-  --primary-strong: 244 146 119;
-  --primary-soft: 80 41 32;
-  --canvas: 28 25 23;
-  --surface: 39 35 32;
-  --surface-muted: 50 44 40;
-  --text-main: 247 239 232;
-  --text-muted: 190 176 165;
-  --border: 72 62 56;
+  --primary: 71 207 202;
+  --primary-strong: 124 229 224;
+  --primary-soft: 20 70 72;
+  --canvas: 15 28 29;
+  --surface: 22 39 40;
+  --surface-muted: 29 50 51;
+  --text-main: 239 248 246;
+  --text-muted: 169 193 190;
+  --border: 52 76 76;
   --success: 79 181 126;
   --warning: 226 158 72;
   --danger: 235 104 104;
@@ -80,14 +88,14 @@
 
 @layer components {
   .surface-card {
-    @apply rounded-2xl border;
+    @apply rounded-3xl border;
     background: rgb(var(--surface));
     border-color: rgb(var(--border));
     box-shadow: 0 12px 30px rgb(var(--shadow) / 0.06);
   }
 
   .brand-button {
-    @apply inline-flex min-h-11 items-center justify-center rounded-xl px-5 py-2.5 text-sm font-bold text-white transition disabled:cursor-not-allowed disabled:opacity-50;
+    @apply inline-flex min-h-11 items-center justify-center rounded-2xl px-5 py-2.5 text-sm font-bold text-white transition disabled:cursor-not-allowed disabled:opacity-50;
     background: rgb(var(--primary));
   }
 
@@ -97,7 +105,7 @@
   }
 
   .secondary-button {
-    @apply inline-flex min-h-11 items-center justify-center rounded-xl border px-5 py-2.5 text-sm font-bold transition disabled:cursor-not-allowed disabled:opacity-50;
+    @apply inline-flex min-h-11 items-center justify-center rounded-2xl border px-5 py-2.5 text-sm font-bold transition disabled:cursor-not-allowed disabled:opacity-50;
     color: rgb(var(--text-main));
     border-color: rgb(var(--border));
     background: rgb(var(--surface));
@@ -108,7 +116,7 @@
   }
 
   .form-field {
-    @apply min-h-11 w-full rounded-xl border px-3 py-2.5 text-sm transition;
+    @apply min-h-11 w-full rounded-2xl border px-3 py-2.5 text-sm transition;
     border-color: rgb(var(--border));
     background: rgb(var(--surface));
   }
@@ -129,6 +137,19 @@
     background: rgb(var(--surface) / 0.88);
     backdrop-filter: blur(14px);
     border: 1px solid rgb(var(--border) / 0.85);
+  }
+  .category-home { --category-accent: var(--category-home); }
+  .category-tech { --category-accent: var(--category-tech); }
+  .category-education { --category-accent: var(--category-education); }
+  .category-design { --category-accent: var(--category-design); }
+  .category-business { --category-accent: var(--category-business); }
+  .category-events { --category-accent: var(--category-events); }
+  .category-maintenance { --category-accent: var(--category-maintenance); }
+  .category-other { --category-accent: var(--category-other); }
+  .category-icon {
+    color: rgb(var(--category-accent));
+    background: rgb(var(--category-accent) / 0.13);
+    box-shadow: inset 0 0 0 1px rgb(var(--category-accent) / 0.12);
   }
 }
 

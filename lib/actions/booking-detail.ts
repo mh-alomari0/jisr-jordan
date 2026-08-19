@@ -17,7 +17,7 @@ export async function getBookingDetailAction(bookingId: string) {
 
     const { data: booking, error } = await supabase
       .from("bookings")
-      .select("id, customer_id, provider_id, service_id, listing_id, quote_id, service_title, workflow_type, delivery_type_snapshot, pricing_model_snapshot, agreed_amount, currency, commission_rate_snapshot, commission_amount_snapshot, dispute_status, booking_date, booking_time, start_time, end_time, status, notes, phone, address, payment_status, created_at, updated_at")
+      .select("id, customer_id, provider_id, service_id, listing_id, quote_id, service_title, workflow_type, delivery_type_snapshot, pricing_model_snapshot, agreed_amount, currency, commission_rate_snapshot, commission_amount_snapshot, dispute_status, contact_revealed_at, booking_date, booking_time, start_time, end_time, status, notes, phone, address, payment_status, created_at, updated_at")
       .eq("id", bookingId)
       .single();
 
@@ -40,7 +40,9 @@ export async function getBookingDetailAction(bookingId: string) {
       supabase.from("payments").select("id, amount, currency, payment_method, status").eq("booking_id", bookingId).order("created_at", { ascending: false }).limit(1).maybeSingle(),
       supabase.from("reviews").select("id").eq("booking_id", bookingId).eq("customer_id", user.id).maybeSingle(),
       booking.provider_id
-        ? supabase.rpc("get_booking_provider_contact", { p_booking_id: bookingId })
+        ? (booking.contact_revealed_at
+          ? supabase.rpc("get_booking_provider_contact", { p_booking_id: bookingId })
+          : supabase.rpc("get_public_provider_profile", { p_provider_id: booking.provider_id }))
         : Promise.resolve({ data: null, error: null }),
     ]);
 
@@ -55,7 +57,9 @@ export async function getBookingDetailAction(bookingId: string) {
           category: listingResult.data.service_categories?.[0]?.name_ar || null,
         } : { id: booking.listing_id || booking.service_id || "", title: booking.service_title, price: booking.agreed_amount, category: null }),
         listing: listingResult.data || null,
-        users: providerResult.error ? null : providerResult.data,
+        users: providerResult.error ? null : booking.contact_revealed_at
+          ? providerResult.data
+          : providerResult.data ? { full_name: providerResult.data.name, phone: "" } : null,
       },
       payment: paymentResult.data || null,
       hasReviewed: !!reviewResult.data,
@@ -63,6 +67,18 @@ export async function getBookingDetailAction(bookingId: string) {
   } catch {
     return { success: false, error: "حدث خطأ أثناء جلب تفاصيل الحجز" };
   }
+}
+
+export async function revealBookingProviderContactAction(bookingId: string) {
+  if (!z.string().uuid().safeParse(bookingId).success) return { success: false as const, error: "معرف الحجز غير صالح" };
+  try {
+    const supabase = await createServerSupabaseClient();
+    const user = await getAuthenticatedUser(supabase);
+    if (!user) return { success: false as const, error: "يجب تسجيل الدخول" };
+    const { data, error } = await supabase.rpc("get_booking_provider_contact", { p_booking_id: bookingId });
+    if (error || !data) return { success: false as const, error: "بيانات التواصل متاحة بعد حجز مؤكد ومبلغ وعمولة محفوظين" };
+    return { success: true as const, contact: data as { full_name: string; phone: string } };
+  } catch { return { success: false as const, error: "تعذر إظهار بيانات التواصل" }; }
 }
 
 /**

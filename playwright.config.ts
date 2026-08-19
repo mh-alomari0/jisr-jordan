@@ -9,10 +9,14 @@ const usesLocalServer = ["localhost", "127.0.0.1"].includes(testTarget.hostname)
 
 export default defineConfig({
   testDir: "./tests/e2e",
-  fullyParallel: true,
+  // Public acceptance tests intentionally exercise the linked Supabase catalog.
+  // Serialize them so responsive sweeps do not create an artificial burst of
+  // concurrent live reads that can mask product behavior with transport errors.
+  fullyParallel: false,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
-  workers: process.env.CI ? 1 : undefined,
+  workers: 1,
+  timeout: 120 * 1000,
   reporter: "html",
   use: {
     baseURL,

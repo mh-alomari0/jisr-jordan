@@ -1,0 +1,11 @@
+"use client";
+import { useEffect } from "react";
+
+export default function PwaRegistration() {
+  useEffect(() => {
+    if ("serviceWorker" in navigator && (location.protocol === "https:" || location.hostname === "localhost")) {
+      void navigator.serviceWorker.register("/sw.js", { scope: "/", updateViaCache: "none" });
+    }
+  }, []);
+  return null;
+}

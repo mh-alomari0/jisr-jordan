@@ -37,12 +37,14 @@ vi.mock("@supabase/ssr", () => ({
       return {
         select: vi.fn().mockReturnValue({
           eq: vi.fn().mockReturnValue({
-            order: vi.fn().mockReturnValue({
-              limit: vi.fn().mockResolvedValue({
-                data: [
-                  { id: "nt_1", title: "تم تأكيد الحجز", is_read: false },
-                ],
-                error: null,
+            eq: vi.fn().mockReturnValue({
+              order: vi.fn().mockReturnValue({
+                limit: vi.fn().mockResolvedValue({
+                  data: [
+                    { id: "nt_1", title: "تم تأكيد الحجز", is_read: false },
+                  ],
+                  error: null,
+                }),
               }),
             }),
           }),

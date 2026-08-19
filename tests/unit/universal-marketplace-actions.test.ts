@@ -69,6 +69,7 @@ describe("universal marketplace server boundaries", () => {
     vi.mocked(createServerSupabaseClient).mockResolvedValue(client as never);
     vi.mocked(getAuthenticatedUser).mockResolvedValue(user as never);
     const result = await createProviderListingAction({
+      serviceTypeId: "55555555-5555-4555-8555-555555555555",
       title: "تطوير متجر إلكتروني", shortDescription: "متجر عربي سريع ومتجاوب للأعمال المحلية",
       description: "تطوير متجر إلكتروني متكامل مع تجربة عربية متجاوبة ولوحة إدارة واضحة.",
       categoryId: listingId, deliveryType: "REMOTE", pricingModel: "QUOTE_REQUIRED",
@@ -92,4 +93,3 @@ describe("universal marketplace server boundaries", () => {
     expect(insert).not.toHaveBeenCalled();
   });
 });
-

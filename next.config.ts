@@ -38,12 +38,10 @@ const nextConfig: NextConfig = {
     root: process.cwd(),
   },
   images: {
-    remotePatterns: supabaseImageHost ? [{
-      protocol: "https",
-      hostname: supabaseImageHost,
-      port: "",
-      pathname: "/storage/v1/object/public/marketplace-public/**",
-    }] : [],
+    remotePatterns: supabaseImageHost ? [
+      { protocol: "https", hostname: supabaseImageHost, port: "", pathname: "/storage/v1/object/public/marketplace-public/**" },
+      { protocol: "https", hostname: supabaseImageHost, port: "", pathname: "/storage/v1/object/sign/profile-private/**" },
+    ] : [],
   },
   async headers() {
     return [

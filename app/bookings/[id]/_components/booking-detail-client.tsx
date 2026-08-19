@@ -9,10 +9,13 @@ import {
 } from "@/lib/constants";
 import { cancelCustomerBookingAction } from "@/lib/actions/customer-bookings";
 import { createCODPaymentAction } from "@/lib/actions/cod-payment";
-import { submitMarketplaceReviewAction } from "@/lib/actions/reviews";
+import { submitMarketplaceReviewAction, submitServiceReviewAction } from "@/lib/actions/reviews";
+import { revealBookingProviderContactAction } from "@/lib/actions/booking-detail";
+import MessageProviderButton from "@/components/marketplace/message-provider-button";
 
 interface BookingDetail {
   id: string;
+  provider_id?: string | null;
   status: string;
   booking_date: string;
   start_time: string;
@@ -26,6 +29,7 @@ interface BookingDetail {
   agreed_amount?: number | null;
   payment_status: string | null;
   created_at: string;
+  contact_revealed_at?: string | null;
   services: { id: string; title: string; price: number; category: string } | null;
   listing?: { id: string; slug: string; title: string } | null;
   users: { full_name: string; phone: string } | null; // provider info
@@ -88,12 +92,15 @@ export default function BookingDetailClient({
   const [rating, setRating] = useState(5);
   const [reviewComment, setReviewComment] = useState("");
   const [reviewLoading, setReviewLoading] = useState(false);
+  const [providerContact, setProviderContact] = useState(booking.users);
+  const [contactLoading, setContactLoading] = useState(false);
 
   const service = booking.services;
-  const provider = booking.users;
+  const provider = providerContact;
 
   const cancellable =
     ["PENDING", "CONFIRMED", "ASSIGNED"].includes(booking.status) &&
+    !booking.contact_revealed_at &&
     payment?.status !== "PAID";
   const canCreateCOD =
     !payment && ["PENDING", "CONFIRMED", "ASSIGNED"].includes(booking.status);
@@ -124,10 +131,21 @@ export default function BookingDetailClient({
     setCodLoading(false);
   }
 
+  async function revealContact() {
+    setContactLoading(true); setActionError("");
+    const result = await revealBookingProviderContactAction(booking.id);
+    if (result.success) setProviderContact(result.contact); else setActionError(result.error || "تعذر إظهار بيانات التواصل");
+    setContactLoading(false);
+  }
+
   async function handleMarketplaceReview() {
     setReviewLoading(true);
     setActionError("");
-    const result = await submitMarketplaceReviewAction(booking.id, rating, reviewComment);
+    const result = booking.listing_id
+      ? await submitMarketplaceReviewAction(booking.id, rating, reviewComment)
+      : booking.service_id
+        ? await submitServiceReviewAction(booking.service_id, rating, reviewComment, booking.id)
+        : { success: false as const, error: "بيانات الحجز غير مكتملة" };
     if (!result.success) setActionError(result.error || "تعذر حفظ التقييم");
     else router.refresh();
     setReviewLoading(false);
@@ -223,9 +241,11 @@ export default function BookingDetailClient({
             <div className="flex justify-between gap-4">
               <dt className="text-slate-500 font-medium">الهاتف</dt>
               <dd className="text-slate-900 dir-ltr" dir="ltr">
-                {provider.phone || "غير متوفر"}
+                {provider.phone || <button type="button" onClick={revealContact} disabled={contactLoading} className="text-xs font-bold text-brand">{contactLoading ? "جاري التحقق…" : "إظهار بعد تأكيد المعاملة"}</button>}
               </dd>
             </div>
+            {!provider.phone && <p className="rounded-xl bg-[rgb(var(--primary-soft))] p-3 text-[10px] leading-5 text-muted">إظهار الرقم يسجّل كشف بيانات التواصل، وبعدها يحتاج الإلغاء إلى مراجعة الإدارة لحماية حقوق الطرفين.</p>}
+            {booking.provider_id && <MessageProviderButton providerId={booking.provider_id} listingId={booking.listing_id} bookingId={booking.id} className="secondary-button w-full" />}
           </dl>
         ) : (
           <p className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2.5">
@@ -282,9 +302,9 @@ export default function BookingDetailClient({
 
       {/* 8. Actions */}
       <div className="p-6 space-y-3">
-        {isCompleted && !hasReviewed && booking.listing_id && (
+        {isCompleted && !hasReviewed && (booking.listing_id || booking.service_id) && (
           <div className="mb-4 rounded-xl bg-slate-50 p-4">
-            <h2 className="text-sm font-bold">قيّم مقدم الخدمة والمعاملة</h2>
+            <h2 className="text-sm font-bold">{booking.listing_id ? "قيّم مقدم الخدمة والمعاملة" : "قيّم الخدمة المكتملة"}</h2>
             <div className="mt-3 grid gap-3 sm:grid-cols-[120px_1fr]">
               <label className="text-xs font-semibold">التقييم
                 <select value={rating} onChange={(event) => setRating(Number(event.target.value))} className="form-field mt-1.5">
@@ -310,16 +330,6 @@ export default function BookingDetailClient({
         )}
 
         <div className="flex flex-wrap gap-2">
-          {/* Review */}
-          {isCompleted && !hasReviewed && !booking.listing_id && booking.service_id && (
-            <Link
-              href={`/services/${booking.service_id}?reviewBookingId=${booking.id}`}
-              className="flex-1 min-w-[140px] text-center bg-emerald-600 hover:bg-emerald-700 text-white py-2.5 rounded-lg text-sm font-semibold transition-colors"
-            >
-              قيّم الخدمة
-            </Link>
-          )}
-
           {/* Book again */}
           {isCompleted && !booking.listing_id && booking.service_id && (
             <Link

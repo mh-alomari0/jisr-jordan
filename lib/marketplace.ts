@@ -80,6 +80,41 @@ export interface MarketplaceSearchResult {
   relevance: number;
 }
 
+export interface ServiceTypeDefinition {
+  id: string;
+  title: string;
+  description: string | null;
+  category_id: string | null;
+  category_name?: string | null;
+  parent_category_id?: string | null;
+  parent_category_name?: string | null;
+}
+
+export interface ServiceProviderResult {
+  listing_id: string;
+  listing_slug: string;
+  listing_title: string;
+  listing_summary: string;
+  pricing_model: PricingModel;
+  base_price: number | null;
+  currency: "JOD";
+  delivery_type: DeliveryType;
+  service_areas: string[];
+  remote_available: boolean;
+  image_path: string | null;
+  provider_id: string;
+  provider_name: string;
+  provider_avatar_path: string | null;
+  provider_headline: string | null;
+  provider_experience_start_year: number | null;
+  experience_verified: boolean;
+  average_rating: number;
+  review_count: number;
+  completed_booking_count: number;
+  active_service_count: number;
+  available_now: boolean;
+}
+
 export function formatListingPrice(listing: Pick<ServiceListing, "pricing_model" | "base_price" | "currency">) {
   if (listing.pricing_model === "QUOTE_REQUIRED" || listing.base_price == null) return "اطلب عرض سعر";
   const value = new Intl.NumberFormat("ar-JO", { maximumFractionDigits: 2 }).format(listing.base_price);
@@ -87,4 +122,3 @@ export function formatListingPrice(listing: Pick<ServiceListing, "pricing_model"
   const suffix = listing.pricing_model === "HOURLY" ? " / ساعة" : listing.pricing_model === "PER_SESSION" ? " / جلسة" : "";
   return `${prefix}${value} د.أ${suffix}`;
 }
-

@@ -13,16 +13,6 @@ const ReviewSchema = z.object({
   comment: z.string().trim().max(1000, "التعليق طويل جداً"),
 });
 
-export interface ReviewItem {
-  id: string;
-  service_id: string;
-  booking_id?: string | null;
-  rating: number;
-  comment?: string | null;
-  created_at: string;
-  users?: { full_name?: string | null } | null;
-}
-
 async function createReviewsClient() {
   const cookieStore = await cookies();
   return createServerClient(
@@ -67,40 +57,6 @@ export async function submitServiceReviewAction(serviceId: string, rating: numbe
     return { success: true };
   } catch {
     return { success: false, error: "فشل حفظ التقييم" };
-  }
-}
-
-export async function canReviewBookingAction(serviceId: string, bookingId: string) {
-  if (!z.string().uuid().safeParse(serviceId).success || !z.string().uuid().safeParse(bookingId).success) return false;
-  try {
-    const supabase = await createReviewsClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return false;
-    const [{ data: booking }, { data: review }] = await Promise.all([
-      supabase.from("bookings").select("id").eq("id", bookingId).eq("customer_id", user.id)
-        .eq("service_id", serviceId).eq("status", "COMPLETED").maybeSingle(),
-      supabase.from("reviews").select("id").eq("booking_id", bookingId).maybeSingle(),
-    ]);
-    return Boolean(booking && !review);
-  } catch {
-    return false;
-  }
-}
-
-export async function getServiceReviewsAction(serviceId: string) {
-  try {
-    if (!z.string().uuid().safeParse(serviceId).success) return { success: false, error: "معرف الخدمة غير صالح" };
-    const supabase = await createReviewsClient();
-    const { data: reviews, error } = await supabase.from("reviews")
-      .select("id, booking_id, service_id, rating, comment, created_at, users(full_name)")
-      .eq("service_id", serviceId).order("created_at", { ascending: false }).limit(100);
-    if (error) return { success: true, reviews: [], averageRating: 0 };
-    const typedReviews = (reviews || []) as unknown as ReviewItem[];
-    const total = typedReviews.reduce((acc, review) => acc + review.rating, 0);
-    const averageRating = typedReviews.length ? Number((total / typedReviews.length).toFixed(1)) : 0;
-    return { success: true, reviews: typedReviews, averageRating };
-  } catch {
-    return { success: false, error: "فشل جلب التقييمات" };
   }
 }
 

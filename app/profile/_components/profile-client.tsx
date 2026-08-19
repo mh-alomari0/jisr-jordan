@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { updateUserProfileAction, UserProfileData } from "@/lib/actions/profile";
+import ProfileMediaEditor from "@/components/profile-media-editor";
 
 export default function ProfileClient({ initialProfile }: { initialProfile: UserProfileData }) {
   const [fullName, setFullName] = useState(initialProfile.full_name || "");
@@ -28,11 +29,13 @@ export default function ProfileClient({ initialProfile }: { initialProfile: User
   };
 
   return (
-    <div className="max-w-xl mx-auto bg-white border rounded-xl p-6 shadow-sm space-y-6 text-right">
+    <div className="mx-auto max-w-xl overflow-hidden border-y border-theme bg-surface text-right sm:border">
+      <ProfileMediaEditor audience="CUSTOMER" initialAvatar={initialProfile.avatar_url} initialCover={initialProfile.cover_url} name={initialProfile.full_name || "المستخدم"} />
+      <div className="space-y-6 p-5 sm:p-6">
       <div className="space-y-1 border-b pb-4">
-        <p className="text-xs text-gray-500">البريد الإلكتروني:</p>
-        <p className="font-mono text-sm font-semibold text-gray-900">{initialProfile.email}</p>
-        <span className="inline-block mt-2 px-2.5 py-0.5 rounded text-xs bg-gray-100 font-semibold text-gray-700">
+        <p className="text-xs text-muted">البريد الإلكتروني:</p>
+        <p className="font-mono text-sm font-semibold">{initialProfile.email}</p>
+        <span className="mt-2 inline-block bg-surface-muted px-2.5 py-0.5 text-xs font-semibold">
           الرتبة: {initialProfile.role}
         </span>
       </div>
@@ -46,7 +49,7 @@ export default function ProfileClient({ initialProfile }: { initialProfile: User
             value={fullName}
             onChange={(e) => setFullName(e.target.value)}
             placeholder="مثال: محمد العمري"
-            className="w-full border p-2.5 rounded-md text-sm bg-white"
+            className="form-field"
           />
         </div>
 
@@ -58,7 +61,7 @@ export default function ProfileClient({ initialProfile }: { initialProfile: User
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
             placeholder="079XXXXXXXX"
-            className="w-full border p-2.5 rounded-md text-sm bg-white dir-ltr text-right"
+            className="form-field dir-ltr text-right"
           />
         </div>
 
@@ -70,18 +73,20 @@ export default function ProfileClient({ initialProfile }: { initialProfile: User
             value={address}
             onChange={(e) => setAddress(e.target.value)}
             placeholder="المدينة، الشارع، تفاصيل الموقع..."
-            className="w-full border p-2.5 rounded-md text-sm bg-white"
+            className="form-field"
           />
         </div>
 
         <button
           type="submit"
           disabled={loading}
-          className="w-full bg-black text-white py-2.5 rounded-lg text-sm font-medium hover:bg-gray-800 disabled:opacity-50 transition-colors"
+          className="brand-button w-full"
         >
           {loading ? "جاري الحفظ..." : "حفظ التغييرات"}
         </button>
       </form>
+      <p className="border-t border-theme pt-4 text-xs leading-6 text-muted">تغيير البريد أو كلمة المرور أو حذف الحساب يتطلب مسار تحقق أمني منفصل. حذف الحساب الذاتي ما يزال معطلاً حتى اعتماد سياسة الاحتفاظ بالمعاملات.</p>
+      </div>
     </div>
   );
 }

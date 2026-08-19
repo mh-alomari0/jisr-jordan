@@ -5,6 +5,8 @@ import { logger } from "@/lib/logger";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { detectContactSignals, PREBOOKING_CONTACT_WARNING } from "@/lib/anti-circumvention";
+import { recordBlockedContactAttempt } from "@/lib/contact-protection-server";
 
 const ApplySchema = z.object({
   bio: z.string().min(10, "نبذة تعريفية لا تقل عن 10 حروف").max(1000),
@@ -27,6 +29,8 @@ export async function applyAsProviderAction(input: z.infer<typeof ApplySchema>) 
     if (!rateLimit.success) return { success: false, error: rateLimit.error };
 
     const validated = ApplySchema.parse(input);
+    const contactSignals = detectContactSignals(validated.bio);
+    if (contactSignals.length) { await recordBlockedContactAttempt(supabase, "PROFILE", user.id, contactSignals); return { success: false, error: PREBOOKING_CONTACT_WARNING }; }
     const { data, error } = await supabase.rpc("apply_as_provider", {
       p_user_id: user.id,
       p_bio: validated.bio,
@@ -106,6 +110,7 @@ export async function updateProviderProfileAction(input: {
   serviceAreas?: string[];
   experience?: string;
   serviceIds?: string[];
+  experienceStartYear?: number | null;
 }) {
   try {
     const supabase = await createServerSupabaseClient();
@@ -115,7 +120,7 @@ export async function updateProviderProfileAction(input: {
     // Verify user is an approved provider
     const { data: profile } = await supabase
       .from("provider_profiles")
-      .select("application_status")
+      .select("application_status, experience_start_year")
       .eq("user_id", user.id)
       .single();
 
@@ -136,6 +141,10 @@ export async function updateProviderProfileAction(input: {
     if (!parsed.success) {
       return { success: false, error: parsed.error.issues[0]?.message || "بيانات غير صالحة" };
     }
+    const contactSignals = detectContactSignals(parsed.data.bio);
+    if (contactSignals.length) { await recordBlockedContactAttempt(supabase, "PROFILE", user.id, contactSignals); return { success: false, error: PREBOOKING_CONTACT_WARNING }; }
+    const experienceYear = input.experienceStartYear == null ? null : z.number().int().min(1950).max(new Date().getFullYear()).safeParse(input.experienceStartYear);
+    if (experienceYear !== null && !experienceYear.success) return { success: false, error: "سنة بدء الخبرة غير صالحة" };
 
     const { data, error } = await supabase.rpc("update_provider_profile", {
       p_bio: parsed.data.bio,
@@ -146,6 +155,14 @@ export async function updateProviderProfileAction(input: {
     if (error || !data?.success) {
       return { success: false, error: "تعذر تحديث ملف مقدم الخدمة" };
     }
+    const nextExperienceYear = experienceYear === null ? null : experienceYear.data;
+    const experienceUpdate = profile.experience_start_year === nextExperienceYear
+      ? { experience_start_year: nextExperienceYear }
+      : { experience_start_year: nextExperienceYear, experience_verified_at: null, experience_verified_by: null };
+    const { error: experienceError } = await supabase.from("provider_profiles")
+      .update(experienceUpdate)
+      .eq("user_id", user.id).eq("application_status", "APPROVED");
+    if (experienceError) return { success: false, error: "تعذر حفظ سنة الخبرة" };
 
     revalidatePath("/provider");
     return { success: true };
@@ -169,6 +186,8 @@ export async function updateProviderPublicProfileAction(input: z.input<typeof Pu
     const supabase = await createServerSupabaseClient();
     const user = await getAuthenticatedUser(supabase);
     if (!user) return { success: false as const, error: "يجب تسجيل الدخول" };
+    const contactSignals = detectContactSignals(parsed.data.headline);
+    if (contactSignals.length) { await recordBlockedContactAttempt(supabase, "PROFILE", user.id, contactSignals); return { success: false as const, error: PREBOOKING_CONTACT_WARNING }; }
     const { data, error } = await supabase.rpc("update_provider_public_profile", {
       p_headline: parsed.data.headline,
       p_skills: parsed.data.skills,

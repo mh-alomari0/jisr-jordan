@@ -1,18 +1,16 @@
 import { test, expect } from "@playwright/test";
 
-test.describe("مسار الحجز الكامل (Customer Booking E2E Flow)", () => {
-  test("ينبغي أن يتمكن العميل من تصفح الخدمات واختيار موعد وتعبئة تفاصيل الطلب", async ({ page }) => {
-    // 1. تصفح صفحة الخدمات العامة
+test.describe("مسار اكتشاف الخدمة والحجز المحمي", () => {
+  test("ينبغي أن يختار العميل نوع الخدمة قبل مقدمها دون سعر مركزي", async ({ page }) => {
     await page.goto("/services");
     await expect(page).toHaveURL("/services");
     await expect(page.getByRole("heading", { name: "كشف وإصلاح تسربات المياه" })).toBeVisible();
-    await expect(page.getByRole("link", { name: "حجز الخدمة الآن" })).toHaveCount(16);
+    await expect(page.getByText(/د\.أ/)).toHaveCount(0);
+    await page.getByRole("heading", { name: "كشف وإصلاح تسربات المياه" }).click();
+    await expect(page).toHaveURL(/\/service-types\//);
+    await expect(page.getByRole("heading", { name: "مقدمو الخدمة" })).toBeVisible();
 
-    await page.getByRole("button", { name: "نجارة" }).click();
-    await expect(page.getByRole("heading", { name: "إصلاح أبواب وخزائن خشبية" })).toBeVisible();
-    await expect(page.getByRole("link", { name: "حجز الخدمة الآن" })).toHaveCount(2);
-
-    // 2. محاولة زيارة صفحة الحجز المحمية
+    // The transactional booking route remains protected until a provider offer is selected.
     await page.goto("/booking");
 
     // 3. التحقق من السلوك بحسب حالة الجلسة (إما التحويل لصفحة الدخول أو فتح صفحة الحجز)

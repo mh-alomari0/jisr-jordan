@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Heart, Menu, Search, X } from "lucide-react";
+import { Heart, Menu, MessageCircle, Search, X } from "lucide-react";
 import NotificationsBell from "./notifications-bell";
 import ThemeToggle from "./theme-toggle";
 
@@ -21,7 +21,7 @@ export default function Navbar({
   const navLinks = (
     <>
       <Link href="/discover" className="transition hover:text-brand" onClick={close}>استكشاف</Link>
-      <Link href="/services" className="transition hover:text-brand" onClick={close}>الخدمات المنزلية</Link>
+      <Link href="/discover" className="transition hover:text-brand" onClick={close}>الخدمات</Link>
       {isAuthenticated && <Link href="/quotes" className="transition hover:text-brand" onClick={close}>عروض الأسعار</Link>}
       {isProvider && <Link href="/provider" className="font-bold text-brand" onClick={close}>مساحة مقدم الخدمة</Link>}
       {isAdmin && <Link href="/admin" className="font-bold text-brand" onClick={close}>الإدارة</Link>}
@@ -53,6 +53,10 @@ export default function Navbar({
           <ThemeToggle />
           {isAuthenticated ? (
             <>
+              <Link href="/messages" aria-label="الرسائل"
+                className="hidden h-10 w-10 items-center justify-center rounded-full border border-theme transition hover:bg-surface-muted sm:inline-flex">
+                <MessageCircle className="h-4 w-4" aria-hidden="true" />
+              </Link>
               <Link href="/favorites" aria-label="المفضلة"
                 className="hidden h-10 w-10 items-center justify-center rounded-full border border-theme transition hover:bg-surface-muted sm:inline-flex">
                 <Heart className="h-4 w-4" aria-hidden="true" />
@@ -95,6 +99,7 @@ export default function Navbar({
               {isAuthenticated ? (
                 <>
                   <Link href="/favorites" onClick={close}>المفضلة</Link>
+                  <Link href="/messages" onClick={close}>الرسائل</Link>
                   <Link href="/profile" onClick={close}>الملف الشخصي</Link>
                 </>
               ) : (

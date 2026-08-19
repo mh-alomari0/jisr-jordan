@@ -1,128 +1,49 @@
 "use client";
 
 import { useState } from "react";
-import { Bell, Check } from "lucide-react";
-import { markNotificationAsReadAction } from "@/lib/actions/notifications";
-import type { NotificationItem } from "@/lib/actions/notifications";
+import Link from "next/link";
+import { Bell, CalendarDays, Check, MessageCircle, ShieldCheck, Star, WalletCards } from "lucide-react";
+import { markNotificationAsReadAction, type NotificationItem } from "@/lib/actions/notifications";
 
-export default function NotificationsClient({
-  initialNotifications,
-}: {
-  initialNotifications: NotificationItem[];
-}) {
+function groupLabel(dateValue: string) {
+  const date = new Date(dateValue); const now = new Date();
+  const day = new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+  if (day === today) return "اليوم";
+  if (day === today - 86_400_000) return "أمس";
+  return "أقدم";
+}
+
+function visual(type: NotificationItem["type"]) {
+  if (type === "MESSAGE") return { Icon: MessageCircle, style: "bg-[rgb(var(--primary-soft))] text-brand", label: "رسالة" };
+  if (type === "BOOKING") return { Icon: CalendarDays, style: "bg-[rgb(var(--category-tech)/0.12)] text-[rgb(var(--category-tech))]", label: "حجز" };
+  if (type === "PAYMENT") return { Icon: WalletCards, style: "bg-[rgb(var(--success)/0.12)] text-[rgb(var(--success))]", label: "مالي" };
+  if (type === "REVIEW") return { Icon: Star, style: "bg-[rgb(var(--warning)/0.13)] text-[rgb(var(--warning))]", label: "تقييم" };
+  if (["SECURITY", "PROVIDER", "WARNING"].includes(type)) return { Icon: ShieldCheck, style: "bg-[rgb(var(--category-education)/0.12)] text-[rgb(var(--category-education))]", label: "حساب" };
+  return { Icon: Bell, style: "bg-surface-muted text-muted", label: "تحديث" };
+}
+
+export default function NotificationsClient({ initialNotifications }: { initialNotifications: NotificationItem[] }) {
   const [notifications, setNotifications] = useState(initialNotifications);
-
-  const unreadCount = notifications.filter((n) => !n.is_read).length;
-
-  const handleMarkAsRead = async (id: string) => {
-    const res = await markNotificationAsReadAction(id);
-    if (res.success) {
-      setNotifications((prev) =>
-        prev.map((n) => (n.id === id ? { ...n, is_read: true } : n))
-      );
-    }
+  const unreadCount = notifications.filter((notification) => !notification.is_read).length;
+  const markRead = async (id: string) => {
+    const result = await markNotificationAsReadAction(id);
+    if (result.success) setNotifications((current) => current.map((item) => item.id === id ? { ...item, is_read: true } : item));
   };
-
-  const handleMarkAllRead = async () => {
-    const unread = notifications.filter((n) => !n.is_read);
-    await Promise.all(unread.map((n) => markNotificationAsReadAction(n.id)));
-    setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
+  const markAll = async () => {
+    const unread = notifications.filter((item) => !item.is_read);
+    await Promise.all(unread.map((item) => markNotificationAsReadAction(item.id)));
+    setNotifications((current) => current.map((item) => ({ ...item, is_read: true })));
   };
+  const groups = ["اليوم", "أمس", "أقدم"].map((label) => ({ label, items: notifications.filter((item) => groupLabel(item.created_at) === label) })).filter((group) => group.items.length);
 
-  const getTypeBadgeStyle = (type: string) => {
-    switch (type) {
-      case "BOOKING":
-        return "bg-blue-100 text-blue-700";
-      case "PAYMENT":
-        return "bg-green-100 text-green-700";
-      case "WARNING":
-        return "bg-amber-100 text-amber-700";
-      case "SUCCESS":
-        return "bg-emerald-100 text-emerald-700";
-      default:
-        return "bg-gray-100 text-gray-600";
-    }
-  };
-
-  return (
-    <div className="container mx-auto px-4 py-8 max-w-2xl" dir="rtl">
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-3">
-          <Bell className="w-6 h-6 text-gray-700" />
-          <h1 className="text-2xl font-bold text-gray-900">الإشعارات</h1>
-          {unreadCount > 0 && (
-            <span className="text-xs bg-red-500 text-white px-2 py-0.5 rounded-full font-medium">
-              {unreadCount} جديدة
-            </span>
-          )}
-        </div>
-
-        {unreadCount > 0 && (
-          <button
-            onClick={handleMarkAllRead}
-            className="text-xs text-blue-600 hover:text-blue-800 font-medium flex items-center gap-1"
-          >
-            <Check className="w-3.5 h-3.5" />
-            تعليم الكل كمقروء
-          </button>
-        )}
-      </div>
-
-      {notifications.length === 0 ? (
-        <div className="bg-gray-50 border rounded-xl p-12 text-center">
-          <Bell className="w-10 h-10 text-gray-300 mx-auto mb-3" />
-          <p className="text-gray-500 text-sm">لا توجد إشعارات حالياً</p>
-        </div>
-      ) : (
-        <div className="space-y-3">
-          {notifications.map((notification) => (
-            <div
-              key={notification.id}
-              className={`bg-white border rounded-xl p-4 shadow-sm transition-all ${
-                !notification.is_read ? "border-r-4 border-r-blue-500" : ""
-              }`}
-            >
-              <div className="flex items-start justify-between gap-3">
-                <div className="space-y-1 flex-1">
-                  <div className="flex items-center gap-2">
-                    <h3 className="text-sm font-bold text-gray-900">
-                      {notification.title}
-                    </h3>
-                    <span
-                      className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${getTypeBadgeStyle(
-                        notification.type
-                      )}`}
-                    >
-                      {notification.type}
-                    </span>
-                  </div>
-                  <p className="text-xs text-gray-600 leading-relaxed">
-                    {notification.message}
-                  </p>
-                  <p className="text-[10px] text-gray-400">
-                    {new Date(notification.created_at).toLocaleDateString("ar-JO", {
-                      year: "numeric",
-                      month: "short",
-                      day: "numeric",
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
-                  </p>
-                </div>
-
-                {!notification.is_read && (
-                  <button
-                    onClick={() => handleMarkAsRead(notification.id)}
-                    className="shrink-0 text-[10px] text-blue-600 hover:text-blue-800 font-medium px-2 py-1 rounded hover:bg-blue-50 transition-colors"
-                  >
-                    مقروء
-                  </button>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
+  return <div dir="rtl">
+    <header className="mb-7 flex items-end justify-between gap-3"><div><p className="text-xs font-black text-brand">كل جديد بمكان واحد</p><div className="mt-1 flex items-center gap-2"><h1 className="text-3xl font-black">الإشعارات</h1>{unreadCount > 0 && <span className="rounded-full bg-[rgb(var(--primary))] px-2 py-0.5 text-[10px] font-black text-white">{unreadCount} جديدة</span>}</div></div>{unreadCount > 0 && <button onClick={markAll} className="inline-flex items-center gap-1 text-xs font-bold text-brand"><Check className="h-4 w-4" /> تعليم الكل</button>}</header>
+    {!notifications.length ? <section className="surface-card p-14 text-center"><Bell className="mx-auto h-10 w-10 text-brand" /><h2 className="mt-4 font-black">ما في إشعارات جديدة</h2><p className="mt-2 text-xs text-muted">رح تلاقي هون تحديثات الحجوزات والرسائل والحساب.</p></section>
+      : <div className="space-y-7">{groups.map((group) => <section key={group.label} aria-labelledby={`notifications-${group.label}`}><h2 id={`notifications-${group.label}`} className="mb-3 text-sm font-black">{group.label}</h2><div className="overflow-hidden rounded-3xl border border-theme bg-surface">{group.items.map((notification) => {
+        const { Icon, style, label } = visual(notification.type);
+        const content = <div className={`flex min-h-24 gap-3 border-b border-theme p-4 last:border-0 ${notification.is_read ? "" : "bg-[rgb(var(--primary-soft)/0.25)]"}`}><span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl ${style}`}><Icon className="h-5 w-5" /></span><div className="min-w-0 flex-1"><div className="flex items-center gap-2"><h3 className="text-sm font-black">{notification.title}</h3><span className="text-[9px] font-bold text-muted">{label}</span></div><p className="mt-1 text-xs leading-6 text-muted">{notification.message}</p><time className="mt-1 block text-[9px] text-muted">{new Date(notification.created_at).toLocaleTimeString("ar-JO", { hour: "2-digit", minute: "2-digit" })}</time></div>{!notification.is_read && <button type="button" onClick={(event) => { event.preventDefault(); void markRead(notification.id); }} className="self-start text-[10px] font-bold text-brand">مقروء</button>}</div>;
+        return notification.action_url ? <Link key={notification.id} href={notification.action_url} onClick={() => { if (!notification.is_read) void markRead(notification.id); }} className="block hover:bg-surface-muted">{content}</Link> : <div key={notification.id}>{content}</div>;
+      })}</div></section>)}</div>}
+  </div>;
 }

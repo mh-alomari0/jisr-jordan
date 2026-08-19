@@ -5,6 +5,7 @@ import { Cairo } from "next/font/google";
 import Navbar from "@/components/navbar";
 import Footer from "@/components/footer";
 import MobileBottomNav from "@/components/mobile-bottom-nav";
+import PwaRegistration from "@/components/pwa-registration";
 import { getPublicAppOrigin } from "@/lib/app-url";
 import "./globals.css";
 
@@ -71,8 +72,9 @@ export default async function RootLayout({
   }
 
   return (
-    <html lang="ar" dir="rtl" className={cairo.variable} suppressHydrationWarning>
+    <html lang="ar" dir="rtl" data-scroll-behavior="smooth" className={cairo.variable} suppressHydrationWarning>
       <body className="flex min-h-screen flex-col font-cairo antialiased">
+        <PwaRegistration />
         <script
           dangerouslySetInnerHTML={{
             __html: `(function(){try{var m=localStorage.getItem('jisr-theme')||'system';var d=m==='dark'||(m==='system'&&matchMedia('(prefers-color-scheme: dark)').matches)?'dark':'light';document.documentElement.dataset.theme=d;document.documentElement.style.colorScheme=d}catch(e){document.documentElement.dataset.theme='light'}})()`,
@@ -84,7 +86,7 @@ export default async function RootLayout({
         <Navbar userRole={userRole} isAuthenticated={!!user} />
         <main id="main-content" className="flex-1">{children}</main>
         <Footer />
-        <MobileBottomNav />
+        <MobileBottomNav userRole={userRole} />
       </body>
     </html>
   );

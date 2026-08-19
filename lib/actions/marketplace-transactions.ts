@@ -5,6 +5,8 @@ import { z } from "zod";
 import { createServerSupabaseClient, getAuthenticatedUser } from "@/lib/supabase/server";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { logger } from "@/lib/logger";
+import { detectContactSignals, PREBOOKING_CONTACT_WARNING } from "@/lib/anti-circumvention";
+import { recordBlockedContactAttempt } from "@/lib/contact-protection-server";
 
 const IdSchema = z.string().uuid();
 const IdempotencySchema = z.string().min(8).max(120).regex(/^[A-Za-z0-9_-]+$/);
@@ -69,6 +71,8 @@ export async function requestListingQuoteAction(input: z.input<typeof QuoteReque
     const supabase = await createServerSupabaseClient();
     const user = await getAuthenticatedUser(supabase);
     if (!user) return { success: false as const, error: "يجب تسجيل الدخول" };
+    const contactSignals = detectContactSignals(parsed.data.requirements);
+    if (contactSignals.length) { await recordBlockedContactAttempt(supabase, "QUOTE", null, contactSignals); return { success: false as const, error: PREBOOKING_CONTACT_WARNING }; }
     const rate = await checkRateLimit(`quote:request:${user.id}`, { limit: 8, windowMs: 60 * 60_000 });
     if (!rate.success) return { success: false as const, error: rate.error };
     const { data, error } = await supabase.rpc("request_listing_quote", {
@@ -95,6 +99,8 @@ export async function respondToQuoteRequestAction(input: z.input<typeof QuoteRes
     const supabase = await createServerSupabaseClient();
     const user = await getAuthenticatedUser(supabase);
     if (!user) return { success: false as const, error: "يجب تسجيل الدخول" };
+    const contactSignals = detectContactSignals(parsed.data.message);
+    if (contactSignals.length) { await recordBlockedContactAttempt(supabase, "QUOTE", parsed.data.requestId, contactSignals); return { success: false as const, error: PREBOOKING_CONTACT_WARNING }; }
     const rate = await checkRateLimit(`quote:respond:${user.id}`, { limit: 20, windowMs: 60 * 60_000 });
     if (!rate.success) return { success: false as const, error: rate.error };
     const { data, error } = await supabase.rpc("respond_to_quote_request", {
@@ -222,4 +228,3 @@ export async function getProviderQuoteRequestsAction() {
     return { success: false as const, error: "تعذر تحميل طلبات عروض الأسعار", requests: [] };
   }
 }
-

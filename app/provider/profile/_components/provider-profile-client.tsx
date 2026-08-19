@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { updateProviderProfileAction, updateProviderPublicProfileAction } from "@/lib/actions/provider-onboarding";
 import { JORDAN_CITIES } from "@/lib/constants";
+import ProfileMediaEditor from "@/components/profile-media-editor";
 
 interface ProfileForm {
   bio: string;
@@ -13,6 +14,10 @@ interface ProfileForm {
   skills: string[];
   remoteAvailable: boolean;
   publicSlug: string;
+  experienceStartYear: number | null;
+  experienceVerified: boolean;
+  avatarUrl: string | null;
+  coverUrl: string | null;
 }
 
 interface ServiceOption {
@@ -63,10 +68,12 @@ export default function ProviderProfileClient({
   }
 
   return (
-    <div className="surface-card mx-auto max-w-3xl space-y-6 p-5 text-right sm:p-8" dir="rtl">
+    <div className="mx-auto max-w-3xl overflow-hidden border-y border-theme bg-surface text-right sm:border" dir="rtl">
+      <ProfileMediaEditor audience="PROVIDER" initialAvatar={form.avatarUrl} initialCover={form.coverUrl} name={form.headline || "مقدم الخدمة"} />
+      <div className="space-y-6 p-5 sm:p-8">
       <header className="border-b pb-4">
-        <h1 className="text-2xl font-bold text-slate-900">الملف والخدمات المقدمة</h1>
-        <p className="mt-1 text-sm text-slate-600">حدّث نبذتك ومناطق عملك والخدمات التي يمكن تعيينها لك.</p>
+        <h1 className="text-2xl font-black">الملف والخدمات المقدمة</h1>
+        <p className="mt-1 text-sm text-muted">حدّث الصفحة التي يراها العملاء وخدماتك القابلة للتعيين.</p>
       </header>
 
       <form onSubmit={submit} className="space-y-6">
@@ -96,6 +103,12 @@ export default function ProviderProfileClient({
           <textarea id="provider-bio" rows={4} maxLength={1000} value={form.bio}
             onChange={(event) => setForm({ ...form, bio: event.target.value })}
             className="w-full rounded-xl border px-3 py-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-600" />
+        </div>
+
+        <div>
+          <label htmlFor="experience-start-year" className="mb-1 block text-sm font-semibold">سنة بدء الخبرة</label>
+          <input id="experience-start-year" type="number" min="1950" max={new Date().getFullYear()} value={form.experienceStartYear || ""} onChange={(event) => setForm({ ...form, experienceStartYear: event.target.value ? Number(event.target.value) : null })} className="form-field" />
+          <p className="mt-1 text-xs text-muted">{form.experienceVerified ? "تم التحقق إدارياً من هذه المعلومة." : "معلومة مقدمة منك وستظهر بوضوح كخبرة ذاتية الإفادة."}</p>
         </div>
 
         <fieldset>
@@ -148,7 +161,7 @@ export default function ProviderProfileClient({
           className="brand-button w-full">
           {pending ? "جاري الحفظ..." : "حفظ التغييرات"}
         </button>
-      </form>
+      </form></div>
     </div>
   );
 }

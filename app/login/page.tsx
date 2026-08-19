@@ -49,23 +49,23 @@ function LoginForm() {
   return (
     <form onSubmit={handleLogin} className="space-y-5">
       {authError && (
-        <div role="alert" className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+        <div role="alert" className="border border-[rgb(var(--warning)/0.4)] bg-[rgb(var(--warning)/0.1)] px-4 py-3 text-sm">
           رابط المصادقة غير صالح أو انتهت صلاحيته. اطلب رابطاً جديداً وحاول مرة أخرى.
         </div>
       )}
       {error && (
-        <div role="alert" aria-live="polite" className="bg-rose-50 border border-rose-200 text-rose-700 px-4 py-3 rounded-lg flex items-center gap-3 text-sm">
+        <div role="alert" aria-live="polite" className="flex items-center gap-3 border border-[rgb(var(--danger)/0.35)] bg-[rgb(var(--danger)/0.1)] px-4 py-3 text-sm text-[rgb(var(--danger))]">
           <AlertCircle className="w-5 h-5 shrink-0" />
           <span>{error}</span>
         </div>
       )}
 
       <div>
-        <label htmlFor="login-email" className="block text-sm font-semibold text-neutral-text mb-2">
+        <label htmlFor="login-email" className="mb-2 block text-sm font-semibold">
           البريد الإلكتروني
         </label>
         <div className="relative">
-          <Mail className="w-5 h-5 text-neutral-muted absolute right-3.5 top-1/2 -translate-y-1/2" />
+          <Mail className="absolute right-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-muted" />
           <input
             id="login-email"
             type="email"
@@ -73,25 +73,25 @@ function LoginForm() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="name@example.com"
-            className="w-full pr-11 pl-4 py-3 bg-neutral-surface border border-neutral-border rounded-btn focus:outline-none focus:border-primary text-sm font-medium"
+            className="form-field pe-11"
           />
         </div>
       </div>
 
       <div>
         <div className="flex items-center justify-between mb-2">
-          <label htmlFor="login-password" className="block text-sm font-semibold text-neutral-text">
+          <label htmlFor="login-password" className="block text-sm font-semibold">
             كلمة المرور
           </label>
           <Link
             href="/forgot-password"
-            className="text-xs text-primary font-bold hover:underline"
+            className="text-xs font-bold text-brand hover:underline"
           >
             نسيت كلمة المرور؟
           </Link>
         </div>
         <div className="relative">
-          <Lock className="w-5 h-5 text-neutral-muted absolute right-3.5 top-1/2 -translate-y-1/2" />
+          <Lock className="absolute right-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-muted" />
           <input
             id="login-password"
             type={showPassword ? "text" : "password"}
@@ -99,12 +99,12 @@ function LoginForm() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder="••••••••"
-            className="w-full pr-11 pl-11 py-3 bg-neutral-surface border border-neutral-border rounded-btn focus:outline-none focus:border-primary text-sm font-medium"
+            className="form-field px-11"
           />
           <button
             type="button"
             onClick={() => setShowPassword(!showPassword)}
-            className="absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-muted hover:text-neutral-text transition-colors"
+            className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted transition-colors hover:text-[rgb(var(--text-main))]"
             aria-label={showPassword ? "إخفاء كلمة المرور" : "إظهار كلمة المرور"}
           >
             {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
@@ -115,7 +115,7 @@ function LoginForm() {
       <button
         type="submit"
         disabled={loading}
-        className="w-full bg-primary text-white font-bold py-3.5 rounded-btn hover:bg-primary-hover transition-colors flex items-center justify-center gap-2 shadow-md disabled:opacity-50"
+        className="brand-button w-full gap-2"
       >
         {loading ? (
           <Loader2 className="w-5 h-5 animate-spin" />
@@ -126,6 +126,8 @@ function LoginForm() {
           </>
         )}
       </button>
+      <div className="flex items-center gap-3 text-xs text-muted"><span className="h-px flex-1 bg-[rgb(var(--border))]" /><span>أو</span><span className="h-px flex-1 bg-[rgb(var(--border))]" /></div>
+      <Link href="/login/otp" className="secondary-button w-full">أرسل رمز تسجيل الدخول</Link>
     </form>
   );
 }
@@ -133,10 +135,10 @@ function LoginForm() {
 export default function LoginPage() {
   return (
     <div className="min-h-[80vh] flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full bg-white p-8 rounded-card border border-neutral-border shadow-xl">
+      <div className="w-full max-w-md border-y border-theme bg-surface p-6 sm:rounded-card sm:border sm:p-8">
         <div className="text-center mb-8">
-          <h1 className="text-2xl font-black text-neutral-text">مرحبًا بك مجددًا</h1>
-          <p className="text-sm text-neutral-muted mt-2">
+          <h1 className="text-2xl font-black">مرحبًا بك مجددًا</h1>
+          <p className="mt-2 text-sm text-muted">
             سجّل دخولك لمتابعة حجوزاتك وطلب خدمات الصيانة
           </p>
         </div>
@@ -145,10 +147,10 @@ export default function LoginPage() {
           <LoginForm />
         </Suspense>
 
-        <div className="mt-8 pt-6 border-t border-neutral-border text-center">
-          <p className="text-sm text-neutral-muted">
+        <div className="mt-8 border-t border-theme pt-6 text-center">
+          <p className="text-sm text-muted">
             ليس لديك حساب؟{" "}
-            <Link href="/register" className="text-primary font-bold hover:underline">
+            <Link href="/register" className="font-bold text-brand hover:underline">
               أنشئ حسابًا جديدًا
             </Link>
           </p>
