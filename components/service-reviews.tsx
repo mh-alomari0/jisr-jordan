@@ -7,10 +7,12 @@ export default function ServiceReviews({
   serviceId,
   initialReviews,
   initialAverage,
+  reviewBookingId,
 }: {
   serviceId: string;
   initialReviews: ReviewItem[];
   initialAverage: number;
+  reviewBookingId?: string;
 }) {
   const [reviews, setReviews] = useState<ReviewItem[]>(initialReviews);
   const [rating, setRating] = useState(5);
@@ -21,14 +23,15 @@ export default function ServiceReviews({
     e.preventDefault();
     setLoading(true);
 
-    const res = await submitServiceReviewAction(serviceId, rating, comment);
+    if (!reviewBookingId) return;
+    const res = await submitServiceReviewAction(serviceId, rating, comment, reviewBookingId);
     if (res.success) {
       alert("شكرًا لك! تم حفظ تقييمك بنجاح");
       setReviews((prev) => [
         {
           id: Date.now().toString(),
           service_id: serviceId,
-          customer_id: "current-user",
+          booking_id: reviewBookingId,
           rating,
           comment,
           created_at: new Date().toISOString(),
@@ -54,7 +57,7 @@ export default function ServiceReviews({
       </div>
 
       {/* نموذج التقييم */}
-      <form onSubmit={handleSubmit} className="space-y-4 bg-gray-50 p-4 rounded-lg border">
+      {reviewBookingId && <form onSubmit={handleSubmit} className="space-y-4 bg-gray-50 p-4 rounded-lg border">
         <h4 className="font-semibold text-sm">أضف تقييمك للخدمة</h4>
         <div className="flex gap-2 items-center">
           <label htmlFor="rating-select" className="text-xs font-medium">النقاط:</label>
@@ -89,7 +92,7 @@ export default function ServiceReviews({
         >
           {loading ? "جاري الحفظ..." : "إرسال التقييم"}
         </button>
-      </form>
+      </form>}
 
       {/* قائمة التقييمات */}
       <div className="space-y-3">

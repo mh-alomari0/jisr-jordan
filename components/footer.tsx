@@ -42,7 +42,17 @@ export default function Footer() {
             </li>
             <li>
               <Link href="/terms" className="hover:text-white transition-colors">
-                الشروط والأحكام وسياسة الخصوصية
+                الشروط والأحكام
+              </Link>
+            </li>
+            <li>
+              <Link href="/privacy" className="hover:text-white transition-colors">
+                سياسة الخصوصية
+              </Link>
+            </li>
+            <li>
+              <Link href="/contact" className="hover:text-white transition-colors">
+                تواصل معنا
               </Link>
             </li>
           </ul>

@@ -25,4 +25,16 @@ describe("Canonical booking state machine", () => {
     expect(validateStatusTransition("CANCELLED", "PENDING").valid).toBe(false);
     expect(validateStatusTransition("UNKNOWN", "PENDING").valid).toBe(false);
   });
+
+  it("matches the complete allowed transition matrix", () => {
+    const statuses = ["PENDING", "CONFIRMED", "ASSIGNED", "IN_PROGRESS", "COMPLETED", "CANCELLED", "REFUNDED"] as const;
+    const expected = new Set([
+      "PENDING>CONFIRMED", "PENDING>CANCELLED", "CONFIRMED>ASSIGNED",
+      "CONFIRMED>CANCELLED", "ASSIGNED>IN_PROGRESS", "ASSIGNED>CANCELLED",
+      "IN_PROGRESS>COMPLETED", "COMPLETED>REFUNDED",
+    ]);
+    for (const from of statuses) for (const to of statuses) {
+      expect(canTransition(from, to), `${from} -> ${to}`).toBe(expected.has(`${from}>${to}`));
+    }
+  });
 });

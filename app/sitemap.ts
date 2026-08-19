@@ -1,20 +1,13 @@
 import { MetadataRoute } from "next";
+import { getPublicAppOrigin } from "@/lib/app-url";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://jisr-jordan.com";
+  const baseUrl = getPublicAppOrigin();
 
-  // الصفحات الرئيسية الثابتة
-  const routes = [
-    "",
-    "/services",
-    "/booking",
-    "/login",
-    "/register",
-  ].map((route) => ({
+  const routes = ["", "/services", "/faq", "/terms", "/privacy", "/contact"].map((route) => ({
     url: `${baseUrl}${route}`,
-    lastModified: new Date().toISOString(),
-    changeFrequency: "daily" as const,
-    priority: route === "" ? 1.0 : 0.8,
+    changeFrequency: route === "" || route === "/services" ? "daily" as const : "monthly" as const,
+    priority: route === "" ? 1 : route === "/services" ? 0.9 : 0.5,
   }));
 
   return [...routes];

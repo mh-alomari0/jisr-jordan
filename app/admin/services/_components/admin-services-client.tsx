@@ -32,7 +32,7 @@ export default function AdminServicesClient({ initialServices }: { initialServic
       title,
       description,
       price: parseFloat(price) || 0,
-      category: category as "ELECTRICITY" | "PLUMBING" | "CLEANING" | "HVAC" | "GENERAL",
+      category: category as "ELECTRICITY" | "PLUMBING" | "CLEANING" | "HVAC" | "CARPENTRY" | "PAINTING" | "APPLIANCE_REPAIR" | "GARDENING" | "GENERAL",
     });
 
     if (res.success) {
@@ -92,6 +92,10 @@ export default function AdminServicesClient({ initialServices }: { initialServic
             <option value="PLUMBING">سباكة</option>
             <option value="HVAC">تكييف وتبريد</option>
             <option value="CLEANING">تنظيف</option>
+            <option value="CARPENTRY">نجارة</option>
+            <option value="PAINTING">دهان</option>
+            <option value="APPLIANCE_REPAIR">صيانة أجهزة منزلية</option>
+            <option value="GARDENING">حدائق وصيانة خارجية</option>
           </select>
         </div>
         {message && <p role="status" className={`rounded-lg border p-3 text-sm ${message.type === "success" ? "border-emerald-200 bg-emerald-50 text-emerald-800" : "border-rose-200 bg-rose-50 text-rose-800"}`}>{message.text}</p>}
@@ -105,8 +109,8 @@ export default function AdminServicesClient({ initialServices }: { initialServic
       </form>
 
       {/* قائمة الخدمات الحالية */}
-      <div className="bg-white border rounded-xl shadow-sm overflow-hidden">
-        <table className="w-full text-right text-sm">
+      <div className="bg-white border rounded-xl shadow-sm overflow-x-auto">
+        <table className="w-full min-w-[720px] text-right text-sm">
           <thead className="bg-gray-50 border-b">
             <tr>
               <th className="p-4">اسم الخدمة</th>

@@ -4,6 +4,7 @@ import { cookies } from "next/headers";
 import { Cairo } from "next/font/google";
 import Navbar from "@/components/navbar";
 import Footer from "@/components/footer";
+import { getPublicAppOrigin } from "@/lib/app-url";
 import "./globals.css";
 
 const cairo = Cairo({
@@ -13,8 +14,26 @@ const cairo = Cairo({
 });
 
 export const metadata: Metadata = {
-  title: "جسر الأردن | منصة الخدمات والصيانة المركزية",
-  description: "حجز وإدارة خدمات الصيانة المنزلية والاحترافية في الأردن",
+  metadataBase: new URL(getPublicAppOrigin()),
+  title: "جسر الأردن | خدمات منزلية موثوقة",
+  description: "احجز وتابع خدمات الصيانة والتنظيف المنزلية في الأردن بخطوات واضحة ودفع نقدي عند إكمال الخدمة.",
+  applicationName: "جسر الأردن",
+  manifest: "/manifest.json",
+  icons: {
+    icon: [
+      { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icon-512.png", sizes: "512x512", type: "image/png" },
+    ],
+    apple: [{ url: "/icon-192.png", sizes: "192x192", type: "image/png" }],
+  },
+  openGraph: {
+    type: "website",
+    locale: "ar_JO",
+    siteName: "جسر الأردن",
+    title: "جسر الأردن | خدمات منزلية موثوقة",
+    description: "منصة عربية لحجز ومتابعة خدمات الصيانة والتنظيف المنزلية في الأردن.",
+    url: "/",
+  },
 };
 
 export default async function RootLayout({

@@ -1,14 +1,19 @@
 export const metadata = {
-  title: "الشروط والأحكام وسياسة الخصوصية | جسر الأردن",
+  title: "الشروط والأحكام | جسر الأردن",
+  description: "الشروط الأساسية لاستخدام منصة جسر الأردن وحجز الخدمات المنزلية.",
 };
 
 export default function TermsPage() {
   return (
     <div className="container mx-auto p-6 max-w-3xl space-y-8 dir-rtl text-right">
       <div className="border-b pb-4">
-        <h1 className="text-2xl font-bold text-gray-900">الشروط والأحكام وسياسة الخصوصية</h1>
-        <p className="text-gray-600 text-sm">تحدد هذه الاتفاقية القواعد والسياسات المتبعة عند استخدام منصة جسر الأردن</p>
+        <h1 className="text-2xl font-bold text-gray-900">الشروط والأحكام</h1>
+        <p className="text-gray-600 text-sm">القواعد الأساسية لاستخدام منصة جسر الأردن وحجز الخدمات.</p>
       </div>
+
+      <p className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm leading-7 text-amber-900">
+        هذه صياغة تشغيلية أولية، ويجب اعتمادها من مالك المنصة ومراجع قانوني أردني قبل الإطلاق التجاري.
+      </p>
 
       <div className="bg-white border rounded-xl p-6 shadow-sm space-y-6 text-xs text-gray-700 leading-relaxed">
         <section className="space-y-2">
@@ -33,9 +38,23 @@ export default function TermsPage() {
         </section>
 
         <section className="space-y-2">
-          <h2 className="text-sm font-bold text-gray-900">4. حماية الخصوصية</h2>
+          <h2 className="text-sm font-bold text-gray-900">4. تنفيذ الخدمة</h2>
           <p>
-            تلتزم المنصة بحماية خصوصية بيانات المستخدمين وعدم مشاركة التفاصيل الشخصية أو العناوين مع أي أطراف خارجية باستثناء المزود المعتمد الموكل بتنفيذ الحجز.
+            يلتزم المستخدم بتوفير معلومات الموعد والعنوان اللازمة لتنفيذ الطلب. ويظهر لمزود الخدمة المعيّن فقط ما يلزم لتنفيذ الحجز، ولا يجوز له استخدام تلك المعلومات لغرض آخر.
+          </p>
+        </section>
+
+        <section className="space-y-2">
+          <h2 className="text-sm font-bold text-gray-900">5. السلوك المقبول</h2>
+          <p>
+            يُحظر إساءة استخدام المنصة، أو تقديم معلومات مضللة، أو محاولة الوصول إلى حسابات أو حجوزات الغير، أو استخدام الخدمة في نشاط مخالف للقانون.
+          </p>
+        </section>
+
+        <section className="space-y-2">
+          <h2 className="text-sm font-bold text-gray-900">6. التواصل والاستفسارات</h2>
+          <p>
+            يمكن إرسال الاستفسارات المتعلقة بهذه الشروط عبر صفحة تواصل معنا. وتوضح سياسة الخصوصية بصورة منفصلة كيفية التعامل مع البيانات الشخصية.
           </p>
         </section>
       </div>

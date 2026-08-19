@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { supabase } from "@/lib/supabase/client";
+import { requestPasswordResetAction } from "@/lib/actions/auth";
 import { KeyRound, Mail, AlertCircle, Loader2, CheckCircle2, ArrowRight } from "lucide-react";
 
 export default function ForgotPasswordPage() {
@@ -17,12 +17,12 @@ export default function ForgotPasswordPage() {
     setLoading(true);
 
     try {
-      const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/reset-password`,
-      });
-
-      // Keep the response identical for existing and unknown accounts.
-      void resetError;
+      const result = await requestPasswordResetAction(email);
+      if (!result.success) {
+        setError(result.error || "تعذر إرسال الطلب حالياً. حاول مرة أخرى لاحقاً.");
+        setLoading(false);
+        return;
+      }
       setSent(true);
       setLoading(false);
     } catch {

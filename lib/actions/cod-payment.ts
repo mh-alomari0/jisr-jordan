@@ -4,6 +4,7 @@ import { z } from "zod";
 import { revalidatePath } from "next/cache";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { logger } from "@/lib/logger";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 const BookingIdSchema = z.string().uuid();
 
@@ -18,6 +19,9 @@ export async function createCODPaymentAction(bookingId: string) {
     const supabase = await createServerSupabaseClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { success: false, error: "يجب تسجيل الدخول أولاً" };
+
+    const rateLimit = await checkRateLimit(`payment:cod:${user.id}`, { limit: 5, windowMs: 10 * 60_000 });
+    if (!rateLimit.success) return { success: false, error: rateLimit.error };
 
     const { data, error } = await supabase.rpc("create_cod_payment", {
       p_booking_id: parsedId.data,

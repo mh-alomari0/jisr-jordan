@@ -278,7 +278,7 @@ export default function BookingDetailClient({
           {/* Review */}
           {isCompleted && !hasReviewed && (
             <Link
-              href={`/services/${booking.service_id}`}
+              href={`/services/${booking.service_id}?reviewBookingId=${booking.id}`}
               className="flex-1 min-w-[140px] text-center bg-emerald-600 hover:bg-emerald-700 text-white py-2.5 rounded-lg text-sm font-semibold transition-colors"
             >
               قيّم الخدمة

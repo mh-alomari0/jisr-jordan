@@ -3,6 +3,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { z } from "zod";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 export interface NotificationItem {
   id: string;
@@ -140,6 +141,9 @@ export async function sendSystemNotificationAction(
     if (!role || !["ADMIN", "SUPER_ADMIN"].includes(role)) {
       return { success: false, error: "غير مصرح: هذه العملية مخصصة للمسؤولين فقط" };
     }
+
+    const rateLimit = await checkRateLimit(`notification:system:${user.id}`, { limit: 20, windowMs: 60_000 });
+    if (!rateLimit.success) return { success: false, error: rateLimit.error };
 
     const { error } = await supabase.from("notifications").insert({
       user_id: input.data.userId,

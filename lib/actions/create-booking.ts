@@ -3,7 +3,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { CreateBookingSchema, type CreateBookingInput } from "@/lib/schemas/booking-schema";
-import { logger } from "@/lib/logger";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 export type ActionResponse<T> = {
   success: boolean;
@@ -54,6 +54,9 @@ export async function createBookingAction(
       };
     }
 
+    const rateLimit = await checkRateLimit(`booking:create:${user.id}`, { limit: 5, windowMs: 5 * 60_000 });
+    if (!rateLimit.success) return { success: false, error: rateLimit.error, code: "RATE_LIMITED" };
+
     // 3. استدعاء الإجراء المخزن في Postgres لمنع التضارب والحجز المزدوج
     const { data, error } = await supabase.rpc("create_booking_atomic", {
       p_customer_id: user.id,
@@ -81,30 +84,6 @@ export async function createBookingAction(
         error: "حدث خطأ أثناء معالجة الحجز، يرجى المحاولة لاحقاً.",
         code: "DATABASE_ERROR",
       };
-    }
-
-    // 4. إرسال الإشعارات تلقائياً في الخلفية (Email, WhatsApp, In-App) دون تعطيل الاستجابة
-    try {
-      const { error: notificationError } = await supabase.from("notifications").insert({
-        user_id: user.id,
-        title: `تم استلام طلب حجزك #${String(data.booking_id).slice(0, 8)}`,
-        message: `تم استلام حجز خدمة ${data.service_title || "منزلية"} بتاريخ ${validated.bookingDate} في ${validated.startTime}.`,
-        type: "BOOKING",
-      });
-      if (notificationError) {
-        logger.warn("Booking created without in-app notification", {
-          context: "CreateBooking",
-          userId: user.id,
-          metadata: { bookingId: data.booking_id },
-        });
-      }
-    } catch (notificationError) {
-      logger.warn("Booking notification persistence failed", {
-        context: "CreateBooking",
-        userId: user.id,
-        metadata: { bookingId: data.booking_id },
-        error: notificationError,
-      });
     }
 
     return {

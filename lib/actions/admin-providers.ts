@@ -23,25 +23,29 @@ export interface AdminProvider {
 /**
  * List all provider applications/profiles for admin.
  */
-export async function getAdminProvidersAction() {
+export async function getAdminProvidersAction(page = 1) {
   try {
     const supabase = await createServerSupabaseClient();
     const user = await getAuthenticatedUser(supabase);
     if (!user) return { success: false, error: "غير مصرح" };
     if (!isAdminRole(await getUserRole(supabase, user.id))) return { success: false, error: "غير مصرح: للمسؤولين فقط" };
 
+    const safePage = Math.max(1, Math.floor(page));
+    const pageSize = 25;
+    const from = (safePage - 1) * pageSize;
     const { data: profiles, error } = await supabase
       .from("provider_profiles")
       .select("id, user_id, bio, experience, service_areas, is_verified, application_status, application_notes, applied_at, created_at, users(id, email, full_name, phone, role), provider_services(service_id, services(id, title))")
       .order("applied_at", { ascending: false, nullsFirst: false })
-      .limit(100);
+      .range(from, from + pageSize);
 
     if (error) {
       logger.error("Failed to fetch admin providers", { context: "AdminProviders", error });
       return { success: false, error: "تعذر تحميل قائمة مقدمي الخدمة" };
     }
 
-    const normalized = (profiles || []).map((profile) => ({
+    const hasMore = (profiles || []).length > pageSize;
+    const normalized = (profiles || []).slice(0, pageSize).map((profile) => ({
       ...profile,
       users: Array.isArray(profile.users) ? profile.users[0] || null : profile.users,
       provider_services: (profile.provider_services || []).map((providerService) => ({
@@ -51,7 +55,7 @@ export async function getAdminProvidersAction() {
           : providerService.services,
       })),
     })) as unknown as AdminProvider[];
-    return { success: true, providers: normalized };
+    return { success: true, providers: normalized, page: safePage, hasMore };
   } catch (err) {
     unstable_rethrow(err);
     logger.error("Admin providers error", { context: "AdminProviders", error: err });
@@ -79,16 +83,8 @@ export async function approveProviderAction(userId: string) {
 
     if (error || !data?.success) {
       logger.error("Failed to approve provider", { context: "AdminProviders", error });
-      return { success: false, error: "فشل اعتماد مزود الخدمة" };
+      return { success: false, error: data?.error === "INVALID_STATUS" ? "الطلب لم يعد في حالة تسمح بالاعتماد" : "فشل اعتماد مزود الخدمة" };
     }
-
-    // Notify the provider
-    await supabase.from("notifications").insert({
-      user_id: userId,
-      title: "تم اعتمادك كمقدم خدمة",
-      message: "تهانينا، تم اعتماد طلبك. يمكنك الآن استخدام بوابة مقدمي الخدمة وإدارة مواعيدك.",
-      type: "SUCCESS",
-    });
 
     logger.info("Provider approved", {
       context: "AdminProviders",
@@ -121,16 +117,7 @@ export async function rejectProviderAction(userId: string, reason: string) {
       p_reason: normalizedReason || null,
     });
 
-    if (error || !data?.success) return { success: false, error: "فشل رفض الطلب" };
-
-    await supabase.from("notifications").insert({
-      user_id: userId,
-      title: "تحديث طلب الانضمام كمقدم خدمة",
-      message: normalizedReason
-        ? `تعذر اعتماد طلبك حاليًا. السبب: ${normalizedReason}`
-        : "تعذر اعتماد طلبك حاليًا. يمكنك تحديث بياناتك وإعادة التقديم.",
-      type: "WARNING",
-    });
+    if (error || !data?.success) return { success: false, error: data?.error === "INVALID_STATUS" ? "الطلب لم يعد قيد المراجعة" : "فشل رفض الطلب" };
 
     revalidatePath("/admin/providers");
     return { success: true };
@@ -157,7 +144,7 @@ export async function suspendProviderAction(userId: string) {
       p_reason: null,
     });
 
-    if (error || !data?.success) return { success: false, error: "فشل إيقاف مزود الخدمة" };
+    if (error || !data?.success) return { success: false, error: data?.error === "INVALID_STATUS" ? "مقدم الخدمة غير معتمد أو موقوف بالفعل" : "فشل إيقاف مزود الخدمة" };
 
     revalidatePath("/admin/providers");
     return { success: true };
@@ -201,20 +188,6 @@ export async function assignProviderToBookingAction(bookingId: string, providerI
       return { success: false, error: errorMap[data.error] || data.error };
     }
 
-    // Notify provider of new assignment
-    const { data: booking } = await supabase
-      .from("bookings")
-      .select("id, booking_date, start_time, address, service_title")
-      .eq("id", bookingId)
-      .single();
-
-    await supabase.from("notifications").insert({
-      user_id: providerId,
-      title: `تم تعيين حجز جديد لك #${bookingId.slice(0, 8)}`,
-      message: `خدمة ${booking?.service_title || "منزلية"} بتاريخ ${booking?.booking_date || "غير محدد"} في ${booking?.start_time || "وقت غير محدد"}.`,
-      type: "BOOKING",
-    });
-
     logger.info("Provider assigned to booking", {
       context: "ProviderAssignment",
       metadata: { bookingId, providerId, assignedBy: admin.id },
@@ -247,7 +220,7 @@ export async function getEligibleProvidersForBookingAction(bookingId: string) {
       .single();
 
     if (!booking) return { success: false, error: "الحجز غير موجود" };
-    if (!["PENDING", "CONFIRMED"].includes(booking.status)) {
+    if (booking.status !== "CONFIRMED") {
       return { success: false, error: "الحجز ليس في حالة تسمح بالتعيين" };
     }
 

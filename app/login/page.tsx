@@ -3,13 +3,14 @@
 import { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { supabase } from "@/lib/supabase/client";
+import { loginAction } from "@/lib/actions/auth";
 import { LogIn, Mail, Lock, AlertCircle, Loader2, Eye, EyeOff } from "lucide-react";
 
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const requestedRedirect = searchParams.get("redirectTo") || searchParams.get("redirect");
+  const authError = searchParams.get("authError");
   const redirectTo = requestedRedirect?.startsWith("/") && !requestedRedirect.startsWith("//")
     ? requestedRedirect
     : "/";
@@ -26,13 +27,13 @@ function LoginForm() {
     setLoading(true);
 
     try {
-      const { error: authError } = await supabase.auth.signInWithPassword({
+      const result = await loginAction({
         email,
         password,
       });
 
-      if (authError) {
-        setError("بيانات الدخول غير صحيحة. يرجى التأكد من البريد وكلمة المرور.");
+      if (!result.success) {
+        setError(result.error || "بيانات الدخول غير صحيحة. يرجى التأكد من البريد وكلمة المرور.");
         setLoading(false);
         return;
       }
@@ -47,6 +48,11 @@ function LoginForm() {
 
   return (
     <form onSubmit={handleLogin} className="space-y-5">
+      {authError && (
+        <div role="alert" className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          رابط المصادقة غير صالح أو انتهت صلاحيته. اطلب رابطاً جديداً وحاول مرة أخرى.
+        </div>
+      )}
       {error && (
         <div role="alert" aria-live="polite" className="bg-rose-50 border border-rose-200 text-rose-700 px-4 py-3 rounded-lg flex items-center gap-3 text-sm">
           <AlertCircle className="w-5 h-5 shrink-0" />

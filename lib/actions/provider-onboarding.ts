@@ -4,6 +4,7 @@ import { createServerSupabaseClient, getAuthenticatedUser } from "@/lib/supabase
 import { logger } from "@/lib/logger";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 const ApplySchema = z.object({
   bio: z.string().min(10, "نبذة تعريفية لا تقل عن 10 حروف").max(1000),
@@ -22,6 +23,9 @@ export async function applyAsProviderAction(input: z.infer<typeof ApplySchema>) 
     const user = await getAuthenticatedUser(supabase);
     if (!user) return { success: false, error: "يجب تسجيل الدخول أولاً" };
 
+    const rateLimit = await checkRateLimit(`provider:apply:${user.id}`, { limit: 3, windowMs: 60 * 60_000 });
+    if (!rateLimit.success) return { success: false, error: rateLimit.error };
+
     const validated = ApplySchema.parse(input);
     const { data, error } = await supabase.rpc("apply_as_provider", {
       p_user_id: user.id,
@@ -34,7 +38,8 @@ export async function applyAsProviderAction(input: z.infer<typeof ApplySchema>) 
     if (error) {
       logger.error("Provider application RPC failed", {
         context: "ProviderOnboarding",
-        metadata: { userId: user.id, error: error.message },
+        userId: user.id,
+        metadata: { code: error.code },
       });
       return { success: false, error: "فشل تقديم الطلب، يرجى المحاولة لاحقاً" };
     }

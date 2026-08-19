@@ -27,7 +27,7 @@ describe("Service Reviews Security Unit Tests", () => {
       },
     } as unknown as ReturnType<typeof createServerClient>);
 
-    const res = await submitServiceReviewAction("11111111-1111-4111-8111-111111111111", 5, "ممتاز جداً");
+    const res = await submitServiceReviewAction("11111111-1111-4111-8111-111111111111", 5, "ممتاز جداً", "33333333-3333-4333-8333-333333333333");
 
     expect(res.success).toBe(false);
     expect(res.error).toBe("يجب تسجيل الدخول لإضافة تقييم");
@@ -40,7 +40,7 @@ describe("Service Reviews Security Unit Tests", () => {
       },
     } as unknown as ReturnType<typeof createServerClient>);
 
-    const res = await submitServiceReviewAction("11111111-1111-4111-8111-111111111111", 10, "ممتاز جداً");
+    const res = await submitServiceReviewAction("11111111-1111-4111-8111-111111111111", 10, "ممتاز جداً", "33333333-3333-4333-8333-333333333333");
 
     expect(res.success).toBe(false);
     expect(res.error).toBe("يرجى تحديد تقييم صحيح بين 1 و 5 نجوم");

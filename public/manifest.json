@@ -1,8 +1,11 @@
 {
   "name": "جسر | JISR",
   "short_name": "جسر",
-  "description": "المنصة الأولى لحجز ومتابعة خدمات الصيانة المنزلية في الأردن",
+  "description": "منصة أردنية لحجز ومتابعة خدمات الصيانة والتنظيف المنزلية",
   "start_url": "/",
+  "scope": "/",
+  "lang": "ar-JO",
+  "dir": "rtl",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#0284c7",

@@ -49,7 +49,7 @@ export async function getAuditLogsAction(page = 1, limit = 20): Promise<{
       .single();
 
     if (!profile || !["ADMIN", "SUPER_ADMIN"].includes(profile.role)) {
-      logger.warn(`Unauthorized audit logs access attempt by user ${user.id}`, { context: "AdminAudit" });
+      logger.warn("Unauthorized audit logs access attempt", { context: "AdminAudit", userId: user.id });
       return { success: false, error: "غير مصرح: هذه الصفحة مخصصة للمسؤولين فقط" };
     }
 
@@ -62,7 +62,7 @@ export async function getAuditLogsAction(page = 1, limit = 20): Promise<{
       .range(offset, offset + limit - 1);
 
     if (error) {
-      logger.error(`Audit log fetch failed: ${error.message}`, { context: "AdminAudit" });
+      logger.error("Audit log fetch failed", { context: "AdminAudit", metadata: { code: error.code } });
       return { success: false, error: "تعذر جلب سجلات التدقيق الأمنية" };
     }
 

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { supabase } from "@/lib/supabase/client";
+import { registerAction } from "@/lib/actions/auth";
 import { UserPlus, Mail, Lock, User, AlertCircle, Loader2, CheckCircle2, Eye, EyeOff } from "lucide-react";
 
 export default function RegisterPage() {
@@ -17,6 +17,7 @@ export default function RegisterPage() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [requiresConfirmation, setRequiresConfirmation] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const handleRegister = async (e: React.FormEvent) => {
@@ -36,27 +37,26 @@ export default function RegisterPage() {
     setLoading(true);
 
     try {
-      const { error: authError } = await supabase.auth.signUp({
+      const result = await registerAction({
+        fullName,
         email,
         password,
-        options: {
-          data: {
-            full_name: fullName,
-          },
-        },
       });
 
-      if (authError) {
-        setError("تعذر إكمال التسجيل. تحقق من البيانات أو حاول تسجيل الدخول إن كان لديك حساب.");
+      if (!result.success) {
+        setError(result.error || "تعذر إكمال التسجيل. تحقق من البيانات أو حاول تسجيل الدخول إن كان لديك حساب.");
         setLoading(false);
         return;
       }
 
+      setRequiresConfirmation(Boolean(result.requiresEmailConfirmation));
       setSuccess(true);
       setLoading(false);
-      setTimeout(() => {
-        router.push("/login");
-      }, 2000);
+      if (!result.requiresEmailConfirmation) {
+        setTimeout(() => {
+          router.push("/login");
+        }, 2000);
+      }
     } catch {
       setError("حدث خطأ غير متوقع. حاول مرة أخرى.");
       setLoading(false);
@@ -77,7 +77,11 @@ export default function RegisterPage() {
           <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 p-6 rounded-card text-center space-y-3">
             <CheckCircle2 className="w-12 h-12 text-emerald-600 mx-auto" />
             <h3 className="font-bold text-lg">تم إنشاء الحساب بنجاح!</h3>
-            <p className="text-sm">جاري تحويلك لصفحة تسجيل الدخول...</p>
+            <p className="text-sm">
+              {requiresConfirmation
+                ? "تفقّد بريدك الإلكتروني واضغط رابط التأكيد قبل تسجيل الدخول."
+                : "جاري تحويلك لصفحة تسجيل الدخول..."}
+            </p>
           </div>
         ) : (
           <form onSubmit={handleRegister} className="space-y-4">

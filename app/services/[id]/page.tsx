@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Check, Star, ArrowRight, ShieldCheck } from "lucide-react";
 import { getServiceDetailAction } from "@/lib/actions/service-detail";
-import { getServiceReviewsAction } from "@/lib/actions/reviews";
+import { canReviewBookingAction, getServiceReviewsAction } from "@/lib/actions/reviews";
 import ServiceReviews from "@/components/service-reviews";
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
@@ -19,8 +19,9 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   };
 }
 
-export default async function ServiceDetailPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function ServiceDetailPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ reviewBookingId?: string }> }) {
   const { id } = await params;
+  const { reviewBookingId } = await searchParams;
 
   const [serviceRes, reviewsRes] = await Promise.all([
     getServiceDetailAction(id),
@@ -35,6 +36,9 @@ export default async function ServiceDetailPage({ params }: { params: Promise<{ 
   const reviews = reviewsRes.reviews || [];
   const averageRating = reviewsRes.averageRating || 0;
   const reviewsCount = reviews.length;
+  const eligibleReviewBookingId = reviewBookingId && await canReviewBookingAction(id, reviewBookingId)
+    ? reviewBookingId
+    : undefined;
 
   return (
     <div className="container mx-auto p-4 md:p-6 max-w-4xl space-y-8 dir-rtl text-right">
@@ -104,6 +108,7 @@ export default async function ServiceDetailPage({ params }: { params: Promise<{ 
         serviceId={service.id}
         initialReviews={reviews}
         initialAverage={averageRating}
+        reviewBookingId={eligibleReviewBookingId}
       />
     </div>
   );

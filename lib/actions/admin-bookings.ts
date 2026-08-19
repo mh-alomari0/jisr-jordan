@@ -28,7 +28,7 @@ export interface AdminBookingItem {
   } | null;
 }
 
-export async function getAdminBookingsAction() {
+export async function getAdminBookingsAction(page = 1) {
   try {
     const cookieStore = await cookies();
     const supabase = createServerClient(
@@ -58,17 +58,22 @@ export async function getAdminBookingsAction() {
       return { success: false, error: "غير مصرح لك باستعراض كافة الحجوزات" };
     }
 
+    const safePage = Math.max(1, Math.floor(page));
+    const pageSize = 25;
+    const from = (safePage - 1) * pageSize;
     const { data: bookings, error } = await supabase
       .from("bookings")
       .select("id, customer_id, provider_id, service_id, service_title, booking_date, booking_time, start_time, end_time, status, notes, phone, address, payment_status, created_at, updated_at")
       .order("created_at", { ascending: false })
-      .limit(100);
+      .range(from, from + pageSize);
 
     if (error) {
       return { success: false, error: "تعذر تحميل الحجوزات" };
     }
 
-    const enriched = await enrichBookingsWithServices(supabase, bookings || []);
+    const hasMore = (bookings || []).length > pageSize;
+    const pageBookings = (bookings || []).slice(0, pageSize);
+    const enriched = await enrichBookingsWithServices(supabase, pageBookings);
     const customerIds = [...new Set(enriched.map((booking) => booking.customer_id).filter(Boolean))];
     const { data: customers } = customerIds.length
       ? await supabase.from("users").select("id, email, full_name").in("id", customerIds)
@@ -79,7 +84,7 @@ export async function getAdminBookingsAction() {
       users: customerMap.get(booking.customer_id) || null,
     }));
 
-    return { success: true, bookings: result as unknown as AdminBookingItem[] };
+    return { success: true, bookings: result as unknown as AdminBookingItem[], page: safePage, hasMore };
   } catch {
     return { success: false, error: "فشل جلب قائمة الحجوزات الشاملة" };
   }

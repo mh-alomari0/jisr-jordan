@@ -9,7 +9,7 @@ const ServiceSchema = z.object({
   title: z.string().trim().min(3, "اسم الخدمة قصير جداً").max(120),
   description: z.string().trim().max(2000),
   price: z.number().finite().positive("السعر يجب أن يكون أكبر من صفر").max(10000),
-  category: z.enum(["ELECTRICITY", "PLUMBING", "CLEANING", "HVAC", "GENERAL"]).default("GENERAL"),
+  category: z.enum(["ELECTRICITY", "PLUMBING", "CLEANING", "HVAC", "CARPENTRY", "PAINTING", "APPLIANCE_REPAIR", "GARDENING", "GENERAL"]).default("GENERAL"),
 });
 const ServiceIdSchema = z.string().uuid();
 
@@ -47,7 +47,7 @@ export async function createServiceAction(formData: {
   title: string;
   description: string;
   price: number;
-  category?: "ELECTRICITY" | "PLUMBING" | "CLEANING" | "HVAC" | "GENERAL";
+  category?: "ELECTRICITY" | "PLUMBING" | "CLEANING" | "HVAC" | "CARPENTRY" | "PAINTING" | "APPLIANCE_REPAIR" | "GARDENING" | "GENERAL";
 }) {
   try {
     const { supabase, role } = await getAdminSupabase();

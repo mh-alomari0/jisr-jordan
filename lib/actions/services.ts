@@ -42,7 +42,7 @@ export async function getServicesAction(): Promise<{
       .limit(100);
 
     if (error) {
-      logger.error(`Failed to fetch services: ${error.message}`, { context: "ServicesAction" });
+      logger.error("Failed to fetch services", { context: "ServicesAction", metadata: { code: error.code } });
       return { success: false, error: "تعذر جلب قائمة الخدمات" };
     }
 

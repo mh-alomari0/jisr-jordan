@@ -1,12 +1,15 @@
 import { getAdminProvidersAction } from "@/lib/actions/admin-providers";
 import AdminProvidersClient from "./_components/admin-providers-client";
+import { AdminPagination } from "@/components/admin-pagination";
 
 export const metadata = {
   title: "إدارة مقدمي الخدمة | جسر الأردن",
 };
 
-export default async function AdminProvidersPage() {
-  const result = await getAdminProvidersAction();
+export default async function AdminProvidersPage({ searchParams }: { searchParams: Promise<{ page?: string }> }) {
+  const params = await searchParams;
+  const page = Math.max(1, Number.parseInt(params.page || "1", 10) || 1);
+  const result = await getAdminProvidersAction(page);
 
   if (!result.success) {
     return (
@@ -25,6 +28,7 @@ export default async function AdminProvidersPage() {
         </p>
       </div>
       <AdminProvidersClient providers={result.providers || []} />
+      <AdminPagination path="/admin/providers" page={result.page || page} hasMore={Boolean(result.hasMore)} />
     </div>
   );
 }

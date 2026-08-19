@@ -133,47 +133,40 @@ describe("deleteAccountAction — Real Function Security Tests", () => {
     expect(mockRpc).not.toHaveBeenCalled();
   });
 
-  it("ينبغي استدعاء delete_user_account_securely بمعرف المستخدم المسجل نفسه فقط، ثم تسجيل الخروج", async () => {
-    const mockRpc = vi.fn().mockResolvedValue({ error: null });
-    const mockSignOut = vi.fn().mockResolvedValue({ error: null });
-
+  it("ينبغي أن يفشل بأمان للمستخدم المسجل وألا يستدعي حذفاً جزئياً لقاعدة البيانات", async () => {
+    const mockRpc = vi.fn();
     vi.mocked(createServerClient).mockReturnValue({
       auth: {
         getUser: vi.fn().mockResolvedValue({
           data: { user: { id: "usr_self_123", email: "client@test.com" } },
           error: null,
         }),
-        signOut: mockSignOut,
       },
       rpc: mockRpc,
     } as unknown as ReturnType<typeof createServerClient>);
 
     const result = await deleteAccountAction();
 
-    expect(result.success).toBe(true);
-    expect(mockRpc).toHaveBeenCalledWith("delete_user_account_securely", {
-      p_user_id: "usr_self_123",
-    });
-    expect(mockSignOut).toHaveBeenCalled();
+    expect(result.success).toBe(false);
+    expect(result.error).toContain("حذف الحساب غير متاح");
+    expect(mockRpc).not.toHaveBeenCalled();
   });
 
-  it("ينبغي إرجاع فشل واضح عند خطأ الـ RPC دون استدعاء signOut", async () => {
-    const mockSignOut = vi.fn();
-
+  it("ينبغي ألا يعتمد مسار الحذف المعطل على RPC أو service role", async () => {
+    const mockRpc = vi.fn();
     vi.mocked(createServerClient).mockReturnValue({
       auth: {
         getUser: vi.fn().mockResolvedValue({
           data: { user: { id: "usr_1", email: "client@test.com" } },
           error: null,
         }),
-        signOut: mockSignOut,
       },
-      rpc: vi.fn().mockResolvedValue({ error: { message: "DB error" } }),
+      rpc: mockRpc,
     } as unknown as ReturnType<typeof createServerClient>);
 
     const result = await deleteAccountAction();
 
     expect(result.success).toBe(false);
-    expect(mockSignOut).not.toHaveBeenCalled();
+    expect(mockRpc).not.toHaveBeenCalled();
   });
 });

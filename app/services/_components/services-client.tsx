@@ -10,6 +10,10 @@ const CATEGORIES = [
   { id: "PLUMBING", label: "سباكة" },
   { id: "CLEANING", label: "تنظيف" },
   { id: "HVAC", label: "تكييف وتبريد" },
+  { id: "CARPENTRY", label: "نجارة" },
+  { id: "PAINTING", label: "دهان" },
+  { id: "APPLIANCE_REPAIR", label: "صيانة أجهزة" },
+  { id: "GARDENING", label: "حدائق" },
 ];
 
 export default function ServicesClient({ initialServices }: { initialServices: ServiceItem[] }) {
@@ -44,9 +48,7 @@ export default function ServicesClient({ initialServices }: { initialServices: S
       void handleFilterChange(searchQuery, selectedCategory, sortBy);
     }, 350);
     return () => window.clearTimeout(timer);
-  // Category and sorting trigger immediately in their own handlers.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchQuery]);
+  }, [searchQuery, selectedCategory, sortBy]);
 
   return (
     <div className="space-y-6">
@@ -72,7 +74,6 @@ export default function ServicesClient({ initialServices }: { initialServices: S
               onChange={(e) => {
                 const val = e.target.value as "price_asc" | "price_desc" | "newest";
                 setSortBy(val);
-                handleFilterChange(searchQuery, selectedCategory, val);
               }}
               className="border p-2 rounded-lg text-xs bg-white w-full md:w-auto"
             >
@@ -91,7 +92,6 @@ export default function ServicesClient({ initialServices }: { initialServices: S
               type="button"
               onClick={() => {
                 setSelectedCategory(cat.id);
-                handleFilterChange(searchQuery, cat.id, sortBy);
               }}
               className={`px-3 py-1.5 rounded-md text-xs font-medium whitespace-nowrap transition-colors ${
                 selectedCategory === cat.id
@@ -120,7 +120,7 @@ export default function ServicesClient({ initialServices }: { initialServices: S
               <div className="space-y-2">
                 <div className="flex justify-between items-start">
                   <h3 className="font-bold text-lg text-gray-900">{srv.title}</h3>
-                  <span className="text-xs font-semibold px-2 py-1 bg-green-100 text-green-800 rounded-full">
+                  <span className="shrink-0 whitespace-nowrap text-xs font-semibold px-2 py-1 bg-green-100 text-green-800 rounded-full">
                     {srv.price} د.أ
                   </span>
                 </div>

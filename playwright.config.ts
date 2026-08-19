@@ -1,4 +1,11 @@
 import { defineConfig, devices } from "@playwright/test";
+import { loadEnvConfig } from "@next/env";
+
+loadEnvConfig(process.cwd());
+
+const baseURL = process.env.E2E_BASE_URL || "http://localhost:3000";
+const testTarget = new URL(baseURL);
+const usesLocalServer = ["localhost", "127.0.0.1"].includes(testTarget.hostname);
 
 export default defineConfig({
   testDir: "./tests/e2e",
@@ -8,7 +15,7 @@ export default defineConfig({
   workers: process.env.CI ? 1 : undefined,
   reporter: "html",
   use: {
-    baseURL: process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
+    baseURL,
     trace: "on-first-retry",
     screenshot: "only-on-failure",
   },
@@ -18,10 +25,10 @@ export default defineConfig({
       use: { ...devices["Desktop Chrome"] },
     },
   ],
-  webServer: {
+  webServer: usesLocalServer ? {
     command: "npm run dev",
     url: "http://localhost:3000",
     reuseExistingServer: !process.env.CI,
     timeout: 120 * 1000,
-  },
+  } : undefined,
 });

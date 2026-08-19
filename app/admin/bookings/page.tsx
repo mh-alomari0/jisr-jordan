@@ -1,12 +1,15 @@
 import { getAdminBookingsAction } from "@/lib/actions/admin-bookings";
 import AdminBookingsClient from "./_components/admin-bookings-client";
+import { AdminPagination } from "@/components/admin-pagination";
 
 export const metadata = {
   title: "إدارة وتتبع الحجوزات | لوحة التحكم",
 };
 
-export default async function AdminBookingsPage() {
-  const result = await getAdminBookingsAction();
+export default async function AdminBookingsPage({ searchParams }: { searchParams: Promise<{ page?: string }> }) {
+  const params = await searchParams;
+  const page = Math.max(1, Number.parseInt(params.page || "1", 10) || 1);
+  const result = await getAdminBookingsAction(page);
 
   if (!result.success) {
     return (
@@ -24,6 +27,7 @@ export default async function AdminBookingsPage() {
       </div>
 
       <AdminBookingsClient initialBookings={result.bookings || []} />
+      <AdminPagination path="/admin/bookings" page={result.page || page} hasMore={Boolean(result.hasMore)} />
     </div>
   );
 }

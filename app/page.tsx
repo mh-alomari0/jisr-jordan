@@ -82,6 +82,10 @@ export default async function HomePage() {
             { title: "سباكة", icon: "🚰", cat: "PLUMBING" },
             { title: "تكييف وتبريد", icon: "❄️", cat: "HVAC" },
             { title: "تنظيف شامل", icon: "🧹", cat: "CLEANING" },
+            { title: "نجارة", icon: "🪚", cat: "CARPENTRY" },
+            { title: "دهان", icon: "🎨", cat: "PAINTING" },
+            { title: "صيانة أجهزة", icon: "🧰", cat: "APPLIANCE_REPAIR" },
+            { title: "حدائق", icon: "🌿", cat: "GARDENING" },
           ].map((c) => (
             <Link
               key={c.cat}

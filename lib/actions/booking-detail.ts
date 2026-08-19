@@ -33,7 +33,7 @@ export async function getBookingDetailAction(bookingId: string) {
     const [serviceResult, paymentResult, reviewResult, providerResult] = await Promise.all([
       supabase.from("services").select("id, title, price, category").eq("id", booking.service_id).maybeSingle(),
       supabase.from("payments").select("id, amount, currency, payment_method, status").eq("booking_id", bookingId).order("created_at", { ascending: false }).limit(1).maybeSingle(),
-      supabase.from("reviews").select("id").eq("service_id", booking.service_id).eq("customer_id", user.id).maybeSingle(),
+      supabase.from("reviews").select("id").eq("booking_id", bookingId).eq("customer_id", user.id).maybeSingle(),
       booking.provider_id
         ? supabase.rpc("get_booking_provider_contact", { p_booking_id: bookingId })
         : Promise.resolve({ data: null, error: null }),

@@ -8,7 +8,7 @@ export default function AdminUsersClient({ initialUsers }: { initialUsers: Admin
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
 
-  const handleRoleChange = async (userId: string, newRole: "CUSTOMER" | "STAFF" | "ADMIN") => {
+  const handleRoleChange = async (userId: string, newRole: "CUSTOMER" | "ADMIN") => {
     setLoadingId(userId);
     const res = await updateUserRoleAction(userId, newRole);
     if (res.success) {
@@ -68,13 +68,14 @@ export default function AdminUsersClient({ initialUsers }: { initialUsers: Admin
                   </td>
                   <td className="p-3">
                     <select
-                      disabled={loadingId === u.id}
+                      disabled={loadingId === u.id || u.role === "STAFF" || u.role === "SUPER_ADMIN"}
                       value={u.role}
-                      onChange={(e) => handleRoleChange(u.id, e.target.value as "CUSTOMER" | "STAFF" | "ADMIN")}
+                      onChange={(e) => handleRoleChange(u.id, e.target.value as "CUSTOMER" | "ADMIN")}
                       className="border rounded p-1.5 text-xs bg-white disabled:opacity-50"
                     >
                       <option value="CUSTOMER">عميل (CUSTOMER)</option>
-                      <option value="STAFF">مزود خدمة (STAFF)</option>
+                      {u.role === "STAFF" && <option value="STAFF" disabled>مزود خدمة — يُدار من شاشة المزودين</option>}
+                      {u.role === "SUPER_ADMIN" && <option value="SUPER_ADMIN" disabled>مسؤول أعلى — محمي</option>}
                       <option value="ADMIN">مدير نظام (ADMIN)</option>
                     </select>
                   </td>
