@@ -1,4 +1,4 @@
-"use server";
+﻿"use server";
 
 import { randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
@@ -69,12 +69,21 @@ export async function createProviderListingAction(input: z.input<typeof ListingI
     const rate = await checkRateLimit(`listing:create:${user.id}`, { limit: 10, windowMs: 60 * 60_000 });
     if (!rate.success) return { success: false as const, error: rate.error };
     if (!(await approvedProvider(supabase, user.id))) return { success: false as const, error: "لا يمكن إنشاء عرض قبل اعتماد حساب مقدم الخدمة" };
-    const { data: category } = await supabase.from("service_categories")
-      .select("id, parent_id, is_active").eq("id", parsed.data.categoryId).eq("is_active", true).maybeSingle();
-    if (!category?.parent_id) return { success: false as const, error: "اختر تصنيفاً فرعياً صالحاً" };
-    const { data: serviceType } = await supabase.from("services").select("id")
-      .eq("id", parsed.data.serviceTypeId).eq("category_id", parsed.data.categoryId).eq("is_active", true).maybeSingle();
-    if (!serviceType) return { success: false as const, error: "اختر نوع خدمة تابعاً للتصنيف المحدد" };
+    const [{ data: category }, { data: serviceType }] = await Promise.all([
+      supabase.from("service_categories")
+        .select("id, is_active")
+        .eq("id", parsed.data.categoryId)
+        .eq("is_active", true)
+        .maybeSingle(),
+      supabase.from("services")
+        .select("id, category_id, is_active")
+        .eq("id", parsed.data.serviceTypeId)
+        .eq("category_id", parsed.data.categoryId)
+        .eq("is_active", true)
+        .maybeSingle(),
+    ]);
+    if (!category) return { success: false as const, error: "Invalid or inactive service category" };
+    if (!serviceType) return { success: false as const, error: "Invalid service type for selected category" };
 
     const slug = `service-${randomUUID().replaceAll("-", "").slice(0, 16)}`;
     const remoteAvailable = ["REMOTE", "HYBRID"].includes(parsed.data.deliveryType);
@@ -120,12 +129,21 @@ export async function updateProviderListingAction(listingId: string, input: z.in
       .eq("id", listingId).eq("provider_id", user.id).maybeSingle();
     if (!current) return { success: false as const, error: "العرض غير موجود" };
     if (current.status === "PUBLISHED") return { success: false as const, error: "أوقف نشر العرض قبل تعديل محتواه" };
-    const { data: category } = await supabase.from("service_categories")
-      .select("id, parent_id").eq("id", parsed.data.categoryId).eq("is_active", true).maybeSingle();
-    if (!category?.parent_id) return { success: false as const, error: "اختر تصنيفاً فرعياً صالحاً" };
-    const { data: serviceType } = await supabase.from("services").select("id")
-      .eq("id", parsed.data.serviceTypeId).eq("category_id", parsed.data.categoryId).eq("is_active", true).maybeSingle();
-    if (!serviceType) return { success: false as const, error: "اختر نوع خدمة تابعاً للتصنيف المحدد" };
+    const [{ data: category }, { data: serviceType }] = await Promise.all([
+      supabase.from("service_categories")
+        .select("id, is_active")
+        .eq("id", parsed.data.categoryId)
+        .eq("is_active", true)
+        .maybeSingle(),
+      supabase.from("services")
+        .select("id, category_id, is_active")
+        .eq("id", parsed.data.serviceTypeId)
+        .eq("category_id", parsed.data.categoryId)
+        .eq("is_active", true)
+        .maybeSingle(),
+    ]);
+    if (!category) return { success: false as const, error: "Invalid or inactive service category" };
+    if (!serviceType) return { success: false as const, error: "Invalid service type for selected category" };
     const remoteAvailable = ["REMOTE", "HYBRID"].includes(parsed.data.deliveryType);
     const { error } = await supabase.from("service_listings").update({
       legacy_service_id: parsed.data.serviceTypeId,
@@ -192,3 +210,4 @@ export async function deleteProviderListingAction(listingId: string) {
     return { success: false as const, error: "تعذر حذف العرض" };
   }
 }
+

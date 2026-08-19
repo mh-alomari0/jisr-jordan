@@ -1,32 +1,69 @@
 "use client";
 
-import React from "react";
-import { AlertOctagon, RotateCcw } from "lucide-react";
+import { useEffect } from "react";
+import Link from "next/link";
+import {
+  AlertTriangle,
+  Home,
+  RefreshCw,
+} from "lucide-react";
 
-export default function GlobalError({
+export default function ErrorPage({
+  error,
   reset,
 }: {
   error: Error & { digest?: string };
   reset: () => void;
 }) {
+  useEffect(() => {
+    console.error(error);
+  }, [error]);
+
   return (
-    <div className="min-h-[60vh] flex items-center justify-center px-4">
-      <div className="max-w-md w-full bg-white p-8 rounded-2xl border border-slate-200 shadow-sm text-center space-y-4">
-        <div className="w-12 h-12 bg-rose-50 text-rose-600 rounded-full flex items-center justify-center mx-auto">
-          <AlertOctagon className="w-6 h-6" />
-        </div>
-        <h2 className="text-xl font-bold text-slate-900">حدث خطأ غير متوقع</h2>
-        <p className="text-sm text-slate-500">
-          نعتذر، تعذر إكمال العملية الحالية. يرجى المحاولة مرة أخرى.
+    <main className="mx-auto flex min-h-[65vh] max-w-3xl items-center px-4 py-10 sm:px-6">
+      <section className="w-full rounded-[2rem] border border-theme bg-surface p-7 text-center shadow-soft sm:p-10">
+        <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-[rgb(var(--danger)/0.1)] text-[rgb(var(--danger))]">
+          <AlertTriangle size={24} />
+        </span>
+
+        <p className="mt-6 text-[10px] font-bold text-[rgb(var(--danger))]">
+          صار خطأ غير متوقع
         </p>
-        <button
-          onClick={() => reset()}
-          className="inline-flex items-center gap-2 px-5 py-2.5 bg-sky-600 hover:bg-sky-700 text-white rounded-lg text-sm font-medium transition-colors"
-        >
-          <RotateCcw className="w-4 h-4" />
-          إعادة المحاولة
-        </button>
-      </div>
-    </div>
+
+        <h1 className="mt-2 text-2xl font-bold tracking-[-.04em] sm:text-3xl">
+          الصفحة ما قدرت تكمل التحميل
+        </h1>
+
+        <p className="mx-auto mt-3 max-w-lg text-xs leading-6 text-muted">
+          جرّب إعادة تحميل الجزء الحالي. إذا استمرت المشكلة، ارجع للرئيسية
+          وجرب المسار مرة ثانية.
+        </p>
+
+        {error.digest && (
+          <p className="mt-3 text-[9px] text-muted">
+            مرجع الخطأ: {error.digest}
+          </p>
+        )}
+
+        <div className="mt-6 flex flex-wrap justify-center gap-2">
+          <button
+            type="button"
+            onClick={reset}
+            className="brand-button gap-2"
+          >
+            <RefreshCw size={14} />
+            حاول مرة ثانية
+          </button>
+
+          <Link
+            href="/"
+            className="secondary-button gap-2"
+          >
+            <Home size={14} />
+            الرئيسية
+          </Link>
+        </div>
+      </section>
+    </main>
   );
 }

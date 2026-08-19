@@ -1,28 +1,68 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ImagePlus, Pencil, Plus, Send, Trash2 } from "lucide-react";
+import { ArrowLeft, ImagePlus, Pencil, Plus, Send, Trash2, Wrench } from "lucide-react";
 import { supabase } from "@/lib/supabase/client";
 import { confirmMarketplaceImageUploadAction, prepareMarketplaceImageUploadAction } from "@/lib/actions/provider-content";
 import { createProviderListingAction, deleteProviderListingAction, setProviderListingPublicationAction, updateProviderListingAction } from "@/lib/actions/provider-listings";
 import { deliveryTypeLabels, listingStatusLabels, pricingModelLabels, type MarketplaceCategory, type ServiceListing, type ServiceTypeDefinition } from "@/lib/marketplace";
 
 const empty = {
-  serviceTypeId: "", title: "", shortDescription: "", description: "", categoryId: "", deliveryType: "ON_SITE",
-  pricingModel: "FIXED", basePrice: "", estimatedDurationMinutes: "60", serviceAreas: "عمّان",
+  serviceTypeId: "", title: "", shortDescription: "", description: "", categoryId: "",
+  deliveryType: "ON_SITE", pricingModel: "FIXED", basePrice: "",
+  estimatedDurationMinutes: "60", serviceAreas: "عمّان",
 };
 
-export default function ProviderListingsClient({ listings, categories, serviceTypes }: { listings: ServiceListing[]; categories: MarketplaceCategory[]; serviceTypes: ServiceTypeDefinition[] }) {
+export default function ProviderListingsClient({
+  listings, categories, serviceTypes,
+}: {
+  listings: ServiceListing[];
+  categories: MarketplaceCategory[];
+  serviceTypes: ServiceTypeDefinition[];
+}) {
   const router = useRouter();
   const [form, setForm] = useState(empty);
+  const [parentId, setParentId] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   const [message, setMessage] = useState("");
 
-  const field = (name: keyof typeof empty, value: string) => setForm((current) => ({ ...current, [name]: value }));
-  const reset = () => { setForm(empty); setEditingId(null); setMessage(""); };
+  const parents = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const service of serviceTypes) {
+      if (service.parent_category_id) map.set(service.parent_category_id, service.parent_category_name || "مجال");
+    }
+    return [...map.entries()];
+  }, [serviceTypes]);
+
+  const visibleServices = parentId
+    ? serviceTypes.filter((s) => s.parent_category_id === parentId)
+    : serviceTypes;
+
+  const field = (name: keyof typeof empty, value: string) =>
+    setForm((current) => ({ ...current, [name]: value }));
+
+  const chooseService = (id: string) => {
+    const service = serviceTypes.find((item) => item.id === id);
+    setForm((current) => ({
+      ...current,
+      serviceTypeId: id,
+      categoryId: service?.category_id || "",
+      title: current.title || service?.title || "",
+    }));
+  };
+
+  const reset = () => {
+    setForm(empty);
+    setParentId("");
+    setEditingId(null);
+    setMessage("");
+  };
+
   const edit = (listing: ServiceListing) => {
+    const service = serviceTypes.find((item) => item.id === listing.legacy_service_id);
+    setParentId(service?.parent_category_id || "");
     setEditingId(listing.id);
     setForm({
       serviceTypeId: listing.legacy_service_id || "",
@@ -40,7 +80,8 @@ export default function ProviderListingsClient({ listings, categories, serviceTy
   };
 
   const submit = async () => {
-    setPending(true); setMessage("");
+    setPending(true);
+    setMessage("");
     const payload = {
       serviceTypeId: form.serviceTypeId,
       title: form.title,
@@ -51,75 +92,148 @@ export default function ProviderListingsClient({ listings, categories, serviceTy
       pricingModel: form.pricingModel as "FIXED" | "STARTING_FROM" | "HOURLY" | "PER_SESSION" | "QUOTE_REQUIRED",
       basePrice: form.basePrice ? Number(form.basePrice) : null,
       estimatedDurationMinutes: form.estimatedDurationMinutes ? Number(form.estimatedDurationMinutes) : null,
-      serviceAreas: form.serviceAreas.split(/[،,]/).map((item) => item.trim()).filter(Boolean),
+      serviceAreas: form.deliveryType === "REMOTE" ? [] : form.serviceAreas.split(/[،,]/).map((x) => x.trim()).filter(Boolean),
     };
-    const result = editingId ? await updateProviderListingAction(editingId, payload) : await createProviderListingAction(payload);
+
+    const result = editingId
+      ? await updateProviderListingAction(editingId, payload)
+      : await createProviderListingAction(payload);
+
     setPending(false);
-    if (!result.success) { setMessage(result.error || "تعذر حفظ العرض"); return; }
-    reset(); router.refresh();
+    if (!result.success) return setMessage(result.error || "تعذر حفظ العرض");
+    reset();
+    router.refresh();
   };
 
   const publication = async (listing: ServiceListing, publish: boolean) => {
-    setMessage("");
     const result = await setProviderListingPublicationAction(listing.id, publish);
-    if (!result.success) setMessage(result.error || "تعذر تغيير الحالة");
-    else router.refresh();
+    if (!result.success) return setMessage(result.error || "تعذر تغيير الحالة");
+    router.refresh();
   };
+
   const remove = async (listing: ServiceListing) => {
-    if (!window.confirm("حذف هذه المسودة نهائياً؟")) return;
+    if (!confirm("حذف هذه المسودة نهائياً؟")) return;
     const result = await deleteProviderListingAction(listing.id);
-    if (!result.success) setMessage(result.error || "تعذر الحذف"); else router.refresh();
+    if (!result.success) return setMessage(result.error || "تعذر الحذف");
+    router.refresh();
   };
-  const upload = async (listing: ServiceListing, file: File | undefined) => {
+
+  const upload = async (listing: ServiceListing, file?: File) => {
     if (!file) return;
-    setMessage("");
     const prepared = await prepareMarketplaceImageUploadAction({
-      listingId: listing.id, postId: null, fileName: file.name, mimeType: file.type as "image/jpeg" | "image/png" | "image/webp", sizeBytes: file.size,
+      listingId: listing.id, postId: null, fileName: file.name,
+      mimeType: file.type as "image/jpeg" | "image/png" | "image/webp", sizeBytes: file.size,
     });
-    if (!prepared.success) { setMessage(prepared.error || "تعذر تجهيز الصورة"); return; }
-    const { error } = await supabase.storage.from(prepared.bucket).uploadToSignedUrl(prepared.path, prepared.token, file, { contentType: file.type });
-    if (error) { setMessage("تعذر رفع الصورة"); return; }
+    if (!prepared.success) return setMessage(prepared.error || "تعذر تجهيز الصورة");
+
+    const { error } = await supabase.storage.from(prepared.bucket)
+      .uploadToSignedUrl(prepared.path, prepared.token, file, { contentType: file.type });
+    if (error) return setMessage("تعذر رفع الصورة");
+
     const confirmed = await confirmMarketplaceImageUploadAction(prepared.mediaId);
-    if (!confirmed.success) setMessage(confirmed.error || "تعذر اعتماد الصورة"); else router.refresh();
+    if (!confirmed.success) return setMessage(confirmed.error || "تعذر اعتماد الصورة");
+    router.refresh();
   };
 
   return (
-    <div className="space-y-6">
-      <section className="surface-card p-5 sm:p-6">
-        <div className="flex items-center justify-between gap-3">
-          <div><h2 className="text-lg font-black">{editingId ? "تعديل عرض الخدمة" : "إنشاء عرض جديد"}</h2><p className="mt-1 text-xs text-muted">يُحفظ أولاً كمسودة، ثم يمكنك طلب نشره.</p></div>
-          {editingId && <button type="button" onClick={reset} className="secondary-button !min-h-9 !px-3">إلغاء التعديل</button>}
+    <div className="space-y-9">
+      <section className="overflow-hidden rounded-[2rem] border border-theme bg-surface shadow-soft">
+        <div className="grid lg:grid-cols-[.72fr_1.28fr]">
+          <aside className="relative overflow-hidden bg-[#0b817a] p-6 text-white sm:p-8">
+            <div className="absolute -left-14 -top-16 h-48 w-48 rounded-full border-[18px] border-white/10" />
+            <div className="relative">
+              <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/10"><Wrench size={22} /></span>
+              <p className="mt-8 text-[10px] font-bold text-[#c8eee7]">خدماتك على جسر</p>
+              <h2 className="mt-2 text-3xl font-bold leading-tight tracking-[-.05em]">اختَر الخدمة،<br /><span className="text-[#ffc985]">واعرض شغلك بطريقتك.</span></h2>
+              <p className="mt-4 text-xs leading-7 text-[#dbf4ef]">الخدمة الأساسية ثابتة من دليل جسر. أنت تحدد السعر والوصف وطريقة العمل والمناطق والصور.</p>
+            </div>
+          </aside>
+
+          <div className="p-5 sm:p-7">
+            <div className="flex items-center justify-between">
+              <div><p className="text-[10px] font-bold text-brand">1 · اختَر الخدمة</p><h2 className="mt-1 text-xl font-bold">{editingId ? "عدّل عرضك" : "أنشئ عرض جديد"}</h2></div>
+              {editingId && <button onClick={reset} className="secondary-button !min-h-9 !px-3">إلغاء</button>}
+            </div>
+
+            <div className="mt-5 flex flex-wrap gap-2">
+              <button type="button" onClick={() => setParentId("")} className={`rounded-full px-3 py-2 text-[10px] font-bold ${!parentId ? "bg-[rgb(var(--primary))] text-white" : "bg-surface-muted"}`}>كل المجالات</button>
+              {parents.map(([id, label]) => (
+                <button key={id} type="button" onClick={() => { setParentId(id); setForm((f) => ({ ...f, serviceTypeId: "", categoryId: "" })); }}
+                  className={`rounded-full px-3 py-2 text-[10px] font-bold ${parentId === id ? "bg-[rgb(var(--primary))] text-white" : "bg-surface-muted"}`}>
+                  {label}
+                </button>
+              ))}
+            </div>
+
+            <label className="mt-5 block text-xs font-bold">نوع الخدمة
+              <select value={form.serviceTypeId} onChange={(e) => chooseService(e.target.value)} className="form-field mt-1.5">
+                <option value="">اختر الخدمة التي تقدمها</option>
+                {visibleServices.map((service) => <option key={service.id} value={service.id}>{service.parent_category_name} — {service.title}</option>)}
+              </select>
+            </label>
+
+            <div className="mt-7 border-t border-theme pt-6">
+              <p className="text-[10px] font-bold text-brand">2 · تفاصيل عرضك</p>
+              <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                <label className="text-xs font-bold sm:col-span-2">عنوان العرض<input value={form.title} onChange={(e) => field("title", e.target.value)} maxLength={120} className="form-field mt-1.5" placeholder="مثال: كشف وإصلاح تسريبات المياه في عمّان" /></label>
+                <label className="text-xs font-bold sm:col-span-2">وصف مختصر<input value={form.shortDescription} onChange={(e) => field("shortDescription", e.target.value)} maxLength={240} className="form-field mt-1.5" /></label>
+                <label className="text-xs font-bold sm:col-span-2">تفاصيل الخدمة<textarea value={form.description} onChange={(e) => field("description", e.target.value)} rows={6} maxLength={4000} className="form-field mt-1.5" /></label>
+
+                <label className="text-xs font-bold">طريقة التقديم
+                  <select value={form.deliveryType} onChange={(e) => field("deliveryType", e.target.value)} className="form-field mt-1.5">
+                    {Object.entries(deliveryTypeLabels).map(([value,label]) => <option key={value} value={value}>{label}</option>)}
+                  </select>
+                </label>
+
+                <label className="text-xs font-bold">نظام التسعير
+                  <select value={form.pricingModel} onChange={(e) => field("pricingModel", e.target.value)} className="form-field mt-1.5">
+                    {Object.entries(pricingModelLabels).map(([value,label]) => <option key={value} value={value}>{label}</option>)}
+                  </select>
+                </label>
+
+                <label className="text-xs font-bold">السعر بالدينار<input value={form.basePrice} onChange={(e) => field("basePrice", e.target.value)} disabled={form.pricingModel === "QUOTE_REQUIRED"} type="number" min="1" step="0.01" className="form-field mt-1.5" /></label>
+                <label className="text-xs font-bold">المدة بالدقائق<input value={form.estimatedDurationMinutes} onChange={(e) => field("estimatedDurationMinutes", e.target.value)} type="number" min="15" className="form-field mt-1.5" /></label>
+                {form.deliveryType !== "REMOTE" && <label className="text-xs font-bold sm:col-span-2">مناطق الخدمة<input value={form.serviceAreas} onChange={(e) => field("serviceAreas", e.target.value)} className="form-field mt-1.5" placeholder="عمّان، الزرقاء، إربد" /></label>}
+              </div>
+            </div>
+
+            {message && <p role="alert" className="mt-4 rounded-xl bg-[rgb(var(--danger)/0.1)] p-3 text-xs text-[rgb(var(--danger))]">{message}</p>}
+            <button type="button" onClick={submit} disabled={pending || !form.serviceTypeId} className="brand-button mt-5 gap-2">
+              <Plus size={15} /> {pending ? "جارٍ الحفظ..." : editingId ? "حفظ التعديلات" : "إنشاء المسودة"}
+            </button>
+          </div>
         </div>
-        <div className="mt-5 grid gap-4 sm:grid-cols-2">
-          <label className="text-xs font-bold sm:col-span-2">نوع الخدمة في دليل جسر<select value={form.serviceTypeId} onChange={(event) => { const selected = serviceTypes.find((item) => item.id === event.target.value); setForm((current) => ({ ...current, serviceTypeId: event.target.value, categoryId: selected?.category_id || current.categoryId })); }} className="form-field mt-1.5"><option value="">اختر نوع الخدمة الذي تقدمه</option>{serviceTypes.map((service) => <option key={service.id} value={service.id}>{service.parent_category_name} — {service.title}</option>)}</select></label>
-          <label className="text-xs font-bold sm:col-span-2">عنوان العرض<input value={form.title} onChange={(event) => field("title", event.target.value)} maxLength={120} className="form-field mt-1.5" /></label>
-          <label className="text-xs font-bold sm:col-span-2">وصف مختصر<input value={form.shortDescription} onChange={(event) => field("shortDescription", event.target.value)} maxLength={240} className="form-field mt-1.5" /></label>
-          <label className="text-xs font-bold sm:col-span-2">التفاصيل<textarea value={form.description} onChange={(event) => field("description", event.target.value)} maxLength={4000} rows={5} className="form-field mt-1.5" /></label>
-          <label className="text-xs font-bold">التصنيف الفرعي<select value={form.categoryId} onChange={(event) => field("categoryId", event.target.value)} className="form-field mt-1.5"><option value="">اختر</option>{categories.map((parent) => <optgroup key={parent.id} label={parent.name_ar}>{(parent.children || []).map((child) => <option key={child.id} value={child.id}>{child.name_ar}</option>)}</optgroup>)}</select></label>
-          <label className="text-xs font-bold">طريقة التقديم<select value={form.deliveryType} onChange={(event) => field("deliveryType", event.target.value)} className="form-field mt-1.5">{Object.entries(deliveryTypeLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
-          <label className="text-xs font-bold">نظام التسعير<select value={form.pricingModel} onChange={(event) => field("pricingModel", event.target.value)} className="form-field mt-1.5">{Object.entries(pricingModelLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
-          <label className="text-xs font-bold">السعر بالدينار<input value={form.basePrice} onChange={(event) => field("basePrice", event.target.value)} disabled={form.pricingModel === "QUOTE_REQUIRED"} type="number" min="1" step="0.01" className="form-field mt-1.5" /></label>
-          <label className="text-xs font-bold">المدة التقديرية بالدقائق<input value={form.estimatedDurationMinutes} onChange={(event) => field("estimatedDurationMinutes", event.target.value)} type="number" min="15" className="form-field mt-1.5" /></label>
-          <label className="text-xs font-bold">مناطق الخدمة (افصل بفاصلة)<input value={form.serviceAreas} onChange={(event) => field("serviceAreas", event.target.value)} disabled={form.deliveryType === "REMOTE"} className="form-field mt-1.5" /></label>
-        </div>
-        {message && <p role="alert" className="mt-4 rounded-xl bg-[rgb(var(--danger)/0.1)] p-3 text-xs text-[rgb(var(--danger))]">{message}</p>}
-        <button type="button" onClick={submit} disabled={pending} className="brand-button mt-5 gap-2"><Plus className="h-4 w-4" />{pending ? "جارٍ الحفظ..." : editingId ? "حفظ التعديلات" : "إنشاء المسودة"}</button>
       </section>
 
       <section>
-        <div className="mb-4"><h2 className="text-lg font-black">عروضي</h2><p className="mt-1 text-xs text-muted">{listings.length} عرض</p></div>
-        {listings.length ? <div className="grid gap-4 xl:grid-cols-2">{listings.map((listing) => (
-          <article key={listing.id} className="surface-card p-5">
-            <div className="flex items-start justify-between gap-3"><div className="min-w-0"><span className="status-pill bg-surface-muted">{listingStatusLabels[listing.status]}</span><h3 className="mt-2 truncate font-black">{listing.title}</h3><p className="mt-1 text-xs text-muted">{listing.service_categories?.name_ar} · {pricingModelLabels[listing.pricing_model]}</p></div><strong className="shrink-0 text-sm text-brand">{listing.base_price ? listing.base_price + " د.أ" : "عرض سعر"}</strong></div>
-            {listing.moderation_notes && <p className="mt-3 rounded-xl bg-[rgb(var(--warning)/0.1)] p-3 text-xs">ملاحظة المراجعة: {listing.moderation_notes}</p>}
-            <div className="mt-4 flex flex-wrap gap-2 border-t border-theme pt-4">
-              {listing.status !== "PUBLISHED" && <button type="button" onClick={() => edit(listing)} className="secondary-button !min-h-9 gap-1 !px-3"><Pencil className="h-3.5 w-3.5" /> تعديل</button>}
-              {listing.status === "PUBLISHED" || listing.status === "PENDING_REVIEW" ? <button type="button" onClick={() => publication(listing, false)} className="secondary-button !min-h-9 !px-3">إيقاف</button> : <button type="button" onClick={() => publication(listing, true)} className="brand-button !min-h-9 gap-1 !px-3 !py-1"><Send className="h-3.5 w-3.5" /> نشر</button>}
-              <label className="secondary-button !min-h-9 cursor-pointer gap-1 !px-3"><ImagePlus className="h-3.5 w-3.5" /> صورة<input type="file" accept="image/jpeg,image/png,image/webp" className="sr-only" onChange={(event) => { void upload(listing, event.target.files?.[0]); event.currentTarget.value = ""; }} /></label>
-              {["DRAFT", "REJECTED"].includes(listing.status) && <button type="button" onClick={() => remove(listing)} className="secondary-button !min-h-9 gap-1 !px-3 text-[rgb(var(--danger))]"><Trash2 className="h-3.5 w-3.5" /> حذف</button>}
-            </div>
-          </article>
-        ))}</div> : <div className="surface-card p-10 text-center text-sm text-muted">لم تنشئ عروض خدمات بعد.</div>}
+        <div className="mb-5"><p className="text-[10px] font-bold text-brand">3 · الصور والنشر</p><h2 className="mt-1 text-2xl font-bold">عروضي</h2><p className="mt-1 text-xs text-muted">{listings.length} عرض</p></div>
+
+        {listings.length ? <div className="grid gap-4 xl:grid-cols-2">
+          {listings.map((listing) => (
+            <article key={listing.id} className="overflow-hidden rounded-[1.75rem] border border-theme bg-surface shadow-soft">
+              <div className="bg-[#0b817a] p-5 text-white">
+                <span className="rounded-full bg-white/10 px-2.5 py-1 text-[10px] font-bold">{listingStatusLabels[listing.status]}</span>
+                <h3 className="mt-4 text-xl font-bold">{listing.title}</h3>
+                <p className="mt-1 text-[10px] text-white/70">{listing.service_categories?.name_ar} · {pricingModelLabels[listing.pricing_model]}</p>
+              </div>
+              <div className="p-5">
+                <div className="flex items-center justify-between gap-3"><span className="text-xs text-muted">{deliveryTypeLabels[listing.delivery_type]}</span><strong className="text-sm text-brand">{listing.base_price ? `${listing.base_price} د.أ` : "عرض سعر"}</strong></div>
+                {listing.moderation_notes && <p className="mt-3 rounded-xl bg-[rgb(var(--warning)/0.1)] p-3 text-xs">ملاحظة المراجعة: {listing.moderation_notes}</p>}
+                <div className="mt-4 flex flex-wrap gap-2 border-t border-theme pt-4">
+                  {listing.status !== "PUBLISHED" && <button onClick={() => edit(listing)} className="secondary-button !min-h-9 gap-1 !px-3"><Pencil size={14}/>تعديل</button>}
+                  {listing.status === "PUBLISHED" || listing.status === "PENDING_REVIEW"
+                    ? <button onClick={() => publication(listing,false)} className="secondary-button !min-h-9 !px-3">إيقاف</button>
+                    : <button onClick={() => publication(listing,true)} className="brand-button !min-h-9 gap-1 !px-3 !py-1"><Send size={14}/>إرسال للنشر</button>}
+                  <label className="secondary-button !min-h-9 cursor-pointer gap-1 !px-3"><ImagePlus size={14}/>صورة
+                    <input type="file" accept="image/jpeg,image/png,image/webp" className="sr-only" onChange={(e) => { void upload(listing,e.target.files?.[0]); e.currentTarget.value=""; }} />
+                  </label>
+                  {["DRAFT","REJECTED"].includes(listing.status) && <button onClick={() => remove(listing)} className="secondary-button !min-h-9 gap-1 !px-3 text-[rgb(var(--danger))]"><Trash2 size={14}/>حذف</button>}
+                </div>
+                {listing.status === "PUBLISHED" && <a href={`/listings/${listing.slug}`} className="mt-4 inline-flex items-center gap-1 text-xs font-bold text-brand">شوفها مثل العميل <ArrowLeft size={14}/></a>}
+              </div>
+            </article>
+          ))}
+        </div> : <div className="rounded-[1.75rem] border border-dashed border-[rgb(var(--primary)/0.3)] p-10 text-center text-sm text-muted">لسه ما أنشأت أي عرض. ابدأ من النموذج فوق.</div>}
       </section>
     </div>
   );

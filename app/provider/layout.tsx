@@ -1,30 +1,70 @@
 import Link from "next/link";
+import {
+  ArrowLeft,
+  BriefcaseBusiness,
+  CalendarDays,
+  FileQuestion,
+  Home,
+  Images,
+  UserRound,
+} from "lucide-react";
 
 const links = [
-  ["/provider", "الطلبات الحالية"],
-  ["/provider/listings", "عروض الخدمات"],
-  ["/provider/quotes", "طلبات عروض الأسعار"],
-  ["/provider/posts", "المحتوى المهني"],
-  ["/provider/schedule", "جدول العمل"],
-  ["/provider/profile", "الملف المهني"],
+  { href: "/provider", label: "الرئيسية", icon: Home },
+  { href: "/provider/listings", label: "خدماتي", icon: BriefcaseBusiness },
+  { href: "/provider/quotes", label: "عروض الأسعار", icon: FileQuestion },
+  { href: "/provider/posts", label: "أعمالي", icon: Images },
+  { href: "/provider/schedule", label: "جدولي", icon: CalendarDays },
+  { href: "/provider/profile", label: "ملفي", icon: UserRound },
 ] as const;
 
-export default function ProviderLayout({ children }: { children: React.ReactNode }) {
+export default function ProviderLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
-    <div className="flex min-h-screen flex-col bg-canvas md:flex-row">
-      <aside className="w-full border-b border-theme bg-surface p-4 md:w-64 md:border-b-0 md:border-l md:p-6">
-        <div className="border-b border-theme pb-4">
-          <Link href="/provider" className="text-lg font-black"><span className="text-brand">جسر</span> | مساحة المزود</Link>
-          <p className="mt-1 text-xs text-muted">إدارة العمل والحضور المهني</p>
-        </div>
-        <nav aria-label="مساحة مقدم الخدمة" className="mt-4 flex gap-2 overflow-x-auto text-xs font-bold md:flex-col md:gap-1 md:overflow-visible md:text-sm">
-          {links.map(([href, label]) => <Link key={href} href={href} className="shrink-0 rounded-lg p-2.5 transition hover:bg-surface-muted hover:text-brand">{label}</Link>)}
-          <div className="hidden border-t border-theme pt-4 md:block">
-            <Link href="/" className="secondary-button w-full !px-3">العودة للسوق</Link>
+    <div className="min-h-screen bg-canvas">
+      <div className="border-b border-theme bg-[rgb(var(--surface)/0.86)] backdrop-blur-xl">
+        <div className="mx-auto max-w-6xl px-4 py-3 sm:px-6">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className="text-[9px] font-bold tracking-[.08em] text-brand">
+                مساحة مقدم الخدمة
+              </p>
+              <h2 className="mt-0.5 text-sm font-bold">
+                أدِر شغلك من مكان واحد
+              </h2>
+            </div>
+
+            <Link
+              href="/"
+              className="inline-flex items-center gap-1 rounded-full border border-theme bg-surface px-3 py-2 text-[10px] font-bold transition hover:text-brand"
+            >
+              السوق
+              <ArrowLeft size={13} />
+            </Link>
           </div>
-        </nav>
-      </aside>
-      <div className="min-w-0 flex-1 overflow-x-hidden p-2 md:p-6">{children}</div>
+
+          <nav
+            aria-label="مساحة مقدم الخدمة"
+            className="hide-scrollbar mt-3 flex gap-2 overflow-x-auto pb-1"
+          >
+            {links.map(({ href, label, icon: Icon }) => (
+              <Link
+                key={href}
+                href={href}
+                className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-theme bg-surface px-3 py-2 text-[10px] font-bold text-muted transition hover:border-[rgb(var(--primary)/0.35)] hover:text-brand"
+              >
+                <Icon size={14} />
+                {label}
+              </Link>
+            ))}
+          </nav>
+        </div>
+      </div>
+
+      {children}
     </div>
   );
 }

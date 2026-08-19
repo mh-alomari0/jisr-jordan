@@ -1,11 +1,21 @@
 import { createServerClient } from "@supabase/ssr";
-import { createClient as createSupabaseClient, type SupabaseClient } from "@supabase/supabase-js";
+import {
+  createClient as createSupabaseClient,
+  type SupabaseClient,
+} from "@supabase/supabase-js";
 import { cookies } from "next/headers";
 
 /**
  * Creates a Supabase server client that respects RLS policies.
- * Use this for all normal user-facing operations (queries, inserts, updates).
- * Cookies are properly handled for session refresh.
+ *
+ * Important:
+ * - Server Components are allowed to READ cookies.
+ * - Next.js does not allow Server Components to WRITE cookies while rendering.
+ * - Supabase may call setAll() while trying to refresh an auth session.
+ * - The proxy is responsible for refreshing the browser session on normal requests.
+ *
+ * In Server Actions / Route Handlers, cookieStore.set() is allowed and succeeds.
+ * In Server Components, the write throws and is intentionally ignored.
  */
 export async function createServerSupabaseClient() {
   const cookieStore = await cookies();
@@ -18,27 +28,35 @@ export async function createServerSupabaseClient() {
         getAll() {
           return cookieStore.getAll();
         },
+
         setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) =>
-            cookieStore.set(name, value, options)
-          );
+          try {
+            cookiesToSet.forEach(({ name, value, options }) => {
+              cookieStore.set(name, value, options);
+            });
+          } catch {
+            // Expected when called during Server Component rendering.
+            // Session refresh is handled by lib/supabase/proxy.ts.
+          }
         },
       },
-    }
+    },
   );
 }
 
 /**
  * Creates a Supabase admin client using the service role key.
- * BYPASSES RLS — use ONLY where explicitly required (e.g., webhooks, system operations).
- * Never expose this client to user-facing flows.
+ * BYPASSES RLS — use ONLY where explicitly required
+ * (webhooks/system/admin-only operations).
  */
 export function createAdminSupabaseClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
   if (!url || !key) {
-    throw new Error("Missing SUPABASE_SERVICE_ROLE_KEY or NEXT_PUBLIC_SUPABASE_URL");
+    throw new Error(
+      "Missing SUPABASE_SERVICE_ROLE_KEY or NEXT_PUBLIC_SUPABASE_URL",
+    );
   }
 
   return createSupabaseClient(url, key, {
@@ -50,21 +68,31 @@ export function createAdminSupabaseClient() {
 }
 
 /**
- * Helper: get the authenticated user or return null.
- * Centralizes the most common auth pattern used across server actions.
+ * Returns the authenticated user, or null.
  */
-export async function getAuthenticatedUser(supabase?: SupabaseClient) {
-  const client = supabase ?? await createServerSupabaseClient();
-  const { data: { user }, error } = await client.auth.getUser();
+export async function getAuthenticatedUser(
+  supabase?: SupabaseClient,
+) {
+  const client =
+    supabase ?? (await createServerSupabaseClient());
+
+  const {
+    data: { user },
+    error,
+  } = await client.auth.getUser();
+
   if (error || !user) return null;
+
   return user;
 }
 
 /**
- * Helper: verify the user has an admin role (ADMIN or SUPER_ADMIN).
- * Returns the role string or null if not admin.
+ * Returns ADMIN / SUPER_ADMIN role, otherwise null.
  */
-export async function getUserRole(supabase: SupabaseClient, userId: string): Promise<string | null> {
+export async function getUserRole(
+  supabase: SupabaseClient,
+  userId: string,
+): Promise<string | null> {
   const { data: profile } = await supabase
     .from("users")
     .select("role")
@@ -74,16 +102,20 @@ export async function getUserRole(supabase: SupabaseClient, userId: string): Pro
   return profile?.role || null;
 }
 
-/**
- * Helper: check if a role is an admin-level role.
- */
-export function isAdminRole(role: string | null): boolean {
-  return !!role && ["ADMIN", "SUPER_ADMIN"].includes(role);
+export function isAdminRole(
+  role: string | null,
+): boolean {
+  return (
+    !!role &&
+    ["ADMIN", "SUPER_ADMIN"].includes(role)
+  );
 }
 
-/**
- * Helper: check if a role is staff-level or above.
- */
-export function isStaffOrAbove(role: string | null): boolean {
-  return !!role && ["STAFF", "ADMIN", "SUPER_ADMIN"].includes(role);
+export function isStaffOrAbove(
+  role: string | null,
+): boolean {
+  return (
+    !!role &&
+    ["STAFF", "ADMIN", "SUPER_ADMIN"].includes(role)
+  );
 }

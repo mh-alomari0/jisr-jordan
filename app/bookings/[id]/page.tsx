@@ -3,9 +3,7 @@ import { createServerSupabaseClient } from "@/lib/supabase/server";
 import BookingDetailClient from "./_components/booking-detail-client";
 import { getBookingDetailAction } from "@/lib/actions/booking-detail";
 
-export const metadata = {
-  title: "تفاصيل الحجز | جسر الأردن",
-};
+export const metadata = { title: "تفاصيل الحجز | جسر الأردن" };
 
 export default async function BookingDetailPage(props: { params: Promise<{ id: string }> }) {
   const { id } = await props.params;
@@ -16,19 +14,18 @@ export default async function BookingDetailPage(props: { params: Promise<{ id: s
   const result = await getBookingDetailAction(id);
 
   if (!result.success || !result.booking) {
-    if (result.code === "FORBIDDEN") {
-      return <div className="max-w-3xl mx-auto py-12 px-4 text-center text-red-600"><p>غير مصرح لك بعرض هذا الحجز</p></div>;
-    }
-    return <div className="max-w-3xl mx-auto py-12 px-4 text-center text-red-600"><p>{result.error || "الحجز غير موجود"}</p></div>;
+    return (
+      <main className="mx-auto max-w-4xl px-4 py-12">
+        <div className="rounded-[1.8rem] border border-theme bg-surface p-8 text-center text-sm text-[rgb(var(--danger))]">
+          {result.code === "FORBIDDEN" ? "غير مصرح لك بعرض هذا الحجز" : result.error || "الحجز غير موجود"}
+        </div>
+      </main>
+    );
   }
 
   return (
-    <div className="max-w-3xl mx-auto py-8 px-4">
-      <BookingDetailClient
-        booking={result.booking}
-        payment={result.payment ?? null}
-        hasReviewed={result.hasReviewed ?? false}
-      />
-    </div>
+    <main className="mx-auto max-w-4xl px-4 py-8 sm:px-6 sm:py-12">
+      <BookingDetailClient booking={result.booking} payment={result.payment ?? null} hasReviewed={result.hasReviewed ?? false} />
+    </main>
   );
 }

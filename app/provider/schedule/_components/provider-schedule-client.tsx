@@ -1,7 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { updateProviderScheduleAction, ScheduleSlot } from "@/lib/actions/provider-schedule";
+import {
+  CheckCircle2,
+  Clock3,
+  Save,
+} from "lucide-react";
+import {
+  updateProviderScheduleAction,
+  type ScheduleSlot,
+} from "@/lib/actions/provider-schedule";
 
 const DAYS = [
   "الأحد",
@@ -19,89 +27,182 @@ export default function ProviderScheduleClient({
   initialSchedule: ScheduleSlot[];
 }) {
   const [loading, setLoading] = useState(false);
-  const [slots, setSlots] = useState<ScheduleSlot[]>(() => {
-    return DAYS.map((_, index) => {
-      const existing = initialSchedule.find((s) => s.day_of_week === index);
+  const [message, setMessage] = useState("");
+  const [slots, setSlots] = useState<ScheduleSlot[]>(() =>
+    DAYS.map((_, index) => {
+      const existing = initialSchedule.find(
+        (s) => s.day_of_week === index,
+      );
+
       return (
         existing || {
           day_of_week: index,
           start_time: "09:00",
           end_time: "17:00",
-          is_active: index !== 5, // الجمعة مغلق إفتراضياً
+          is_active: index !== 5,
         }
       );
-    });
-  });
+    }),
+  );
+
+  const activeDays = slots.filter(
+    (slot) => slot.is_active,
+  ).length;
 
   const handleToggle = (dayIndex: number) => {
     setSlots((prev) =>
-      prev.map((s) => (s.day_of_week === dayIndex ? { ...s, is_active: !s.is_active } : s))
+      prev.map((slot) =>
+        slot.day_of_week === dayIndex
+          ? { ...slot, is_active: !slot.is_active }
+          : slot,
+      ),
     );
   };
 
-  const handleTimeChange = (dayIndex: number, field: "start_time" | "end_time", value: string) => {
+  const handleTimeChange = (
+    dayIndex: number,
+    field: "start_time" | "end_time",
+    value: string,
+  ) => {
     setSlots((prev) =>
-      prev.map((s) => (s.day_of_week === dayIndex ? { ...s, [field]: value } : s))
+      prev.map((slot) =>
+        slot.day_of_week === dayIndex
+          ? { ...slot, [field]: value }
+          : slot,
+      ),
     );
   };
 
   const handleSave = async () => {
     setLoading(true);
-    const res = await updateProviderScheduleAction(slots);
-    if (res.success) {
-      alert("تم حفظ جدول أوقات العمل بنجاح");
-    } else {
-      alert(res.error || "حدث خطأ أثناء الحفظ");
-    }
+    setMessage("");
+
+    const result = await updateProviderScheduleAction(slots);
+
+    setMessage(
+      result.success
+        ? "تم حفظ جدول أوقات العمل بنجاح."
+        : result.error || "حدث خطأ أثناء الحفظ",
+    );
+
     setLoading(false);
   };
 
   return (
-    <div className="bg-white border rounded-xl p-6 shadow-sm space-y-6">
-      <div className="space-y-4">
-        {slots.map((slot) => (
-          <div key={slot.day_of_week} className="flex flex-wrap items-center justify-between border-b pb-3 gap-4">
-            <div className="flex items-center gap-3 w-32">
-              <input
-                type="checkbox"
-                checked={slot.is_active}
-                onChange={() => handleToggle(slot.day_of_week)}
-                className="h-4 w-4 rounded border-gray-300 text-black focus:ring-black"
-              />
-              <span className={`text-sm font-medium ${slot.is_active ? "text-gray-900" : "text-gray-400"}`}>
-                {DAYS[slot.day_of_week]}
-              </span>
-            </div>
+    <section className="overflow-hidden rounded-[2rem] border border-theme bg-surface shadow-soft">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-theme p-5 sm:p-6">
+        <div>
+          <p className="text-[10px] font-bold text-brand">
+            أسبوع العمل
+          </p>
+          <h2 className="mt-1 text-xl font-bold">
+            {activeDays} أيام مفعلة
+          </h2>
+        </div>
 
-            <div className="flex items-center gap-2 dir-ltr">
-              <input
-                type="time"
-                disabled={!slot.is_active}
-                value={slot.start_time}
-                onChange={(e) => handleTimeChange(slot.day_of_week, "start_time", e.target.value)}
-                className="border rounded p-1 text-sm disabled:bg-gray-100"
-              />
-              <span className="text-gray-500 text-xs">إلى</span>
-              <input
-                type="time"
-                disabled={!slot.is_active}
-                value={slot.end_time}
-                onChange={(e) => handleTimeChange(slot.day_of_week, "end_time", e.target.value)}
-                className="border rounded p-1 text-sm disabled:bg-gray-100"
-              />
-            </div>
-          </div>
-        ))}
+        <span className="rounded-full bg-surface-muted px-3 py-1.5 text-[10px] font-bold text-muted">
+          توقيت الأردن
+        </span>
       </div>
 
-      <button
-        type="button"
-        disabled={loading}
-        onClick={handleSave}
-        className="bg-black text-white px-6 py-2.5 rounded-lg text-sm font-medium hover:bg-gray-800 disabled:opacity-50"
-      >
-        {loading ? "جاري الحفظ..." : "حفظ الأوقات"}
-      </button>
-    </div>
+      <div className="divide-y divide-[rgb(var(--border))]">
+        {slots.map((slot) => {
+          const active = slot.is_active;
+
+          return (
+            <div
+              key={slot.day_of_week}
+              className={`grid gap-4 p-4 transition sm:grid-cols-[180px_1fr] sm:items-center sm:p-5 ${
+                active
+                  ? ""
+                  : "bg-surface-muted/60 opacity-70"
+              }`}
+            >
+              <label className="flex cursor-pointer items-center gap-3">
+                <input
+                  type="checkbox"
+                  checked={active}
+                  onChange={() =>
+                    handleToggle(slot.day_of_week)
+                  }
+                />
+
+                <span
+                  className={`flex h-10 w-10 items-center justify-center rounded-2xl ${
+                    active
+                      ? "bg-[rgb(var(--primary-soft))] text-brand"
+                      : "bg-surface-muted text-muted"
+                  }`}
+                >
+                  <Clock3 size={16} />
+                </span>
+
+                <span>
+                  <strong className="block text-sm">
+                    {DAYS[slot.day_of_week]}
+                  </strong>
+                  <span className="text-[9px] text-muted">
+                    {active ? "متاح للحجوزات" : "مغلق"}
+                  </span>
+                </span>
+              </label>
+
+              <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2" dir="ltr">
+                <input
+                  type="time"
+                  disabled={!active}
+                  value={slot.start_time}
+                  onChange={(e) =>
+                    handleTimeChange(
+                      slot.day_of_week,
+                      "start_time",
+                      e.target.value,
+                    )
+                  }
+                  className="form-field text-center"
+                />
+
+                <span className="text-[10px] text-muted">
+                  إلى
+                </span>
+
+                <input
+                  type="time"
+                  disabled={!active}
+                  value={slot.end_time}
+                  onChange={(e) =>
+                    handleTimeChange(
+                      slot.day_of_week,
+                      "end_time",
+                      e.target.value,
+                    )
+                  }
+                  className="form-field text-center"
+                />
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="border-t border-theme p-5 sm:p-6">
+        {message && (
+          <p className="mb-4 flex items-center gap-2 rounded-2xl bg-[rgb(var(--primary-soft))] p-3 text-xs">
+            <CheckCircle2 size={15} className="text-brand" />
+            {message}
+          </p>
+        )}
+
+        <button
+          type="button"
+          disabled={loading}
+          onClick={handleSave}
+          className="brand-button w-full gap-2 sm:w-auto"
+        >
+          <Save size={15} />
+          {loading ? "جاري الحفظ..." : "حفظ أوقات العمل"}
+        </button>
+      </div>
+    </section>
   );
 }

@@ -2,9 +2,41 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Heart, Menu, MessageCircle, Search, X } from "lucide-react";
+import {
+  BriefcaseBusiness,
+  Compass,
+  Heart,
+  Home,
+  Menu,
+  MessageCircle,
+  Settings,
+  X,
+} from "lucide-react";
 import NotificationsBell from "./notifications-bell";
 import ThemeToggle from "./theme-toggle";
+
+function Brand() {
+  return (
+    <Link
+      href="/"
+      className="flex shrink-0 items-center gap-2.5"
+      aria-label="جسر الأردن — الرئيسية"
+    >
+      <span className="brand-mark h-10 w-10 text-lg" aria-hidden="true">
+        ج
+      </span>
+
+      <span className="leading-none">
+        <span className="block text-[17px] font-bold tracking-[-.04em]">
+          جسر
+        </span>
+        <span className="mt-1 block text-[9px] font-medium tracking-[.18em] text-muted">
+          JISR · JORDAN
+        </span>
+      </span>
+    </Link>
+  );
+}
 
 export default function Navbar({
   userRole,
@@ -14,104 +46,200 @@ export default function Navbar({
   isAuthenticated?: boolean;
 }) {
   const [mobileOpen, setMobileOpen] = useState(false);
+
   const isAdmin = ["ADMIN", "SUPER_ADMIN"].includes(userRole || "");
   const isProvider = ["STAFF", "ADMIN", "SUPER_ADMIN"].includes(userRole || "");
 
   const close = () => setMobileOpen(false);
-  const navLinks = (
-    <>
-      <Link href="/discover" className="transition hover:text-brand" onClick={close}>استكشاف</Link>
-      <Link href="/discover" className="transition hover:text-brand" onClick={close}>الخدمات</Link>
-      {isAuthenticated && <Link href="/quotes" className="transition hover:text-brand" onClick={close}>عروض الأسعار</Link>}
-      {isProvider && <Link href="/provider" className="font-bold text-brand" onClick={close}>مساحة مقدم الخدمة</Link>}
-      {isAdmin && <Link href="/admin" className="font-bold text-brand" onClick={close}>الإدارة</Link>}
-    </>
-  );
+
+  const primaryLinks = [
+    { href: "/", label: "الرئيسية" },
+    { href: "/discover", label: "اكتشف" },
+    ...(isAuthenticated ? [{ href: "/bookings", label: "طلباتي" }] : []),
+    ...(isAuthenticated ? [{ href: "/messages", label: "الرسائل" }] : []),
+  ];
 
   return (
-    <header className="sticky top-0 z-40 border-b border-theme bg-[rgb(var(--surface)/0.94)] backdrop-blur-xl">
-      <div className="mx-auto flex h-16 max-w-7xl items-center gap-3 px-3 sm:px-5">
-        <Link href="/" className="shrink-0 text-lg font-black tracking-tight text-[rgb(var(--text-main))]" aria-label="جسر الأردن — الرئيسية">
-          <span className="text-brand">جسر</span> الأردن
-        </Link>
+    <header className="sticky top-0 z-40 border-b border-theme bg-[rgb(var(--canvas)/0.9)] backdrop-blur-xl">
+      <div className="relative mx-auto flex h-[72px] max-w-6xl items-center justify-between px-4 sm:px-6">
+        <Brand />
 
-        <form action="/discover" role="search" className="mx-auto hidden w-full max-w-xl lg:block">
-          <label htmlFor="nav-search" className="sr-only">ابحث عن خدمة أو مقدم خدمة</label>
-          <div className="relative">
-            <Search className="pointer-events-none absolute end-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" aria-hidden="true" />
-            <input id="nav-search" name="q" type="search" maxLength={120}
-              placeholder="محتاج مدرس رياضيات، مبرمج متجر، سباك في عمّان..."
-              className="h-11 w-full rounded-full border border-theme bg-[rgb(var(--surface-muted))] pe-10 ps-4 text-sm outline-none transition focus:bg-[rgb(var(--surface))]" />
-          </div>
-        </form>
-
-        <nav aria-label="التنقل الرئيسي" className="hidden shrink-0 items-center gap-4 text-xs font-bold xl:flex">
-          {navLinks}
+        <nav
+          aria-label="التنقل الرئيسي"
+          className="absolute left-1/2 hidden -translate-x-1/2 items-center gap-1 md:flex"
+        >
+          {primaryLinks.map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              className="whitespace-nowrap rounded-xl px-4 py-2.5 text-xs font-semibold text-muted transition hover:bg-surface-muted hover:text-[rgb(var(--text-main))]"
+            >
+              {item.label}
+            </Link>
+          ))}
         </nav>
 
-        <div className="ms-auto flex shrink-0 items-center gap-1.5">
+        <div className="flex shrink-0 items-center gap-2">
+          {isAuthenticated && <NotificationsBell />}
           <ThemeToggle />
+
           {isAuthenticated ? (
-            <>
-              <Link href="/messages" aria-label="الرسائل"
-                className="hidden h-10 w-10 items-center justify-center rounded-full border border-theme transition hover:bg-surface-muted sm:inline-flex">
-                <MessageCircle className="h-4 w-4" aria-hidden="true" />
-              </Link>
-              <Link href="/favorites" aria-label="المفضلة"
-                className="hidden h-10 w-10 items-center justify-center rounded-full border border-theme transition hover:bg-surface-muted sm:inline-flex">
-                <Heart className="h-4 w-4" aria-hidden="true" />
-              </Link>
-              <NotificationsBell />
-              <Link href="/profile" className="hidden rounded-full bg-[rgb(var(--primary-soft))] px-3 py-2 text-xs font-bold text-brand sm:inline-block">
-                حسابي
-              </Link>
-            </>
+            <Link
+              href="/profile"
+              className="hidden h-10 items-center gap-2 rounded-full border border-theme bg-surface px-3 text-xs font-semibold sm:flex"
+            >
+              <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-[rgb(var(--accent-sand)/0.45)] text-[10px] font-bold">
+                ج
+              </span>
+              حسابي
+            </Link>
           ) : (
             <div className="hidden items-center gap-2 sm:flex">
-              <Link href="/login" className="px-2 py-2 text-xs font-bold">دخول</Link>
-              <Link href="/register" className="brand-button !min-h-10 !rounded-full !px-4 !py-1.5">إنشاء حساب</Link>
+              <Link
+                href="/login"
+                className="rounded-full border border-theme bg-surface px-4 py-2.5 text-xs font-semibold"
+              >
+                تسجيل الدخول
+              </Link>
+              <Link
+                href="/register"
+                className="rounded-full bg-[rgb(var(--primary))] px-4 py-2.5 text-xs font-bold text-white"
+              >
+                إنشاء حساب
+              </Link>
             </div>
           )}
-          <button type="button"
-            className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-theme xl:hidden"
+
+          <button
+            type="button"
             onClick={() => setMobileOpen((open) => !open)}
+            className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-theme bg-surface md:hidden"
             aria-label={mobileOpen ? "إغلاق القائمة" : "فتح القائمة"}
             aria-expanded={mobileOpen}
-            aria-controls="mobile-navigation">
-            {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            aria-controls="mobile-navigation"
+          >
+            {mobileOpen ? <X size={19} /> : <Menu size={19} />}
           </button>
         </div>
       </div>
 
+      {(isProvider || isAdmin) && (
+        <div className="hidden border-t border-theme/70 md:block">
+          <div className="mx-auto flex h-9 max-w-6xl items-center justify-center gap-2 px-6 text-[10px] font-semibold">
+            {isProvider && (
+              <Link
+                href="/provider"
+                className="rounded-full px-3 py-1 text-brand hover:bg-[rgb(var(--primary-soft))]"
+              >
+                مساحة مقدم الخدمة
+              </Link>
+            )}
+
+            {isAdmin && (
+              <Link
+                href="/admin"
+                className="rounded-full px-3 py-1 text-brand hover:bg-[rgb(var(--primary-soft))]"
+              >
+                الإدارة
+              </Link>
+            )}
+          </div>
+        </div>
+      )}
+
       {mobileOpen && (
-        <div id="mobile-navigation" className="border-t border-theme bg-surface xl:hidden">
-          <div className="mx-auto max-w-7xl space-y-4 px-4 py-4">
-            <form action="/discover" role="search" className="lg:hidden">
-              <label htmlFor="mobile-search" className="sr-only">ابحث في جسر الأردن</label>
-              <div className="relative">
-                <Search className="absolute end-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" aria-hidden="true" />
-                <input id="mobile-search" name="q" type="search" maxLength={120}
-                  placeholder="عن ماذا تبحث؟" className="form-field !rounded-full pe-10" />
-              </div>
-            </form>
-            <nav aria-label="القائمة الموسعة" className="grid gap-1 text-sm font-bold">
-              {navLinks}
-              {isAuthenticated ? (
-                <>
-                  <Link href="/favorites" onClick={close}>المفضلة</Link>
-                  <Link href="/messages" onClick={close}>الرسائل</Link>
-                  <Link href="/profile" onClick={close}>الملف الشخصي</Link>
-                </>
-              ) : (
-                <>
-                  <Link href="/login" onClick={close}>تسجيل الدخول</Link>
-                  <Link href="/register" onClick={close}>إنشاء حساب</Link>
-                </>
-              )}
-              {isAuthenticated && !isProvider && (
-                <Link href="/provider/apply" className="text-brand" onClick={close}>انضم كمقدم خدمة</Link>
-              )}
-            </nav>
+        <div
+          id="mobile-navigation"
+          className="page-reveal border-t border-theme bg-surface px-4 py-3 md:hidden"
+        >
+          <div className="mx-auto grid max-w-lg grid-cols-2 gap-2">
+            <Link
+              href="/"
+              onClick={close}
+              className="flex items-center gap-2 rounded-xl bg-surface-muted px-3 py-3 text-xs font-semibold"
+            >
+              <Home size={16} className="text-brand" />
+              الرئيسية
+            </Link>
+
+            <Link
+              href="/discover"
+              onClick={close}
+              className="flex items-center gap-2 rounded-xl bg-surface-muted px-3 py-3 text-xs font-semibold"
+            >
+              <Compass size={16} className="text-brand" />
+              اكتشف
+            </Link>
+
+            {isAuthenticated && (
+              <>
+                <Link
+                  href="/bookings"
+                  onClick={close}
+                  className="flex items-center gap-2 rounded-xl bg-surface-muted px-3 py-3 text-xs font-semibold"
+                >
+                  <BriefcaseBusiness size={16} className="text-brand" />
+                  طلباتي
+                </Link>
+
+                <Link
+                  href="/messages"
+                  onClick={close}
+                  className="flex items-center gap-2 rounded-xl bg-surface-muted px-3 py-3 text-xs font-semibold"
+                >
+                  <MessageCircle size={16} className="text-brand" />
+                  الرسائل
+                </Link>
+
+                <Link
+                  href="/favorites"
+                  onClick={close}
+                  className="flex items-center gap-2 rounded-xl bg-surface-muted px-3 py-3 text-xs font-semibold"
+                >
+                  <Heart size={16} className="text-brand" />
+                  المحفوظات
+                </Link>
+
+                <Link
+                  href="/profile"
+                  onClick={close}
+                  className="flex items-center gap-2 rounded-xl bg-surface-muted px-3 py-3 text-xs font-semibold"
+                >
+                  <Settings size={16} className="text-brand" />
+                  حسابي
+                </Link>
+              </>
+            )}
+
+            {!isAuthenticated && (
+              <>
+                <Link
+                  href="/login"
+                  onClick={close}
+                  className="flex items-center justify-center rounded-xl border border-theme bg-surface px-3 py-3 text-xs font-semibold"
+                >
+                  تسجيل الدخول
+                </Link>
+                <Link
+                  href="/register"
+                  onClick={close}
+                  className="flex items-center justify-center rounded-xl bg-[rgb(var(--primary))] px-3 py-3 text-xs font-bold text-white"
+                >
+                  إنشاء حساب
+                </Link>
+              </>
+            )}
+
+            {isAuthenticated && !isProvider && (
+              <Link
+                href="/provider/apply"
+                onClick={close}
+                className="col-span-2 flex items-center gap-2 rounded-xl bg-[rgb(var(--primary))] px-3 py-3 text-xs font-semibold text-white"
+              >
+                <BriefcaseBusiness size={16} />
+                سجّل كمقدم خدمة
+              </Link>
+            )}
           </div>
         </div>
       )}
