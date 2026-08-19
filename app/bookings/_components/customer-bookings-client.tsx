@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { cancelCustomerBookingAction } from "@/lib/actions/customer-bookings";
+import Link from "next/link";
 
 export interface CustomerBookingItem {
   id: string;
@@ -10,6 +11,9 @@ export interface CustomerBookingItem {
   phone?: string | null;
   booking_date?: string | null;
   start_time?: string | null;
+  listing_id?: string | null;
+  agreed_amount?: number | null;
+  workflow_type?: string | null;
   services?: {
     title?: string | null;
     price?: number | null;
@@ -53,7 +57,7 @@ export default function CustomerBookingsClient({ initialBookings }: { initialBoo
   return (
     <div className="grid gap-4 md:grid-cols-2">
       {initialBookings.map((b) => (
-        <div key={b.id} className="border rounded-xl p-5 bg-white shadow-sm space-y-3">
+        <article key={b.id} className="surface-card space-y-3 p-5">
           <div className="flex justify-between items-center">
             <h2 className="font-bold text-lg">{b.services?.title || "خدمة غير محددة"}</h2>
             {getStatusBadge(b.status)}
@@ -62,11 +66,13 @@ export default function CustomerBookingsClient({ initialBookings }: { initialBoo
           <div className="text-sm text-gray-600 space-y-1">
             <p><strong>الموعد:</strong> {b.booking_date} ({b.start_time})</p>
             <p><strong>العنوان:</strong> {b.address || "غير محدد"}</p>
-            {b.services?.price && <p><strong>السعر:</strong> {b.services.price} د.أ</p>}
+            {(b.agreed_amount || b.services?.price) && <p><strong>السعر المتفق:</strong> {b.agreed_amount || b.services?.price} د.أ</p>}
+            {b.workflow_type && b.workflow_type !== "LEGACY_HOME" && <p><strong>المسار:</strong> {b.workflow_type === "QUOTE_PROJECT" ? "عرض سعر مقبول" : "حجز عرض مباشر"}</p>}
           </div>
 
-          {b.status === "PENDING" && (
-            <div className="pt-3 border-t">
+          <div className="flex items-center justify-between gap-3 border-t pt-3">
+            <Link href={`/bookings/${b.id}`} className="text-xs font-black text-brand">عرض التفاصيل</Link>
+            {["PENDING", "CONFIRMED", "ASSIGNED"].includes(b.status) && (
               <button
                 type="button"
                 disabled={loadingId === b.id}
@@ -75,9 +81,9 @@ export default function CustomerBookingsClient({ initialBookings }: { initialBoo
               >
                 إلغاء الطلب المعلق
               </button>
-            </div>
-          )}
-        </div>
+            )}
+          </div>
+        </article>
       ))}
     </div>
   );

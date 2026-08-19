@@ -14,6 +14,10 @@ export interface ProviderBookingItem {
   phone?: string | null;
   booking_date?: string | null;
   start_time?: string | null;
+  listing_id?: string | null;
+  workflow_type?: string | null;
+  agreed_amount?: number | null;
+  currency?: string | null;
   services?: {
     title?: string | null;
     price?: number | null;
@@ -63,7 +67,7 @@ export async function getProviderBookingsAction() {
 
     const { data: bookings, error } = await supabase
       .from("bookings")
-      .select("id, customer_id, provider_id, service_id, service_title, booking_date, booking_time, start_time, end_time, status, notes, phone, address, payment_status, created_at, updated_at")
+      .select("id, customer_id, provider_id, service_id, listing_id, quote_id, service_title, workflow_type, delivery_type_snapshot, pricing_model_snapshot, agreed_amount, currency, booking_date, booking_time, start_time, end_time, status, notes, phone, address, payment_status, created_at, updated_at")
       .eq("provider_id", user.id)
       .order("created_at", { ascending: false })
       .limit(100);

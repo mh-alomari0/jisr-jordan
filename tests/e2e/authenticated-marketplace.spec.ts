@@ -29,11 +29,16 @@ test.describe("Live authenticated marketplace roles", () => {
     await page.goto("/provider");
     await expect(page).toHaveURL(/\/provider/);
     await expect(page.locator("main")).toBeVisible();
+    for (const path of ["/provider/listings", "/provider/quotes", "/provider/posts", "/provider/profile"]) {
+      await page.goto(path);
+      await expect(page).toHaveURL(new RegExp(path.replaceAll("/", "\\/")));
+      await expect(page.locator("main")).toBeVisible();
+    }
   });
 
   test("admin account can reach operational dashboards", async ({ page }) => {
     await login(page, admin);
-    for (const path of ["/admin", "/admin/providers", "/admin/bookings", "/admin/payments", "/admin/audit-logs"]) {
+    for (const path of ["/admin", "/admin/categories", "/admin/listings", "/admin/quotes", "/admin/content", "/admin/commissions", "/admin/providers", "/admin/bookings", "/admin/payments", "/admin/audit-logs"]) {
       await page.goto(path);
       await expect(page).toHaveURL(new RegExp(path.replaceAll("/", "\\/")));
       await expect(page.locator("main")).toBeVisible();

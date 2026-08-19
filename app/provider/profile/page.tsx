@@ -14,7 +14,7 @@ export default async function ProviderProfilePage() {
   const [{ data: profile }, { data: offered }, { data: services }] = await Promise.all([
     supabase
       .from("provider_profiles")
-      .select("bio, service_areas, experience, application_status, is_verified")
+      .select("bio, service_areas, experience, application_status, is_verified, headline, skills, remote_available, public_slug")
       .eq("user_id", user.id)
       .maybeSingle(),
     supabase
@@ -41,6 +41,10 @@ export default async function ProviderProfilePage() {
         serviceAreas: profile.service_areas || [],
         experience: profile.experience || "",
         serviceIds: (offered || []).map((item) => item.service_id),
+        headline: profile.headline || "",
+        skills: profile.skills || [],
+        remoteAvailable: profile.remote_available || false,
+        publicSlug: profile.public_slug || "",
       }}
       availableServices={services || []}
     />

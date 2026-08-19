@@ -103,3 +103,43 @@ export async function getServiceReviewsAction(serviceId: string) {
     return { success: false, error: "فشل جلب التقييمات" };
   }
 }
+
+const MarketplaceReviewSchema = z.object({
+  bookingId: z.string().uuid(),
+  rating: z.number().int().min(1).max(5),
+  comment: z.string().trim().max(1000),
+});
+
+export async function submitMarketplaceReviewAction(bookingId: string, rating: number, comment: string) {
+  const parsed = MarketplaceReviewSchema.safeParse({ bookingId, rating, comment });
+  if (!parsed.success) return { success: false as const, error: parsed.error.issues[0]?.message || "بيانات التقييم غير صالحة" };
+  try {
+    const supabase = await createReviewsClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { success: false as const, error: "يجب تسجيل الدخول" };
+    const rateLimit = await checkRateLimit(`review:marketplace:${user.id}`, { limit: 5, windowMs: 60 * 60_000 });
+    if (!rateLimit.success) return { success: false as const, error: rateLimit.error };
+    const { data: booking } = await supabase.from("bookings")
+      .select("id, listing_id, provider_id, status")
+      .eq("id", parsed.data.bookingId).eq("customer_id", user.id).maybeSingle();
+    if (!booking || booking.status !== "COMPLETED" || !booking.listing_id || !booking.provider_id) {
+      return { success: false as const, error: "يمكن تقييم معاملة سوق مكتملة تخص حسابك فقط" };
+    }
+    const { error } = await supabase.from("reviews").upsert({
+      booking_id: booking.id,
+      service_id: null,
+      listing_id: booking.listing_id,
+      provider_id: booking.provider_id,
+      customer_id: user.id,
+      rating: parsed.data.rating,
+      comment: parsed.data.comment,
+    }, { onConflict: "booking_id" });
+    if (error) return { success: false as const, error: "تعذر حفظ التقييم" };
+    revalidatePath(`/bookings/${booking.id}`);
+    revalidatePath(`/providers/${booking.provider_id}`);
+    revalidatePath("/discover");
+    return { success: true as const };
+  } catch {
+    return { success: false as const, error: "تعذر حفظ التقييم" };
+  }
+}

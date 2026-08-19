@@ -154,3 +154,34 @@ export async function updateProviderProfileAction(input: {
     return { success: false, error: "حدث خطأ أثناء التحديث" };
   }
 }
+
+const PublicProviderProfileSchema = z.object({
+  headline: z.string().trim().max(160),
+  skills: z.array(z.string().trim().min(2).max(60)).max(20),
+  remoteAvailable: z.boolean(),
+  publicSlug: z.string().trim().max(80).regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "الرابط المختصر يجب أن يكون إنجليزياً وبشرطات").or(z.literal("")),
+});
+
+export async function updateProviderPublicProfileAction(input: z.input<typeof PublicProviderProfileSchema>) {
+  const parsed = PublicProviderProfileSchema.safeParse(input);
+  if (!parsed.success) return { success: false as const, error: parsed.error.issues[0]?.message || "بيانات الملف العام غير صالحة" };
+  try {
+    const supabase = await createServerSupabaseClient();
+    const user = await getAuthenticatedUser(supabase);
+    if (!user) return { success: false as const, error: "يجب تسجيل الدخول" };
+    const { data, error } = await supabase.rpc("update_provider_public_profile", {
+      p_headline: parsed.data.headline,
+      p_skills: parsed.data.skills,
+      p_remote_available: parsed.data.remoteAvailable,
+      p_public_slug: parsed.data.publicSlug || null,
+    });
+    if (error || !data?.success) {
+      return { success: false as const, error: data?.error === "SLUG_TAKEN" ? "الرابط المختصر مستخدم" : "تعذر تحديث الملف المهني" };
+    }
+    revalidatePath("/provider/profile");
+    revalidatePath(`/providers/${user.id}`);
+    return { success: true as const };
+  } catch {
+    return { success: false as const, error: "تعذر تحديث الملف المهني" };
+  }
+}

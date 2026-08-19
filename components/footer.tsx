@@ -2,70 +2,40 @@ import Link from "next/link";
 
 export default function Footer() {
   return (
-    <footer className="bg-gray-900 text-gray-300 border-t border-gray-800 text-xs dir-rtl mt-auto">
-      <div className="container mx-auto px-6 py-10 grid gap-8 md:grid-cols-4 text-right">
+    <footer className="mt-auto border-t border-theme bg-[rgb(var(--surface))] text-xs text-muted">
+      <div className="container mx-auto grid gap-8 px-6 py-10 text-right md:grid-cols-4">
         <div className="space-y-3">
-          <h3 className="text-white text-base font-bold">جسر الأردن</h3>
-          <p className="text-gray-400 leading-relaxed">
-            المنصة المركزية لحجز وإدارة خدمات الصيانة المنزلية والاحترافية بأمان وسهولة داخل المملكة الأردنية الهاشمية.
+          <h3 className="text-base font-black text-[rgb(var(--text-main))]"><span className="text-brand">جسر</span> الأردن</h3>
+          <p className="leading-relaxed">
+            سوق أردني لاكتشاف مقدمي الخدمات والمهارات، والحجز المباشر أو طلب عرض سعر ضمن مسارات واضحة وآمنة.
           </p>
         </div>
-
         <div className="space-y-2">
-          <h4 className="text-white font-bold text-sm">روابط سريعة</h4>
+          <h4 className="text-sm font-bold text-[rgb(var(--text-main))]">السوق</h4>
           <ul className="space-y-1.5">
-            <li>
-              <Link href="/services" className="hover:text-white transition-colors">
-                دليل الخدمات
-              </Link>
-            </li>
-            <li>
-              <Link href="/bookings" className="hover:text-white transition-colors">
-                متابعة الحجوزات
-              </Link>
-            </li>
-            <li>
-              <Link href="/profile" className="hover:text-white transition-colors">
-                الملف الشخصي
-              </Link>
-            </li>
+            <li><Link href="/discover" className="transition hover:text-brand">استكشاف السوق</Link></li>
+            <li><Link href="/services" className="transition hover:text-brand">الخدمات المنزلية</Link></li>
+            <li><Link href="/bookings" className="transition hover:text-brand">متابعة الحجوزات</Link></li>
+            <li><Link href="/provider/apply" className="transition hover:text-brand">انضم كمقدم خدمة</Link></li>
           </ul>
         </div>
-
         <div className="space-y-2">
-          <h4 className="text-white font-bold text-sm">الدعم والسياسات</h4>
+          <h4 className="text-sm font-bold text-[rgb(var(--text-main))]">الدعم والثقة</h4>
           <ul className="space-y-1.5">
-            <li>
-              <Link href="/faq" className="hover:text-white transition-colors">
-                الأسئلة الشائعة
-              </Link>
-            </li>
-            <li>
-              <Link href="/terms" className="hover:text-white transition-colors">
-                الشروط والأحكام
-              </Link>
-            </li>
-            <li>
-              <Link href="/privacy" className="hover:text-white transition-colors">
-                سياسة الخصوصية
-              </Link>
-            </li>
-            <li>
-              <Link href="/contact" className="hover:text-white transition-colors">
-                تواصل معنا
-              </Link>
-            </li>
+            <li><Link href="/faq" className="transition hover:text-brand">الأسئلة الشائعة</Link></li>
+            <li><Link href="/terms" className="transition hover:text-brand">الشروط والأحكام</Link></li>
+            <li><Link href="/privacy" className="transition hover:text-brand">سياسة الخصوصية</Link></li>
+            <li><Link href="/contact" className="transition hover:text-brand">تواصل معنا</Link></li>
           </ul>
         </div>
-
         <div className="space-y-2">
-          <h4 className="text-white font-bold text-sm">تواصل معنا</h4>
-          <p className="text-gray-400">عمان / الزرقاء - المملكة الأردنية الهاشمية</p>
-          <p className="text-gray-400 dir-ltr text-right">support@jisr-jordan.com</p>
+          <h4 className="text-sm font-bold text-[rgb(var(--text-main))]">تواصل معنا</h4>
+          <p>المملكة الأردنية الهاشمية</p>
+          <p dir="ltr" className="text-right">support@jisr-jordan.com</p>
+          <p className="text-[10px]">قناة الدعم تتطلب تحقق المالك من جاهزية صندوق البريد قبل الإطلاق.</p>
         </div>
       </div>
-
-      <div className="border-t border-gray-800 py-4 text-center text-gray-500">
+      <div className="border-t border-theme py-4 text-center">
         © {new Date().getFullYear()} جسر الأردن. جميع الحقوق محفوظة.
       </div>
     </footer>

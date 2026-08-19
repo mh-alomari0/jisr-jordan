@@ -80,6 +80,7 @@ export default function ProviderBookingsClient({ initialBookings }: { initialBoo
                 <p><strong>الهاتف:</strong> {b.phone || "غير محدد"}</p>
                 <p><strong>العنوان:</strong> {b.address || "غير محدد"}</p>
                 {b.services?.price && <p><strong>القيمة:</strong> {b.services.price} د.أ</p>}
+                {b.workflow_type && b.workflow_type !== "LEGACY_HOME" && <p><strong>نوع الطلب:</strong> {b.workflow_type === "QUOTE_PROJECT" ? "عرض سعر" : "حجز مباشر"}</p>}
               </div>
 
               <div className="flex gap-2 pt-1">

@@ -1,5 +1,14 @@
 import type { NextConfig } from "next";
 
+const supabaseImageOrigin = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseImageHost = (() => {
+  try {
+    return supabaseImageOrigin ? new URL(supabaseImageOrigin).hostname : null;
+  } catch {
+    return null;
+  }
+})();
+
 const contentSecurityPolicy = [
   "default-src 'self'",
   `script-src 'self' 'unsafe-inline'${process.env.NODE_ENV === "development" ? " 'unsafe-eval'" : ""}`,
@@ -27,6 +36,14 @@ const securityHeaders = [
 const nextConfig: NextConfig = {
   turbopack: {
     root: process.cwd(),
+  },
+  images: {
+    remotePatterns: supabaseImageHost ? [{
+      protocol: "https",
+      hostname: supabaseImageHost,
+      port: "",
+      pathname: "/storage/v1/object/public/marketplace-public/**",
+    }] : [],
   },
   async headers() {
     return [

@@ -63,7 +63,7 @@ export async function getAdminBookingsAction(page = 1) {
     const from = (safePage - 1) * pageSize;
     const { data: bookings, error } = await supabase
       .from("bookings")
-      .select("id, customer_id, provider_id, service_id, service_title, booking_date, booking_time, start_time, end_time, status, notes, phone, address, payment_status, created_at, updated_at")
+      .select("id, customer_id, provider_id, service_id, listing_id, quote_id, service_title, workflow_type, delivery_type_snapshot, pricing_model_snapshot, agreed_amount, currency, booking_date, booking_time, start_time, end_time, status, notes, phone, address, payment_status, created_at, updated_at")
       .order("created_at", { ascending: false })
       .range(from, from + pageSize);
 

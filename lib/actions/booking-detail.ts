@@ -17,7 +17,7 @@ export async function getBookingDetailAction(bookingId: string) {
 
     const { data: booking, error } = await supabase
       .from("bookings")
-      .select("id, customer_id, provider_id, service_id, service_title, booking_date, booking_time, start_time, end_time, status, notes, phone, address, payment_status, created_at, updated_at")
+      .select("id, customer_id, provider_id, service_id, listing_id, quote_id, service_title, workflow_type, delivery_type_snapshot, pricing_model_snapshot, agreed_amount, currency, commission_rate_snapshot, commission_amount_snapshot, dispute_status, booking_date, booking_time, start_time, end_time, status, notes, phone, address, payment_status, created_at, updated_at")
       .eq("id", bookingId)
       .single();
 
@@ -30,8 +30,13 @@ export async function getBookingDetailAction(bookingId: string) {
       return { success: false, error: "غير مصرح لك بعرض هذا الحجز", code: "FORBIDDEN" };
     }
 
-    const [serviceResult, paymentResult, reviewResult, providerResult] = await Promise.all([
-      supabase.from("services").select("id, title, price, category").eq("id", booking.service_id).maybeSingle(),
+    const [serviceResult, listingResult, paymentResult, reviewResult, providerResult] = await Promise.all([
+      booking.service_id
+        ? supabase.from("services").select("id, title, price, category").eq("id", booking.service_id).maybeSingle()
+        : Promise.resolve({ data: null, error: null }),
+      booking.listing_id
+        ? supabase.from("service_listings").select("id, slug, title, category_id, service_categories(name_ar)").eq("id", booking.listing_id).maybeSingle()
+        : Promise.resolve({ data: null, error: null }),
       supabase.from("payments").select("id, amount, currency, payment_method, status").eq("booking_id", bookingId).order("created_at", { ascending: false }).limit(1).maybeSingle(),
       supabase.from("reviews").select("id").eq("booking_id", bookingId).eq("customer_id", user.id).maybeSingle(),
       booking.provider_id
@@ -43,7 +48,13 @@ export async function getBookingDetailAction(bookingId: string) {
       success: true,
       booking: {
         ...booking,
-        services: serviceResult.data || null,
+        services: serviceResult.data || (listingResult.data ? {
+          id: listingResult.data.id,
+          title: listingResult.data.title || booking.service_title,
+          price: booking.agreed_amount,
+          category: listingResult.data.service_categories?.[0]?.name_ar || null,
+        } : { id: booking.listing_id || booking.service_id || "", title: booking.service_title, price: booking.agreed_amount, category: null }),
+        listing: listingResult.data || null,
         users: providerResult.error ? null : providerResult.data,
       },
       payment: paymentResult.data || null,

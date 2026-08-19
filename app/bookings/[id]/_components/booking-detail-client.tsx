@@ -9,6 +9,7 @@ import {
 } from "@/lib/constants";
 import { cancelCustomerBookingAction } from "@/lib/actions/customer-bookings";
 import { createCODPaymentAction } from "@/lib/actions/cod-payment";
+import { submitMarketplaceReviewAction } from "@/lib/actions/reviews";
 
 interface BookingDetail {
   id: string;
@@ -19,10 +20,14 @@ interface BookingDetail {
   address: string;
   phone: string;
   notes: string | null;
-  service_id: string;
+  service_id: string | null;
+  listing_id?: string | null;
+  workflow_type?: string | null;
+  agreed_amount?: number | null;
   payment_status: string | null;
   created_at: string;
   services: { id: string; title: string; price: number; category: string } | null;
+  listing?: { id: string; slug: string; title: string } | null;
   users: { full_name: string; phone: string } | null; // provider info
 }
 
@@ -80,6 +85,9 @@ export default function BookingDetailClient({
   const [cancelLoading, setCancelLoading] = useState(false);
   const [codLoading, setCodLoading] = useState(false);
   const [actionError, setActionError] = useState("");
+  const [rating, setRating] = useState(5);
+  const [reviewComment, setReviewComment] = useState("");
+  const [reviewLoading, setReviewLoading] = useState(false);
 
   const service = booking.services;
   const provider = booking.users;
@@ -88,7 +96,7 @@ export default function BookingDetailClient({
     ["PENDING", "CONFIRMED", "ASSIGNED"].includes(booking.status) &&
     payment?.status !== "PAID";
   const canCreateCOD =
-    !payment && ["PENDING", "CONFIRMED"].includes(booking.status);
+    !payment && ["PENDING", "CONFIRMED", "ASSIGNED"].includes(booking.status);
   const isCompleted = booking.status === "COMPLETED";
 
   async function handleCancel() {
@@ -114,6 +122,15 @@ export default function BookingDetailClient({
       setActionError(res.error || "تعذر إنشاء طلب الدفع");
     }
     setCodLoading(false);
+  }
+
+  async function handleMarketplaceReview() {
+    setReviewLoading(true);
+    setActionError("");
+    const result = await submitMarketplaceReviewAction(booking.id, rating, reviewComment);
+    if (!result.success) setActionError(result.error || "تعذر حفظ التقييم");
+    else router.refresh();
+    setReviewLoading(false);
   }
 
   return (
@@ -265,6 +282,24 @@ export default function BookingDetailClient({
 
       {/* 8. Actions */}
       <div className="p-6 space-y-3">
+        {isCompleted && !hasReviewed && booking.listing_id && (
+          <div className="mb-4 rounded-xl bg-slate-50 p-4">
+            <h2 className="text-sm font-bold">قيّم مقدم الخدمة والمعاملة</h2>
+            <div className="mt-3 grid gap-3 sm:grid-cols-[120px_1fr]">
+              <label className="text-xs font-semibold">التقييم
+                <select value={rating} onChange={(event) => setRating(Number(event.target.value))} className="form-field mt-1.5">
+                  {[5, 4, 3, 2, 1].map((value) => <option key={value} value={value}>{value} نجوم</option>)}
+                </select>
+              </label>
+              <label className="text-xs font-semibold">تعليق اختياري
+                <textarea value={reviewComment} onChange={(event) => setReviewComment(event.target.value)} maxLength={1000} rows={2} className="form-field mt-1.5" />
+              </label>
+            </div>
+            <button type="button" onClick={handleMarketplaceReview} disabled={reviewLoading} className="brand-button mt-3">
+              {reviewLoading ? "جارٍ الحفظ..." : "حفظ التقييم"}
+            </button>
+          </div>
+        )}
         {actionError && (
           <div
             className="bg-rose-50 border border-rose-200 text-rose-700 text-sm rounded-lg p-3"
@@ -276,7 +311,7 @@ export default function BookingDetailClient({
 
         <div className="flex flex-wrap gap-2">
           {/* Review */}
-          {isCompleted && !hasReviewed && (
+          {isCompleted && !hasReviewed && !booking.listing_id && booking.service_id && (
             <Link
               href={`/services/${booking.service_id}?reviewBookingId=${booking.id}`}
               className="flex-1 min-w-[140px] text-center bg-emerald-600 hover:bg-emerald-700 text-white py-2.5 rounded-lg text-sm font-semibold transition-colors"
@@ -286,13 +321,16 @@ export default function BookingDetailClient({
           )}
 
           {/* Book again */}
-          {isCompleted && (
+          {isCompleted && !booking.listing_id && booking.service_id && (
             <Link
               href={`/booking?serviceId=${booking.service_id}`}
               className="flex-1 min-w-[140px] text-center bg-slate-900 hover:bg-slate-800 text-white py-2.5 rounded-lg text-sm font-semibold transition-colors"
             >
               حجز مرة أخرى
             </Link>
+          )}
+          {isCompleted && booking.listing?.slug && (
+            <Link href={`/listings/${booking.listing.slug}`} className="brand-button flex-1 min-w-[140px]">عرض الخدمة مرة أخرى</Link>
           )}
 
           {/* Cancel */}

@@ -4,6 +4,7 @@ import { cookies } from "next/headers";
 import { Cairo } from "next/font/google";
 import Navbar from "@/components/navbar";
 import Footer from "@/components/footer";
+import MobileBottomNav from "@/components/mobile-bottom-nav";
 import { getPublicAppOrigin } from "@/lib/app-url";
 import "./globals.css";
 
@@ -15,8 +16,8 @@ const cairo = Cairo({
 
 export const metadata: Metadata = {
   metadataBase: new URL(getPublicAppOrigin()),
-  title: "جسر الأردن | خدمات منزلية موثوقة",
-  description: "احجز وتابع خدمات الصيانة والتنظيف المنزلية في الأردن بخطوات واضحة ودفع نقدي عند إكمال الخدمة.",
+  title: { default: "جسر الأردن | سوق الخدمات والمهارات", template: "%s | جسر الأردن" },
+  description: "اكتشف مقدمي خدمات معتمدين في الأردن، قارن عروض الخدمات، احجز مباشرة أو اطلب عرض سعر بأمان.",
   applicationName: "جسر الأردن",
   manifest: "/manifest.json",
   icons: {
@@ -30,8 +31,8 @@ export const metadata: Metadata = {
     type: "website",
     locale: "ar_JO",
     siteName: "جسر الأردن",
-    title: "جسر الأردن | خدمات منزلية موثوقة",
-    description: "منصة عربية لحجز ومتابعة خدمات الصيانة والتنظيف المنزلية في الأردن.",
+    title: "جسر الأردن | سوق الخدمات والمهارات",
+    description: "منصة عربية لاكتشاف وحجز الخدمات المحلية والرقمية وطلب عروض الأسعار في الأردن.",
     url: "/",
   },
 };
@@ -70,11 +71,20 @@ export default async function RootLayout({
   }
 
   return (
-    <html lang="ar" dir="rtl" className={cairo.variable}>
-      <body className="min-h-screen bg-gray-50 flex flex-col font-cairo antialiased">
+    <html lang="ar" dir="rtl" className={cairo.variable} suppressHydrationWarning>
+      <body className="flex min-h-screen flex-col font-cairo antialiased">
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var m=localStorage.getItem('jisr-theme')||'system';var d=m==='dark'||(m==='system'&&matchMedia('(prefers-color-scheme: dark)').matches)?'dark':'light';document.documentElement.dataset.theme=d;document.documentElement.style.colorScheme=d}catch(e){document.documentElement.dataset.theme='light'}})()`,
+          }}
+        />
+        <a href="#main-content" className="fixed start-3 top-2 z-[100] -translate-y-20 rounded-lg bg-[rgb(var(--primary))] px-4 py-2 text-sm font-bold text-white transition focus:translate-y-0">
+          انتقل إلى المحتوى
+        </a>
         <Navbar userRole={userRole} isAuthenticated={!!user} />
-        <main className="flex-1">{children}</main>
+        <main id="main-content" className="flex-1">{children}</main>
         <Footer />
+        <MobileBottomNav />
       </body>
     </html>
   );

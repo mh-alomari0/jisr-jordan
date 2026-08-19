@@ -3,6 +3,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 type BookingWithServiceKey = {
   service_id?: string | null;
   service_title?: string | null;
+  agreed_amount?: number | null;
 };
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -37,7 +38,7 @@ export async function enrichBookingsWithServices<T extends BookingWithServiceKey
     ...booking,
     services: services.get(booking.service_id || "") || {
       title: booking.service_title || "خدمة منزلية",
-      price: null,
+      price: booking.agreed_amount ?? null,
       category: null,
     },
   }));
