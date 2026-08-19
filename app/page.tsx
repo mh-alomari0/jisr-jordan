@@ -2,14 +2,15 @@ import Link from "next/link";
 import {
   ArrowLeft,
   BriefcaseBusiness,
-  Camera,
   ChevronLeft,
+  Code2,
+  GraduationCap,
   Heart,
+  House,
   LayoutGrid,
-  Lightbulb,
-  Paintbrush,
-  Plus,
+  Palette,
   Search,
+  Shapes,
   Sparkles,
   Wrench,
 } from "lucide-react";
@@ -20,16 +21,36 @@ import {
   searchMarketplaceAction,
 } from "@/lib/actions/marketplace-discovery";
 
-const categoryVisuals = [
-  { icon: Wrench, tone: "bg-[#d8f0e9] text-[#087a72]" },
-  { icon: Sparkles, tone: "bg-[#fde4df] text-[#c7584d]" },
-  { icon: BriefcaseBusiness, tone: "bg-[#fbe8ba] text-[#8a641c]" },
-  { icon: Lightbulb, tone: "bg-[#e2e3f7] text-[#5d5799]" },
-  { icon: Paintbrush, tone: "bg-[#f9dce8] text-[#a14670]" },
-  { icon: Camera, tone: "bg-[#d9e9f4] text-[#38759a]" },
-  { icon: LayoutGrid, tone: "bg-[#e6e4db] text-[#607064]" },
-  { icon: Plus, tone: "bg-[#dcefe5] text-[#267a57]" },
-] as const;
+const categoryVisuals = {
+  "home-services": {
+    icon: House,
+    tone: "bg-[#d8f0e9] text-[#087a72]",
+  },
+  "technology-programming": {
+    icon: Code2,
+    tone: "bg-[#fde4df] text-[#c7584d]",
+  },
+  "education-training": {
+    icon: GraduationCap,
+    tone: "bg-[#fbe8ba] text-[#8a641c]",
+  },
+  "beauty-care": {
+    icon: Sparkles,
+    tone: "bg-[#f9dce8] text-[#a14670]",
+  },
+  "design-creative": {
+    icon: Palette,
+    tone: "bg-[#e2e3f7] text-[#5d5799]",
+  },
+  "maintenance-repair": {
+    icon: Wrench,
+    tone: "bg-[#e6e4db] text-[#607064]",
+  },
+  "other-services": {
+    icon: Shapes,
+    tone: "bg-[#dcefe5] text-[#267a57]",
+  },
+} as const;
 
 function SectionHeading({
   eyebrow,
@@ -78,9 +99,18 @@ export default async function HomePage() {
   ] = await Promise.all([
     getMarketplaceCategoriesAction(),
     getHomeServiceTaxonomyAction(),
-    searchMarketplaceAction({ scope: "PROVIDERS", pageSize: 4 }),
-    searchMarketplaceAction({ scope: "LISTINGS", pageSize: 4 }),
-    searchMarketplaceAction({ scope: "POSTS", pageSize: 4 }),
+    searchMarketplaceAction({
+      scope: "PROVIDERS",
+      pageSize: 4,
+    }),
+    searchMarketplaceAction({
+      scope: "LISTINGS",
+      pageSize: 4,
+    }),
+    searchMarketplaceAction({
+      scope: "POSTS",
+      pageSize: 4,
+    }),
   ]);
 
   const categories = categoriesResult.categories || [];
@@ -96,34 +126,41 @@ export default async function HomePage() {
   return (
     <div className="page-reveal pb-10 sm:pb-16">
       <section className="mx-auto max-w-6xl px-4 pb-12 pt-8 sm:px-6 sm:pt-12 lg:pb-16 lg:pt-16">
-        <div className="relative overflow-hidden rounded-[2rem] bg-[#0b817a] px-5 py-8 text-white shadow-lift sm:px-10 sm:py-12 lg:min-h-[520px] lg:px-16 lg:py-16">
+        <div className="relative overflow-hidden rounded-[2rem] bg-[#0b817a] px-5 py-8 text-white shadow-lift sm:px-10 sm:py-12 lg:min-h-[500px] lg:px-16 lg:py-16">
           <div className="absolute -left-10 -top-16 h-48 w-48 rounded-full border-[22px] border-[#5bc2ad]/30 sm:h-72 sm:w-72" />
           <div className="absolute -bottom-20 right-[18%] h-56 w-56 rounded-full bg-[#f9a48c]/20" />
 
           <div className="relative max-w-2xl">
-            <div className="mb-5 flex items-center gap-2 text-[10px] font-semibold text-[#c3eee2]">
-              <span>عمّان، الأردن</span>
-              <span className="h-1 w-1 rounded-full bg-[#f9a48c]" />
-              <span>خدمات قريبة منك</span>
-            </div>
-
             <h1 className="max-w-xl text-[2.35rem] font-bold leading-[1.2] tracking-[-.07em] sm:text-5xl lg:text-[4rem]">
-              خلّيها علينا،
+             الشغل عليك,
               <br />
-              <span className="text-[#ffd39a]">والجسر علينا.</span>
+              <span className="text-[#ffd39a]">
+               وعلينا نكبّر اسمك.
+              </span>
             </h1>
 
             <p className="mt-4 max-w-md text-sm leading-7 text-[#d7f2eb] sm:text-base">
-              كل خدمة تحتاجها، من ناس مستقلين بتعرف تعتمد عليهم. ابدأ باللي في بالك.
+              ابحث عن الخدمة التي تحتاجها، وشوف الخيارات
+              المتاحة ومقدميها من مكان واحد.
             </p>
 
-            <form action="/discover" role="search" className="mt-7 max-w-xl">
-              <label htmlFor="home-search" className="sr-only">
+            <form
+              action="/discover"
+              role="search"
+              className="mt-7 max-w-xl"
+            >
+              <label
+                htmlFor="home-search"
+                className="sr-only"
+              >
                 ابحث عن خدمة
               </label>
 
               <div className="hero-search-shell flex h-14 items-center gap-3 rounded-2xl border border-white/20 px-4">
-                <Search size={20} className="shrink-0 text-[#1ea59d]" />
+                <Search
+                  size={20}
+                  className="shrink-0 text-[#1ea59d]"
+                />
 
                 <input
                   id="home-search"
@@ -136,32 +173,12 @@ export default async function HomePage() {
 
                 <button
                   type="submit"
-                  className="hidden rounded-xl bg-[#1ea59d] px-4 py-2 text-xs font-bold text-white sm:block"
+                  className="hidden rounded-xl bg-[#1ea59d] px-4 py-2 text-xs font-bold text-white transition active:scale-[0.97] sm:block"
                 >
                   ابحث
                 </button>
               </div>
             </form>
-
-            <div className="mt-4 flex flex-wrap gap-2 text-[10px] text-[#d7f2eb]">
-              <span>جرّب:</span>
-              {["تصليح غسالة", "تنظيف البيت", "تصميم شعار"].map((term) => (
-                <Link
-                  key={term}
-                  href={`/discover?q=${encodeURIComponent(term)}`}
-                  className="rounded-full border border-white/20 px-3 py-1.5 transition hover:bg-white/10"
-                >
-                  {term}
-                </Link>
-              ))}
-            </div>
-          </div>
-
-          <div className="absolute bottom-7 left-8 hidden h-40 w-40 rotate-[-12deg] items-center justify-center rounded-[2.5rem] border border-white/20 bg-white/10 lg:flex">
-            <div className="h-24 w-24 rounded-full border border-[#ffd39a]/50 bg-[#ffd39a]/30" />
-            <span className="absolute bottom-5 text-[10px] font-bold tracking-widest text-[#d7f2eb]">
-              خدمة بتفرق
-            </span>
           </div>
         </div>
       </section>
@@ -174,33 +191,48 @@ export default async function HomePage() {
           action="كل التصنيفات"
         />
 
-        <div className="hide-scrollbar -mx-4 flex gap-3 overflow-x-auto px-4 pb-4 sm:mx-0 sm:grid sm:grid-cols-4 sm:gap-4 sm:overflow-visible sm:px-0 lg:grid-cols-8">
-          {categories.slice(0, 8).map((category, index) => {
-            const visual = categoryVisuals[index % categoryVisuals.length];
-            const Icon = visual.icon;
+        <div className="hide-scrollbar -mx-4 flex gap-3 overflow-x-auto px-4 pb-4 sm:mx-0 sm:grid sm:grid-cols-3 sm:gap-4 sm:overflow-visible sm:px-0 lg:grid-cols-4 xl:grid-cols-8">
+          {categories
+            .filter(
+              (category) =>
+                category.slug !== "business-consulting" &&
+                category.slug !== "events",
+            )
+            .slice(0, 8)
+            .map((category) => {
+              const visual =
+                categoryVisuals[
+                  category.slug as keyof typeof categoryVisuals
+                ] || {
+                  icon: LayoutGrid,
+                  tone: "bg-[#e6e4db] text-[#607064]",
+                };
 
-            return (
-              <Link
-                key={category.id}
-                href={`/discover?category=${category.id}`}
-                className="home-category-card group flex min-w-[142px] flex-col rounded-2xl border border-theme bg-surface p-3.5 transition hover:-translate-y-1 hover:shadow-soft sm:min-w-0"
-              >
-                <span
-                  className={`mb-5 flex h-12 w-12 items-center justify-center rounded-2xl ${visual.tone}`}
+              const Icon = visual.icon;
+
+              return (
+                <Link
+                  key={category.id}
+                  href={`/discover?category=${category.id}`}
+                  className="home-category-card group flex min-w-[142px] flex-col rounded-2xl border border-theme bg-surface p-3.5 transition hover:-translate-y-1 hover:shadow-soft sm:min-w-0"
                 >
-                  <Icon size={21} />
-                </span>
+                  <span
+                    className={`mb-5 flex h-12 w-12 items-center justify-center rounded-2xl ${visual.tone}`}
+                  >
+                    <Icon size={21} />
+                  </span>
 
-                <h3 className="home-category-title line-clamp-2 text-sm font-bold leading-5 tracking-[-.03em]">
-                  {category.name_ar}
-                </h3>
+                  <h3 className="home-category-title line-clamp-2 text-sm font-bold leading-5 tracking-[-.03em]">
+                    {category.name_ar}
+                  </h3>
 
-                <p className="home-category-copy mt-1 line-clamp-2 text-[10px] leading-5 text-muted">
-                  {category.description_ar || "خدمات تناسب احتياجك"}
-                </p>
-              </Link>
-            );
-          })}
+                  <p className="home-category-copy mt-1 line-clamp-2 text-[10px] leading-5 text-muted">
+                    {category.description_ar ||
+                      "خدمات تناسب احتياجك"}
+                  </p>
+                </Link>
+              );
+            })}
         </div>
       </section>
 
@@ -220,18 +252,15 @@ export default async function HomePage() {
             <div className="absolute -bottom-12 -left-5 h-48 w-48 rounded-full border-[26px] border-[#fff0df]/70" />
 
             <div className="relative max-w-xs">
-              <span className="inline-flex rounded-full bg-[#fff0df] px-3 py-1.5 text-[10px] font-bold text-[#9d5749]">
-                قريباً في جسر
-              </span>
-
-              <h3 className="mt-5 text-2xl font-bold leading-tight tracking-[-.05em] text-[#713f3c]">
+              <h3 className="text-2xl font-bold leading-tight tracking-[-.05em] text-[#713f3c]">
                 سوق الخدمات
                 <br />
                 عم يكبر معك.
               </h3>
 
               <p className="mt-4 text-xs leading-6 text-[#875651]">
-                لما تلاقي الخدمة اللي بدك إياها، رح تلاقي التفاصيل كلها بمكان واحد.
+                افتح المجال، اختار الخدمة، وبعدها شوف كل
+                مقدمي الخدمة المتاحين لها.
               </p>
             </div>
 
@@ -253,34 +282,14 @@ export default async function HomePage() {
             </h3>
 
             <p className="mt-3 text-xs leading-6 text-muted">
-              اعرض مهاراتك للناس اللي بتدور عليها. التسجيل بسيط وملفك تحت سيطرتك.
+              اعرض خدماتك للناس اللي بتدور عليها، وخلي ملفك
+              وخدماتك تحت سيطرتك.
             </p>
 
-            <span className="mt-7 inline-flex items-center gap-2 rounded-full border border-[rgb(var(--primary))] px-4 py-2.5 text-xs font-bold text-brand">
+            <span className="mt-7 inline-flex items-center gap-2 text-xs font-bold text-brand">
               اعرف أكثر
               <ArrowLeft size={14} />
             </span>
-          </Link>
-        </div>
-      </section>
-
-      <section className="mx-auto mt-12 max-w-6xl px-4 sm:px-6 lg:mt-20">
-        <SectionHeading eyebrow="المفضلة عندك" title="لسه ما حفظت أي خدمة" />
-
-        <div className="empty-state">
-          <span className="empty-state-icon">
-            <Heart size={24} />
-          </span>
-
-          <h3 className="text-base font-bold">مكتبتك الصغيرة فاضية</h3>
-
-          <p className="mx-auto mt-2 max-w-sm text-xs leading-6 text-muted">
-            احفظ الخدمات اللي بتعجبك عشان تلاقيها بسرعة وقت ما تحتاجها.
-          </p>
-
-          <Link href="/discover" className="brand-button mt-5">
-            اكتشف الخدمات
-            <ArrowLeft size={14} />
           </Link>
         </div>
       </section>
@@ -296,7 +305,10 @@ export default async function HomePage() {
 
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             {providers.map((result) => (
-              <SearchResultCard key={result.result_id} result={result} />
+              <SearchResultCard
+                key={result.result_id}
+                result={result}
+              />
             ))}
           </div>
         </section>
@@ -313,7 +325,10 @@ export default async function HomePage() {
 
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             {listings.map((result) => (
-              <SearchResultCard key={result.result_id} result={result} />
+              <SearchResultCard
+                key={result.result_id}
+                result={result}
+              />
             ))}
           </div>
         </section>
@@ -330,7 +345,10 @@ export default async function HomePage() {
 
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             {posts.map((result) => (
-              <SearchResultCard key={result.result_id} result={result} />
+              <SearchResultCard
+                key={result.result_id}
+                result={result}
+              />
             ))}
           </div>
         </section>

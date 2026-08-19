@@ -10,13 +10,14 @@ import {
 } from "lucide-react";
 import { getUserProfileAction } from "@/lib/actions/profile";
 import ProfileClient from "./_components/profile-client";
+import AccountActions from "./_components/account-actions";
 
 export const metadata = {
   title: "الملف الشخصي | جسر الأردن",
 };
 
 const links = [
-  ["/bookings", "حجوزاتي", "طلباتك الحالية والسابقة", CalendarDays],
+  ["/bookings", "طلباتي", "طلباتك الحالية والسابقة", CalendarDays],
   ["/messages", "الرسائل", "محادثاتك مع مقدمي الخدمة", MessageCircle],
   ["/favorites", "المفضلة", "الخدمات والأشخاص المحفوظون", Heart],
   ["/notifications", "الإشعارات", "التحديثات وتنبيهات الهاتف", Bell],
@@ -59,7 +60,10 @@ export default async function ProfilePage() {
       </section>
 
       <div className="mt-7 grid gap-6 lg:grid-cols-[1.15fr_.85fr]">
-        <ProfileClient initialProfile={result.profile} />
+        <div>
+          <ProfileClient initialProfile={result.profile} />
+          <AccountActions />
+        </div>
 
         <aside>
           <div className="mb-4">
