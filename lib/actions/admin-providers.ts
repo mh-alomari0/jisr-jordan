@@ -37,27 +37,68 @@ export interface AdminProvider {
   }[];
 }
 
+type ProviderProfileRow = {
+  id: string;
+  user_id: string;
+  bio: string | null;
+  service_areas: string[] | null;
+  experience: string | null;
+  application_status: string | null;
+  is_verified: boolean | null;
+  applied_at: string | null;
+  application_notes: string | null;
+  created_at: string;
+};
+
+type AdminUserRow = {
+  id: string;
+  email: string | null;
+  full_name: string | null;
+  phone: string | null;
+  role: string;
+};
+
+type ProviderServiceRow = {
+  provider_id: string;
+  service_id: string;
+  is_active: boolean | null;
+};
+
+type ServiceRow = {
+  id: string;
+  title: string;
+};
+
 /**
- * List all provider applications/profiles for admin.
+ * List provider profiles for admin.
+ *
+ * Important:
+ * We intentionally DO NOT use nested PostgREST embeds here.
+ * The live schema has provider_profiles.user_id -> users.id and
+ * provider_services.provider_id -> users.id, but provider_profiles and
+ * provider_services do not have a direct FK between them.
+ *
+ * Fetching each table independently is more resilient to schema-cache drift
+ * and avoids an admin page failure when PostgREST cannot resolve an embed.
  */
 export async function getAdminProvidersAction(page = 1) {
   try {
     const supabase = await createServerSupabaseClient();
 
-    const user = await getAuthenticatedUser(supabase);
+    const admin = await getAuthenticatedUser(supabase);
 
-    if (!user) {
+    if (!admin) {
       return {
-        success: false,
+        success: false as const,
         error: "غير مصرح",
       };
     }
 
-    const role = await getUserRole(supabase, user.id);
+    const role = await getUserRole(supabase, admin.id);
 
     if (!isAdminRole(role)) {
       return {
-        success: false,
+        success: false as const,
         error: "غير مصرح: للمسؤولين فقط",
       };
     }
@@ -66,40 +107,28 @@ export async function getAdminProvidersAction(page = 1) {
     const pageSize = 25;
     const from = (safePage - 1) * pageSize;
 
-    /*
-     * Important:
-     * provider_profiles and provider_services do NOT have a direct FK.
-     *
-     * provider_profiles.user_id -> users.id
-     * provider_services.provider_id -> users.id
-     *
-     * Therefore they must NOT be embedded directly in one PostgREST query.
-     */
-
-    const { data: profiles, error: profilesError } = await supabase
+    const { data: profileRows, error: profilesError } = await supabase
       .from("provider_profiles")
-      .select(`
-        id,
-        user_id,
-        bio,
-        experience,
-        service_areas,
-        is_verified,
-        application_status,
-        application_notes,
-        applied_at,
-        created_at,
-        users (
-          id,
-          email,
-          full_name,
-          phone,
-          role
-        )
-      `)
+      .select(
+        [
+          "id",
+          "user_id",
+          "bio",
+          "service_areas",
+          "experience",
+          "application_status",
+          "is_verified",
+          "applied_at",
+          "application_notes",
+          "created_at",
+        ].join(","),
+      )
       .order("applied_at", {
         ascending: false,
         nullsFirst: false,
+      })
+      .order("created_at", {
+        ascending: false,
       })
       .range(from, from + pageSize);
 
@@ -110,101 +139,163 @@ export async function getAdminProvidersAction(page = 1) {
       });
 
       return {
-        success: false,
-        error: "تعذر تحميل قائمة مقدمي الخدمة",
+        success: false as const,
+        error:
+          "تعذر تحميل قائمة مقدمي الخدمة. تأكد من تنفيذ migration إصلاح صلاحيات provider_profiles.",
       };
     }
 
-    const rawProfiles = profiles || [];
+    const rawProfiles = (profileRows || []) as ProviderProfileRow[];
     const hasMore = rawProfiles.length > pageSize;
     const visibleProfiles = rawProfiles.slice(0, pageSize);
 
+    if (visibleProfiles.length === 0) {
+      return {
+        success: true as const,
+        providers: [] as AdminProvider[],
+        page: safePage,
+        hasMore: false,
+      };
+    }
+
     const providerIds = visibleProfiles.map((profile) => profile.user_id);
 
-    type ProviderServiceRow = {
-      provider_id: string;
-      service_id: string;
-      services:
-        | {
-            id: string;
-            title: string;
-          }
-        | {
-            id: string;
-            title: string;
-          }[]
-        | null;
-    };
-
-    let providerServices: ProviderServiceRow[] = [];
-
-    if (providerIds.length > 0) {
-      const { data, error: servicesError } = await supabase
+    const [
+      { data: userRows, error: usersError },
+      { data: providerServiceRows, error: providerServicesError },
+    ] = await Promise.all([
+      supabase
+        .from("users")
+        .select("id,email,full_name,phone,role")
+        .in("id", providerIds),
+      supabase
         .from("provider_services")
-        .select(`
-          provider_id,
-          service_id,
-          services (
-            id,
-            title
-          )
-        `)
-        .in("provider_id", providerIds);
+        .select("provider_id,service_id,is_active")
+        .in("provider_id", providerIds),
+    ]);
+
+    if (usersError) {
+      logger.error("Failed to fetch provider users for admin", {
+        context: "AdminProviders",
+        error: usersError,
+      });
+
+      return {
+        success: false as const,
+        error: "تعذر تحميل بيانات حسابات مقدمي الخدمة",
+      };
+    }
+
+    if (providerServicesError) {
+      logger.error("Failed to fetch provider services for admin", {
+        context: "AdminProviders",
+        error: providerServicesError,
+      });
+
+      return {
+        success: false as const,
+        error: "تعذر تحميل خدمات مقدمي الخدمة",
+      };
+    }
+
+    const users = (userRows || []) as AdminUserRow[];
+    const providerServices =
+      (providerServiceRows || []) as ProviderServiceRow[];
+
+    const serviceIds = [
+      ...new Set(
+        providerServices
+          .filter((row) => row.is_active !== false)
+          .map((row) => row.service_id),
+      ),
+    ];
+
+    let services: ServiceRow[] = [];
+
+    if (serviceIds.length > 0) {
+      const { data: serviceRows, error: servicesError } = await supabase
+        .from("services")
+        .select("id,title")
+        .in("id", serviceIds);
 
       if (servicesError) {
-        logger.error("Failed to fetch provider services", {
+        logger.error("Failed to fetch service titles for admin providers", {
           context: "AdminProviders",
           error: servicesError,
         });
 
         return {
-          success: false,
-          error: "تعذر تحميل خدمات مقدمي الخدمة",
+          success: false as const,
+          error: "تعذر تحميل أسماء خدمات مقدمي الخدمة",
         };
       }
 
-      providerServices = (data || []) as ProviderServiceRow[];
+      services = (serviceRows || []) as ServiceRow[];
     }
+
+    const userById = new Map(users.map((user) => [user.id, user]));
+    const serviceById = new Map(
+      services.map((service) => [service.id, service]),
+    );
 
     const servicesByProvider = new Map<
       string,
-      {
-        service_id: string;
-        services: {
-          id: string;
-          title: string;
-        } | null;
-      }[]
+      AdminProvider["provider_services"]
     >();
 
     for (const row of providerServices) {
-      const current = servicesByProvider.get(row.provider_id) || [];
+      if (row.is_active === false) continue;
 
-      const service = Array.isArray(row.services)
-        ? row.services[0] || null
-        : row.services;
+      const current = servicesByProvider.get(row.provider_id) || [];
+      const service = serviceById.get(row.service_id) || null;
 
       current.push({
         service_id: row.service_id,
-        services: service,
+        services: service
+          ? {
+              id: service.id,
+              title: service.title,
+            }
+          : null,
       });
 
       servicesByProvider.set(row.provider_id, current);
     }
 
-    const normalized = visibleProfiles.map((profile) => ({
-      ...profile,
+    const normalized: AdminProvider[] = visibleProfiles.map((profile) => {
+      const providerUser = userById.get(profile.user_id);
 
-      users: Array.isArray(profile.users)
-        ? profile.users[0] || null
-        : profile.users,
-
-      provider_services:
-        servicesByProvider.get(profile.user_id) || [],
-    })) as AdminProvider[];
+      return {
+        id: profile.id,
+        user_id: profile.user_id,
+        bio: profile.bio,
+        service_areas: profile.service_areas,
+        experience: profile.experience,
+        application_status:
+          profile.application_status || "NOT_APPLIED",
+        is_verified: Boolean(profile.is_verified),
+        applied_at: profile.applied_at,
+        application_notes: profile.application_notes,
+        created_at: profile.created_at,
+        users: providerUser
+          ? {
+              id: providerUser.id,
+              email: providerUser.email || "",
+              full_name:
+                providerUser.full_name?.trim() ||
+                providerUser.email?.split("@")[0] ||
+                "بدون اسم",
+              phone: providerUser.phone,
+              role: providerUser.role,
+            }
+          : null,
+        provider_services:
+          servicesByProvider.get(profile.user_id) || [],
+      };
+    });
 
     return {
-      success: true,
+      success: true as const,
       providers: normalized,
       page: safePage,
       hasMore,
@@ -218,7 +309,7 @@ export async function getAdminProvidersAction(page = 1) {
     });
 
     return {
-      success: false,
+      success: false as const,
       error: "حدث خطأ غير متوقع",
     };
   }
@@ -259,7 +350,7 @@ export async function approveProviderAction(userId: string) {
         p_actor_id: admin.id,
         p_decision: "APPROVE",
         p_reason: null,
-      }
+      },
     );
 
     if (error || !data?.success) {
@@ -308,7 +399,7 @@ export async function approveProviderAction(userId: string) {
  */
 export async function rejectProviderAction(
   userId: string,
-  reason: string
+  reason: string,
 ) {
   try {
     const supabase = await createServerSupabaseClient();
@@ -340,7 +431,7 @@ export async function rejectProviderAction(
         p_actor_id: admin.id,
         p_decision: "REJECT",
         p_reason: normalizedReason || null,
-      }
+      },
     );
 
     if (error || !data?.success) {
@@ -408,7 +499,7 @@ export async function suspendProviderAction(userId: string) {
         p_actor_id: admin.id,
         p_decision: "SUSPEND",
         p_reason: null,
-      }
+      },
     );
 
     if (error || !data?.success) {
@@ -449,7 +540,7 @@ export async function suspendProviderAction(userId: string) {
  */
 export async function assignProviderToBookingAction(
   bookingId: string,
-  providerId: string
+  providerId: string,
 ) {
   try {
     const supabase = await createServerSupabaseClient();
@@ -478,7 +569,7 @@ export async function assignProviderToBookingAction(
         p_booking_id: bookingId,
         p_provider_id: providerId,
         p_assigned_by: admin.id,
-      }
+      },
     );
 
     if (error) {
@@ -546,7 +637,7 @@ export async function assignProviderToBookingAction(
  * for admin assignment UI.
  */
 export async function getEligibleProvidersForBookingAction(
-  bookingId: string
+  bookingId: string,
 ) {
   try {
     const supabase = await createServerSupabaseClient();
@@ -572,7 +663,7 @@ export async function getEligibleProvidersForBookingAction(
     const { data: booking, error: bookingError } = await supabase
       .from("bookings")
       .select(
-        "id, service_id, booking_date, start_time, end_time, status"
+        "id, service_id, booking_date, start_time, end_time, status",
       )
       .eq("id", bookingId)
       .single();
@@ -591,21 +682,10 @@ export async function getEligibleProvidersForBookingAction(
       };
     }
 
-    /*
-     * First fetch providers that offer the service.
-     * provider_services links directly to users.
-     */
     const { data: providerServiceRows, error: providerServicesError } =
       await supabase
         .from("provider_services")
-        .select(`
-          provider_id,
-          users (
-            id,
-            full_name,
-            phone
-          )
-        `)
+        .select("provider_id,service_id,is_active")
         .eq("service_id", booking.service_id)
         .eq("is_active", true);
 
@@ -622,10 +702,7 @@ export async function getEligibleProvidersForBookingAction(
     }
 
     const candidateRows = providerServiceRows || [];
-
-    const providerIds = candidateRows.map(
-      (row) => row.provider_id
-    );
+    const providerIds = candidateRows.map((row) => row.provider_id);
 
     if (providerIds.length === 0) {
       return {
@@ -635,20 +712,19 @@ export async function getEligibleProvidersForBookingAction(
       };
     }
 
-    /*
-     * provider_profiles is linked to users through user_id,
-     * not directly to provider_services.
-     */
-    const { data: profiles, error: profilesError } =
-      await supabase
+    const [
+      { data: profiles, error: profilesError },
+      { data: providerUsers, error: providerUsersError },
+    ] = await Promise.all([
+      supabase
         .from("provider_profiles")
-        .select(`
-          user_id,
-          is_verified,
-          application_status,
-          bio
-        `)
-        .in("user_id", providerIds);
+        .select("user_id,is_verified,application_status,bio")
+        .in("user_id", providerIds),
+      supabase
+        .from("users")
+        .select("id,full_name,phone")
+        .in("id", providerIds),
+    ]);
 
     if (profilesError) {
       logger.error("Failed to fetch provider candidate profiles", {
@@ -662,11 +738,30 @@ export async function getEligibleProvidersForBookingAction(
       };
     }
 
+    if (providerUsersError) {
+      logger.error("Failed to fetch provider candidate users", {
+        context: "ProviderAssignment",
+        error: providerUsersError,
+      });
+
+      return {
+        success: false,
+        error: "تعذر تحميل بيانات مقدمي الخدمة",
+      };
+    }
+
     const profileByUserId = new Map(
       (profiles || []).map((profile) => [
         profile.user_id,
         profile,
-      ])
+      ]),
+    );
+
+    const userById = new Map(
+      (providerUsers || []).map((providerUser) => [
+        providerUser.id,
+        providerUser,
+      ]),
     );
 
     const eligible = candidateRows
@@ -681,9 +776,7 @@ export async function getEligibleProvidersForBookingAction(
           return null;
         }
 
-        const providerUser = Array.isArray(row.users)
-          ? row.users[0] || null
-          : row.users;
+        const providerUser = userById.get(row.provider_id);
 
         return {
           providerId: row.provider_id,
@@ -695,13 +788,13 @@ export async function getEligibleProvidersForBookingAction(
       })
       .filter(
         (
-          provider
+          provider,
         ): provider is {
           providerId: string;
           fullName: string;
           phone: string | null;
           bio: string | null;
-        } => provider !== null
+        } => provider !== null,
       );
 
     return {
