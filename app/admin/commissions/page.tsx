@@ -12,7 +12,7 @@ export const metadata = { title: "العمولات" };
 export default async function AdminCommissionsPage() {
   const [result, categories] = await Promise.all([
     getAdminCommissionsAction(),
-    getMarketplaceCategoriesAction(),
+    getMarketplaceCategoriesAction({ normalizeDrift: false }),
   ]);
 
   return (

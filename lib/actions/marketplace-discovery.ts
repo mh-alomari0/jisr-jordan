@@ -2,7 +2,8 @@
 
 import { z } from "zod";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
-import type { MarketplaceCategory, MarketplaceSearchResult, ServiceListing, ServiceProviderResult, ServiceTypeDefinition } from "@/lib/marketplace";
+import type { MarketplaceCategory, MarketplaceSearchResult, ServiceListing, ServiceProviderResult } from "@/lib/marketplace";
+import { buildServiceTaxonomy, normalizeServiceCategories } from "@/lib/service-taxonomy";
 
 const SearchSchema = z.object({
   query: z.string().trim().max(120).default(""),
@@ -20,7 +21,7 @@ function mediaUrl(supabaseUrl: string, path: string | null) {
   return `${supabaseUrl.replace(/\/$/, "")}/storage/v1/object/public/marketplace-public/${safePath}`;
 }
 
-export async function getMarketplaceCategoriesAction() {
+export async function getMarketplaceCategoriesAction(options?: { normalizeDrift?: boolean }) {
   try {
     const supabase = await createServerSupabaseClient();
     const { data, error } = await supabase
@@ -30,7 +31,10 @@ export async function getMarketplaceCategoriesAction() {
       .order("display_order", { ascending: true })
       .order("name_ar", { ascending: true });
     if (error) return { success: false as const, error: "تعذر تحميل تصنيفات الخدمات", categories: [] as MarketplaceCategory[] };
-    const categories = (data || []) as MarketplaceCategory[];
+    const rawCategories = (data || []) as MarketplaceCategory[];
+    const categories = options?.normalizeDrift === false
+      ? rawCategories
+      : normalizeServiceCategories(rawCategories);
     const parents = categories.filter((category) => !category.parent_id).map((category) => ({
       ...category,
       children: categories.filter((child) => child.parent_id === category.id),
@@ -41,19 +45,26 @@ export async function getMarketplaceCategoriesAction() {
   }
 }
 
-export async function getHomeServiceTaxonomyAction() {
+export async function getHomeServiceTaxonomyAction(options?: { normalizeDrift?: boolean }) {
   try {
     const supabase = await createServerSupabaseClient();
     const [{ data: categories, error: categoryError }, { data: services, error: serviceError }] = await Promise.all([
       supabase.from("service_categories")
-        .select("id, parent_id, slug, name_ar, description_ar, display_order")
+        .select("id, parent_id, slug, name_ar, description_ar, icon, display_order, is_active, requires_moderation")
         .eq("is_active", true).order("display_order"),
       supabase.from("services")
-        .select("id, title, description, category_id")
+        .select("id, title, description, category, category_id")
         .eq("is_active", true).order("title").limit(200),
     ]);
     if (categoryError || serviceError) return { success: false as const, categories: [] };
-    const categoryRows = (categories || []) as Array<{ id: string; parent_id: string | null; slug: string; name_ar: string; description_ar: string | null; display_order: number }>;
+    const categoryRows = (categories || []) as MarketplaceCategory[];
+    if (options?.normalizeDrift !== false) {
+      return {
+        success: true as const,
+        categories: buildServiceTaxonomy(categoryRows, services || []),
+      };
+    }
+
     const byId = new Map(categoryRows.map((item) => [item.id, item]));
     const serviceRows = (services || []).map((service) => {
       const child = service.category_id ? byId.get(service.category_id) : null;
@@ -66,13 +77,15 @@ export async function getHomeServiceTaxonomyAction() {
         category_name: child?.name_ar || null,
         parent_category_id: parent?.id || null,
         parent_category_name: parent?.name_ar || null,
-      } satisfies ServiceTypeDefinition;
+      };
     });
-    const grouped = categoryRows.filter((item) => !item.parent_id).map((parent) => ({
-      ...parent,
-      serviceTypes: serviceRows.filter((service) => service.parent_category_id === parent.id),
-    }));
-    return { success: true as const, categories: grouped };
+    return {
+      success: true as const,
+      categories: categoryRows.filter((item) => !item.parent_id).map((parent) => ({
+        ...parent,
+        serviceTypes: serviceRows.filter((service) => service.parent_category_id === parent.id),
+      })),
+    };
   } catch {
     return { success: false as const, categories: [] };
   }

@@ -7,8 +7,8 @@ export const metadata = { title: "خدماتي | مساحة مقدم الخدم�
 export default async function ProviderListingsPage() {
   const [listingsResult, categoriesResult, taxonomyResult] = await Promise.all([
     getProviderListingsAction(),
-    getMarketplaceCategoriesAction(),
-    getHomeServiceTaxonomyAction(),
+    getMarketplaceCategoriesAction({ normalizeDrift: false }),
+    getHomeServiceTaxonomyAction({ normalizeDrift: false }),
   ]);
 
   if (!listingsResult.success) {
