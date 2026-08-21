@@ -14,7 +14,6 @@ SET
     WHEN '20000000-0000-4000-8000-000000000003'::UUID THEN 'التعليم والتدريب'
     WHEN '20000000-0000-4000-8000-000000000004'::UUID THEN 'التصميم والإبداع'
     WHEN '20000000-0000-4000-8000-000000000005'::UUID THEN 'الأعمال والاستشارات'
-    WHEN '20000000-0000-4000-8000-000000000006'::UUID THEN 'المناسبات'
     WHEN '20000000-0000-4000-8000-000000000007'::UUID THEN 'الصيانة والإصلاح'
     WHEN '20000000-0000-4000-8000-000000000008'::UUID THEN 'خدمات أخرى'
   END,
@@ -24,7 +23,6 @@ SET
     WHEN '20000000-0000-4000-8000-000000000003'::UUID THEN 'دروس وجلسات تدريب فردية ومهنية.'
     WHEN '20000000-0000-4000-8000-000000000004'::UUID THEN 'تصميم بصري ومحتوى إبداعي وخدمات إنتاج.'
     WHEN '20000000-0000-4000-8000-000000000005'::UUID THEN 'خدمات أعمال مهنية تخضع لسياسة المنصة ونطاق الترخيص.'
-    WHEN '20000000-0000-4000-8000-000000000006'::UUID THEN 'تنظيم وتصوير وتجهيز المناسبات.'
     WHEN '20000000-0000-4000-8000-000000000007'::UUID THEN 'إصلاح الأجهزة والأثاث والأعمال المتخصصة.'
     WHEN '20000000-0000-4000-8000-000000000008'::UUID THEN 'خدمات متنوعة بعد مراجعة الإدارة والتأكد من ملاءمتها.'
   END,
@@ -34,7 +32,6 @@ SET
     WHEN '20000000-0000-4000-8000-000000000003'::UUID THEN 'graduation-cap'
     WHEN '20000000-0000-4000-8000-000000000004'::UUID THEN 'palette'
     WHEN '20000000-0000-4000-8000-000000000005'::UUID THEN 'briefcase-business'
-    WHEN '20000000-0000-4000-8000-000000000006'::UUID THEN 'party-popper'
     WHEN '20000000-0000-4000-8000-000000000007'::UUID THEN 'wrench'
     WHEN '20000000-0000-4000-8000-000000000008'::UUID THEN 'shapes'
   END,
@@ -45,7 +42,6 @@ SET
     WHEN '20000000-0000-4000-8000-000000000009'::UUID THEN 35
     WHEN '20000000-0000-4000-8000-000000000004'::UUID THEN 40
     WHEN '20000000-0000-4000-8000-000000000005'::UUID THEN 50
-    WHEN '20000000-0000-4000-8000-000000000006'::UUID THEN 60
     WHEN '20000000-0000-4000-8000-000000000007'::UUID THEN 70
     WHEN '20000000-0000-4000-8000-000000000008'::UUID THEN 80
   END,
@@ -56,7 +52,6 @@ WHERE id IN (
   '20000000-0000-4000-8000-000000000003'::UUID,
   '20000000-0000-4000-8000-000000000004'::UUID,
   '20000000-0000-4000-8000-000000000005'::UUID,
-  '20000000-0000-4000-8000-000000000006'::UUID,
   '20000000-0000-4000-8000-000000000007'::UUID,
   '20000000-0000-4000-8000-000000000008'::UUID
 );
@@ -185,3 +180,50 @@ WHERE listing.legacy_service_id = service.id
   AND service.category_id IS NOT NULL
   AND listing.category_id IS DISTINCT FROM service.category_id;
 
+-- 4. The events field is intentionally removed from every active marketplace
+-- surface. Keep rows for historical bookings/references, but prevent new use.
+WITH RECURSIVE event_tree AS (
+  SELECT id
+  FROM public.service_categories
+  WHERE slug = 'events'
+     OR id = '20000000-0000-4000-8000-000000000006'::UUID
+  UNION ALL
+  SELECT child.id
+  FROM public.service_categories AS child
+  JOIN event_tree AS parent ON child.parent_id = parent.id
+)
+UPDATE public.service_categories
+SET is_active = FALSE
+WHERE id IN (SELECT id FROM event_tree);
+
+UPDATE public.services
+SET is_active = FALSE
+WHERE category_id IN (
+  WITH RECURSIVE event_tree AS (
+    SELECT id
+    FROM public.service_categories
+    WHERE slug = 'events'
+       OR id = '20000000-0000-4000-8000-000000000006'::UUID
+    UNION ALL
+    SELECT child.id
+    FROM public.service_categories AS child
+    JOIN event_tree AS parent ON child.parent_id = parent.id
+  )
+  SELECT id FROM event_tree
+);
+
+UPDATE public.service_listings
+SET status = 'PAUSED', updated_at = NOW()
+WHERE category_id IN (
+  WITH RECURSIVE event_tree AS (
+    SELECT id
+    FROM public.service_categories
+    WHERE slug = 'events'
+       OR id = '20000000-0000-4000-8000-000000000006'::UUID
+    UNION ALL
+    SELECT child.id
+    FROM public.service_categories AS child
+    JOIN event_tree AS parent ON child.parent_id = parent.id
+  )
+  SELECT id FROM event_tree
+);

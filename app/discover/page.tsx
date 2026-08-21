@@ -122,7 +122,7 @@ export default async function DiscoverPage({
     ? (requestedScope as (typeof scopes)[number]["value"])
     : "ALL";
 
-  const category = one(params.category) || null;
+  const requestedCategory = one(params.category) || null;
   const delivery = one(params.delivery) || null;
   const pricing = one(params.pricing) || null;
   const area = one(params.area) || null;
@@ -135,6 +135,9 @@ export default async function DiscoverPage({
 
   const categories = categoriesResult.categories || [];
   const taxonomy = taxonomyResult.categories || [];
+  const category = requestedCategory && categories.some((item) => item.id === requestedCategory)
+    ? requestedCategory
+    : null;
 
   const selectedCategory = category
     ? categories.find((item) => item.id === category) || null

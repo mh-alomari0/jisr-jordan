@@ -26,4 +26,11 @@ describe("service taxonomy repair migration", () => {
     expect(migration).toContain("listing.legacy_service_id = service.id");
     expect(migration).not.toMatch(/DROP\s+(TABLE|COLUMN)/i);
   });
+
+  it("deactivates the complete events subtree and its marketplace content", () => {
+    expect(migration).toContain("The events field is intentionally removed");
+    expect(migration).toContain("SET is_active = FALSE");
+    expect(migration).toContain("SET status = 'PAUSED'");
+    expect(migration).not.toContain("THEN 'المناسبات'");
+  });
 });

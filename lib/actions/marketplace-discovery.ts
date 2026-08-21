@@ -3,7 +3,7 @@
 import { z } from "zod";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import type { MarketplaceCategory, MarketplaceSearchResult, ServiceListing, ServiceProviderResult } from "@/lib/marketplace";
-import { buildServiceTaxonomy, normalizeServiceCategories } from "@/lib/service-taxonomy";
+import { buildServiceTaxonomy, excludeEventCategories, normalizeServiceCategories } from "@/lib/service-taxonomy";
 
 const SearchSchema = z.object({
   query: z.string().trim().max(120).default(""),
@@ -31,7 +31,7 @@ export async function getMarketplaceCategoriesAction(options?: { normalizeDrift?
       .order("display_order", { ascending: true })
       .order("name_ar", { ascending: true });
     if (error) return { success: false as const, error: "تعذر تحميل تصنيفات الخدمات", categories: [] as MarketplaceCategory[] };
-    const rawCategories = (data || []) as MarketplaceCategory[];
+    const rawCategories = excludeEventCategories((data || []) as MarketplaceCategory[]);
     const categories = options?.normalizeDrift === false
       ? rawCategories
       : normalizeServiceCategories(rawCategories);
@@ -57,7 +57,7 @@ export async function getHomeServiceTaxonomyAction(options?: { normalizeDrift?: 
         .eq("is_active", true).order("title").limit(200),
     ]);
     if (categoryError || serviceError) return { success: false as const, categories: [] };
-    const categoryRows = (categories || []) as MarketplaceCategory[];
+    const categoryRows = excludeEventCategories((categories || []) as MarketplaceCategory[]);
     if (options?.normalizeDrift !== false) {
       return {
         success: true as const,

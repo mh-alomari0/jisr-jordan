@@ -19,7 +19,6 @@ const ROOT_IDS = {
   education: "20000000-0000-4000-8000-000000000003",
   design: "20000000-0000-4000-8000-000000000004",
   business: "20000000-0000-4000-8000-000000000005",
-  events: "20000000-0000-4000-8000-000000000006",
   maintenance: "20000000-0000-4000-8000-000000000007",
   other: "20000000-0000-4000-8000-000000000008",
   beauty: "20000000-0000-4000-8000-000000000009",
@@ -91,17 +90,6 @@ const canonicalRoots: CategoryRow[] = [
     display_order: 50,
     is_active: true,
     requires_moderation: true,
-  },
-  {
-    id: ROOT_IDS.events,
-    parent_id: null,
-    slug: "events",
-    name_ar: "المناسبات",
-    description_ar: "تنظيم وتصوير وتجهيز المناسبات.",
-    icon: "party-popper",
-    display_order: 60,
-    is_active: true,
-    requires_moderation: false,
   },
   {
     id: ROOT_IDS.maintenance,
@@ -227,7 +215,7 @@ function resolveServiceCategory(service: TaxonomyServiceRow) {
 }
 
 export function normalizeServiceCategories(rows: CategoryRow[]) {
-  const byId = new Map(rows.map((row) => [row.id, row]));
+  const byId = new Map(excludeEventCategories(rows).map((row) => [row.id, row]));
 
   for (const canonical of [...canonicalRoots, ...syntheticChildren]) {
     const existing = byId.get(canonical.id);
@@ -237,6 +225,27 @@ export function normalizeServiceCategories(rows: CategoryRow[]) {
   return [...byId.values()]
     .filter((category) => category.is_active)
     .sort((a, b) => a.display_order - b.display_order || a.name_ar.localeCompare(b.name_ar, "ar"));
+}
+
+export function excludeEventCategories(rows: CategoryRow[]) {
+  const excludedIds = new Set(
+    rows
+      .filter((category) => category.slug === "events" || category.id === "20000000-0000-4000-8000-000000000006")
+      .map((category) => category.id),
+  );
+
+  let changed = true;
+  while (changed) {
+    changed = false;
+    for (const category of rows) {
+      if (category.parent_id && excludedIds.has(category.parent_id) && !excludedIds.has(category.id)) {
+        excludedIds.add(category.id);
+        changed = true;
+      }
+    }
+  }
+
+  return rows.filter((category) => !excludedIds.has(category.id));
 }
 
 export function buildServiceTaxonomy(
@@ -268,4 +277,3 @@ export function buildServiceTaxonomy(
       serviceTypes: serviceRows.filter((service) => service.parent_category_id === parent.id),
     }));
 }
-
