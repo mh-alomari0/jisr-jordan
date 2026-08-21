@@ -1,7 +1,9 @@
+// app/messages/_components/delete-conversation-button.tsx
 "use client";
 
 import { useState, useTransition } from "react";
-import { Trash2 } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Loader2, Trash2 } from "lucide-react";
 import { deleteConversationAction } from "@/lib/actions/conversation-delete";
 
 export default function DeleteConversationButton({
@@ -9,23 +11,30 @@ export default function DeleteConversationButton({
 }: {
   conversationId: string;
 }) {
+  const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState("");
 
-  const remove = () => {
+  const remove = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
     const confirmed = window.confirm(
-      "حذف هذه المحادثة من قائمة رسائلك؟ إذا وصلت رسالة جديدة لاحقاً ستظهر المحادثة من جديد.",
+      "هل أنت متأكد من حذف هذه المحادثة من قائمتك؟",
     );
 
     if (!confirmed) return;
 
     startTransition(async () => {
       setError("");
-      const result =
-        await deleteConversationAction(conversationId);
+      const result = await deleteConversationAction(conversationId);
 
       if (!result.success) {
         setError(result.error || "تعذر حذف المحادثة.");
+        alert(result.error || "تعذر حذف المحادثة");
+      } else {
+        // تحديث الواجهة فوراً وحذف العنصر من الشاشة
+        router.refresh();
       }
     });
   };
@@ -36,11 +45,15 @@ export default function DeleteConversationButton({
         type="button"
         disabled={pending}
         onClick={remove}
-        className="flex h-9 w-9 items-center justify-center rounded-full text-muted transition hover:bg-[rgb(var(--danger)/0.08)] hover:text-[rgb(var(--danger))] active:scale-[0.92] disabled:opacity-40"
+        className="flex h-9 w-9 items-center justify-center rounded-2xl text-muted transition-all duration-200 hover:bg-[rgb(var(--danger)/0.1)] hover:text-[rgb(var(--danger))] active:scale-90 disabled:opacity-40"
         aria-label="حذف المحادثة"
         title="حذف المحادثة"
       >
-        <Trash2 size={15} />
+        {pending ? (
+          <Loader2 size={15} className="animate-spin text-[rgb(var(--danger))]" />
+        ) : (
+          <Trash2 size={15} />
+        )}
       </button>
 
       {error && (

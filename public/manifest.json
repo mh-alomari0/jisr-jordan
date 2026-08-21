@@ -1,5 +1,5 @@
 {
-  "name": "جسر | JISR",
+  "name": "جسر الأردن | JISR",
   "short_name": "جسر",
   "description": "سوق أردني لاكتشاف وحجز الخدمات والمهارات وطلب عروض الأسعار",
   "start_url": "/",
@@ -7,19 +7,13 @@
   "lang": "ar-JO",
   "dir": "rtl",
   "display": "standalone",
-  "background_color": "#faf7f2",
-  "theme_color": "#C84A2F",
+  "background_color": "#087f79",
+  "theme_color": "#087f79",
   "icons": [
     {
-      "src": "/icon-192.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any maskable"
-    },
-    {
-      "src": "/icon-512.png",
-      "sizes": "512x512",
-      "type": "image/png",
+      "src": "/app-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
       "purpose": "any maskable"
     }
   ]

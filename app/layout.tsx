@@ -39,21 +39,14 @@ export const metadata: Metadata = {
   icons: {
     icon: [
       {
-        url: "/icon-192.png",
-        sizes: "192x192",
-        type: "image/png",
-      },
-      {
-        url: "/icon-512.png",
-        sizes: "512x512",
-        type: "image/png",
+        url: "/app-icon.svg",
+        type: "image/svg+xml",
       },
     ],
     apple: [
       {
-        url: "/icon-192.png",
-        sizes: "192x192",
-        type: "image/png",
+        url: "/app-icon.svg",
+        type: "image/svg+xml",
       },
     ],
   },
@@ -100,7 +93,7 @@ export default async function RootLayout({
       suppressHydrationWarning
     >
       <body className="flex min-h-screen flex-col font-cairo antialiased selection:bg-[rgb(var(--primary)/0.25)]">
-        {/* 📲 PWA Registration & Install Banner */}
+        {/* 📲 PWA Service Worker & Install Banner */}
         <PwaRegistration />
 
         {/* 🌐 Offline / Network Status Banner */}
@@ -122,13 +115,13 @@ export default async function RootLayout({
           انتقل إلى المحتوى الرئيسي
         </a>
 
-        {/* Top Navigation Bar */}
+        {/* Top Header Navbar */}
         <Navbar
           userRole={userRole}
           isAuthenticated={Boolean(user)}
         />
 
-        {/* Main Page Content */}
+        {/* Main Application Content */}
         <main id="main-content" className="flex-1">
           {children}
         </main>
