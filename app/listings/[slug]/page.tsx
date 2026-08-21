@@ -20,6 +20,7 @@ import {
 } from "@/lib/marketplace";
 import ListingActionsClient from "./_components/listing-actions-client";
 import MessageProviderButton from "@/components/marketplace/message-provider-button";
+import MobileStickyActionBar from "@/components/marketplace/mobile-sticky-action-bar";
 
 export async function generateMetadata({
   params,
@@ -72,24 +73,26 @@ export default async function ListingPage({
   const rating = number(provider.average_rating);
   const reviewCount = number(provider.review_count);
   const completed = number(provider.completed_bookings);
+  const priceFormatted = formatListingPrice(listing);
+  const isDirect = listing.pricing_model === "FIXED";
 
   return (
-    <main className="mx-auto max-w-6xl px-4 py-7 sm:px-6 sm:py-11">
+    <main className="mx-auto max-w-6xl px-4 py-5 sm:px-6 sm:py-10">
       <nav
         aria-label="مسار الصفحة"
-        className="mb-5 text-[10px] text-muted"
+        className="mb-4 text-[11px] font-bold text-muted"
       >
         <Link href="/discover" className="hover:text-brand">
           استكشاف
         </Link>
-        <span className="mx-1">/</span>
-        {listing.service_categories?.name_ar || "الخدمات"}
+        <span className="mx-2">/</span>
+        <span>{listing.service_categories?.name_ar || "الخدمات"}</span>
       </nav>
 
-      <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_380px]">
-        <div className="min-w-0 space-y-5">
-          <section className="overflow-hidden rounded-[2.1rem] border border-theme bg-surface shadow-soft">
-            <div className="relative aspect-[16/8] min-h-[280px] bg-[#dff3ef]">
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_380px]">
+        <div className="min-w-0 space-y-6">
+          <section className="overflow-hidden rounded-[2.2rem] border border-theme bg-surface shadow-soft">
+            <div className="relative aspect-[16/9] min-h-[260px] bg-[#dff3ef] sm:min-h-[320px]">
               {media[0]?.url ? (
                 <Image
                   src={media[0].url}
@@ -100,15 +103,15 @@ export default async function ListingPage({
                   className="object-cover"
                 />
               ) : (
-                <div className="absolute inset-0 bg-[#0b817a]">
+                <div className="absolute inset-0 bg-gradient-to-br from-[#065b60] to-[#0b817a]">
                   <div className="absolute -left-20 -top-24 h-64 w-64 rounded-full border-[26px] border-white/10" />
                   <div className="absolute -bottom-24 right-[12%] h-52 w-52 rounded-full bg-[#ffc985]/18" />
-                  <div className="relative flex h-full items-end p-7 text-white">
+                  <div className="relative flex h-full items-end p-6 text-white sm:p-8">
                     <div>
-                      <p className="text-[10px] font-bold text-[#c9eee8]">
+                      <p className="text-[11px] font-black text-[#c9eee8]">
                         عرض خدمة على جسر
                       </p>
-                      <h2 className="mt-2 max-w-xl text-3xl font-bold leading-tight tracking-[-.05em]">
+                      <h2 className="mt-2 max-w-xl text-2xl font-black leading-tight tracking-[-.05em] sm:text-4xl">
                         {listing.title}
                       </h2>
                     </div>
@@ -117,7 +120,7 @@ export default async function ListingPage({
               )}
 
               {media.length > 1 && (
-                <span className="absolute bottom-4 end-4 inline-flex items-center gap-1.5 rounded-full bg-black/45 px-3 py-2 text-[10px] font-bold text-white backdrop-blur">
+                <span className="absolute bottom-4 end-4 inline-flex items-center gap-1.5 rounded-full bg-black/50 px-3 py-1.5 text-[10px] font-bold text-white backdrop-blur-md">
                   <Images size={13} />
                   {media.length} صور
                 </span>
@@ -126,7 +129,7 @@ export default async function ListingPage({
 
             <div className="p-5 sm:p-7">
               <div className="flex flex-wrap gap-2">
-                <span className="status-pill bg-[rgb(var(--primary-soft))] text-brand">
+                <span className="status-pill bg-[rgb(var(--primary-soft))] text-brand font-black">
                   {listing.service_categories?.name_ar || "خدمة"}
                 </span>
                 <span className="status-pill bg-surface-muted">
@@ -137,88 +140,68 @@ export default async function ListingPage({
                 </span>
               </div>
 
-              <h1 className="mt-4 text-2xl font-bold leading-10 tracking-[-.04em] sm:text-4xl">
+              <h1 className="mt-4 text-2xl font-black leading-9 tracking-[-.04em] sm:text-3xl sm:leading-10">
                 {listing.title}
               </h1>
 
-              <p className="mt-3 text-sm leading-7 text-muted">
+              <p className="mt-3 text-xs leading-6 text-muted sm:text-sm sm:leading-7">
                 {listing.short_description}
               </p>
 
-              <div className="mt-6 grid gap-3 border-y border-theme py-5 sm:grid-cols-3">
+              <div className="mt-6 grid grid-cols-3 gap-2 border-y border-theme py-4 text-center sm:text-start">
                 <div>
-                  <p className="text-[9px] font-bold text-muted">
-                    السعر
-                  </p>
-                  <strong className="mt-1 block text-lg font-bold text-brand">
-                    {formatListingPrice(listing)}
+                  <p className="text-[10px] font-bold text-muted">السعر التقديري</p>
+                  <strong className="mt-1 block text-base font-black text-brand sm:text-lg">
+                    {priceFormatted}
                   </strong>
                 </div>
 
                 <div>
-                  <p className="text-[9px] font-bold text-muted">
-                    الوقت التقريبي
-                  </p>
-                  <span className="mt-1 inline-flex items-center gap-1.5 text-xs font-bold">
-                    <Clock3 className="h-4 w-4 text-brand" />
+                  <p className="text-[10px] font-bold text-muted">الوقت التقريبي</p>
+                  <span className="mt-1 inline-flex items-center gap-1 text-xs font-bold">
+                    <Clock3 className="h-3.5 w-3.5 text-brand" />
                     {listing.estimated_duration_minutes
                       ? `${listing.estimated_duration_minutes} دقيقة`
-                      : "حسب تفاصيل الطلب"}
+                      : "حسب الطلب"}
                   </span>
                 </div>
 
                 <div>
-                  <p className="text-[9px] font-bold text-muted">
-                    مكان الخدمة
-                  </p>
-                  <span className="mt-1 inline-flex items-center gap-1.5 text-xs font-bold">
+                  <p className="text-[10px] font-bold text-muted">طريقة التنفيذ</p>
+                  <span className="mt-1 inline-flex items-center gap-1 text-xs font-bold">
                     {listing.remote_available ? (
-                      <Monitor className="h-4 w-4 text-brand" />
+                      <Monitor className="h-3.5 w-3.5 text-brand" />
                     ) : (
-                      <MapPin className="h-4 w-4 text-brand" />
+                      <MapPin className="h-3.5 w-3.5 text-brand" />
                     )}
                     {listing.remote_available
-                      ? "متاح عن بُعد"
-                      : strings(listing.service_areas).join("، ") ||
-                        "حسب منطقة الخدمة"}
+                      ? "عن بُعد"
+                      : strings(listing.service_areas)[0] || "ميداني"}
                   </span>
                 </div>
               </div>
 
-              <section
-                className="mt-7"
-                aria-labelledby="description-title"
-              >
-                <p className="text-[10px] font-bold text-brand">
-                  شو بتشمل الخدمة؟
-                </p>
-                <h2
-                  id="description-title"
-                  className="mt-1 text-xl font-bold"
-                >
+              <section className="mt-7" aria-labelledby="description-title">
+                <p className="text-[10px] font-black text-brand">ماذا تشمل الخدمة؟</p>
+                <h2 id="description-title" className="mt-1 text-lg font-black">
                   تفاصيل العرض
                 </h2>
 
-                <p className="mt-4 whitespace-pre-wrap text-sm leading-8">
+                <p className="mt-3 whitespace-pre-wrap text-xs leading-7 sm:text-sm sm:leading-8 text-[rgb(var(--text-main))]">
                   {listing.description}
                 </p>
               </section>
 
               {media.length > 1 && (
-                <section className="mt-8 border-t border-theme pt-7">
-                  <p className="text-[10px] font-bold text-brand">
-                    صور من الشغل
-                  </p>
-                  <h2 className="mt-1 text-xl font-bold">
-                    شوف قبل ما تطلب
-                  </h2>
+                <section className="mt-8 border-t border-theme pt-6">
+                  <p className="text-[10px] font-black text-brand">معرض الصور</p>
+                  <h2 className="mt-1 text-lg font-black">نماذج من التنفيذ</h2>
 
                   <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
                     {media
                       .slice(1, 7)
-                      .filter(
-                        (item): item is typeof item & { url: string } =>
-                          typeof item.url === "string" && item.url.length > 0,
+                      .filter((item): item is typeof item & { url: string } =>
+                        typeof item.url === "string" && item.url.length > 0
                       )
                       .map((item, index) => (
                         <div
@@ -241,35 +224,34 @@ export default async function ListingPage({
           </section>
         </div>
 
+        {/* Sidebar / Actions */}
         <aside className="space-y-4 lg:sticky lg:top-24 lg:self-start">
-          <section className="overflow-hidden rounded-[1.9rem] border border-theme bg-surface shadow-soft">
+          <section className="overflow-hidden rounded-[2rem] border border-theme bg-surface shadow-soft">
             <div className="bg-[#0b817a] p-5 text-white">
-              <p className="text-[9px] font-bold text-[#c9eee8]">
-                مقدم الخدمة
-              </p>
+              <p className="text-[10px] font-black text-[#c9eee8]">مقدم الخدمة</p>
 
               <div className="mt-3 flex items-center gap-3">
-                <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/10 text-xl font-bold">
+                <div className="flex h-13 w-13 items-center justify-center rounded-2xl bg-white/15 text-lg font-black">
                   {providerName.slice(0, 1)}
                 </div>
 
                 <div className="min-w-0">
                   <Link
-                    href={"/providers/" + listing.provider_id}
-                    className="truncate text-base font-bold hover:text-[#ffc985]"
+                    href={`/providers/${listing.provider_id}`}
+                    className="truncate text-base font-black hover:text-[#ffc985] transition-colors"
                   >
                     {providerName}
                   </Link>
 
-                  <p className="mt-1 flex items-center gap-1 text-[10px] text-[#c9eee8]">
+                  <p className="mt-0.5 flex items-center gap-1 text-[10px] text-[#c9eee8]">
                     <ShieldCheck className="h-3.5 w-3.5" />
-                    مقدم خدمة معتمد
+                    مقدم خدمة موثق
                   </p>
                 </div>
               </div>
 
               {text(provider.headline) && (
-                <p className="mt-4 text-[11px] leading-6 text-white/75">
+                <p className="mt-3 text-xs leading-6 text-white/85">
                   {text(provider.headline)}
                 </p>
               )}
@@ -278,20 +260,16 @@ export default async function ListingPage({
             <div className="p-5">
               <div className="grid grid-cols-2 gap-2 text-center">
                 <div className="rounded-2xl bg-surface-muted p-3">
-                  <strong className="block text-lg">
-                    {completed}
-                  </strong>
-                  <span className="text-[9px] text-muted">
-                    خدمات مكتملة
-                  </span>
+                  <strong className="block text-base font-black">{completed}</strong>
+                  <span className="text-[10px] font-bold text-muted">خدمة منجزة</span>
                 </div>
 
                 <div className="rounded-2xl bg-surface-muted p-3">
-                  <strong className="flex items-center justify-center gap-1 text-lg">
+                  <strong className="flex items-center justify-center gap-1 text-base font-black">
                     {rating || "—"}
-                    <Star className="h-3.5 w-3.5 text-[rgb(var(--warning))]" />
+                    <Star className="h-3.5 w-3.5 text-[rgb(var(--warning))] fill-current" />
                   </strong>
-                  <span className="text-[9px] text-muted">
+                  <span className="text-[10px] font-bold text-muted">
                     {reviewCount} تقييم
                   </span>
                 </div>
@@ -299,8 +277,8 @@ export default async function ListingPage({
 
               <div className="mt-4 grid grid-cols-2 gap-2">
                 <Link
-                  href={"/providers/" + listing.provider_id}
-                  className="secondary-button w-full !px-2 text-[10px]"
+                  href={`/providers/${listing.provider_id}`}
+                  className="secondary-button !min-h-[42px] !rounded-xl !px-2 text-xs font-bold"
                 >
                   الملف المهني
                 </Link>
@@ -308,39 +286,36 @@ export default async function ListingPage({
                 <MessageProviderButton
                   providerId={listing.provider_id}
                   listingId={listing.id}
-                  className="secondary-button w-full !px-2 text-[10px]"
+                  className="secondary-button !min-h-[42px] !rounded-xl !px-2 text-xs font-bold"
                 />
               </div>
             </div>
           </section>
 
-          <ListingActionsClient
-            listingId={listing.id}
-            deliveryType={listing.delivery_type}
-            pricingModel={listing.pricing_model}
-          />
-
-          <div className="rounded-[1.5rem] border border-[rgb(var(--primary)/0.2)] bg-[rgb(var(--primary)/0.045)] p-4 text-[10px] leading-6 text-muted">
-            <p className="flex gap-2">
-              <CheckCircle2 className="mt-1 h-4 w-4 shrink-0 text-[rgb(var(--success))]" />
-              التواصل والطلب داخل جسر يحفظ تفاصيل الطلب والمبلغ
-              والحالة للطرفين. لا ترسل بيانات اتصال شخصية داخل وصف
-              الطلب قبل اكتمال المسار المسموح.
-            </p>
+          <div id="booking-action-card">
+            <ListingActionsClient
+              listingId={listing.id}
+              deliveryType={listing.delivery_type}
+              pricingModel={listing.pricing_model}
+            />
           </div>
 
-          <div className="rounded-[1.5rem] bg-[#f8e0d6] p-4 text-[#743b35]">
-            <p className="flex items-center gap-1.5 text-[10px] font-bold">
-              <Sparkles size={13} />
-              نصيحة قبل الحجز
-            </p>
-            <p className="mt-2 text-[10px] leading-6 opacity-80">
-              قارن السعر، التقييم، الأعمال السابقة وطريقة التقديم قبل
-              تأكيد طلبك.
+          <div className="rounded-2xl border border-[rgb(var(--primary)/0.2)] bg-[rgb(var(--primary)/0.04)] p-4 text-[11px] leading-6 text-muted">
+            <p className="flex gap-2">
+              <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-[rgb(var(--success))]" />
+              الطلب والتواصل داخل منصة جسر يحفظ تفاصيل الاتفاق والمبالغ بشكل آمن لكلا الطرفين.
             </p>
           </div>
         </aside>
       </div>
+
+      {/* Floating Mobile Sticky Action Bar */}
+      <MobileStickyActionBar
+        providerId={listing.provider_id}
+        listingId={listing.id}
+        priceFormatted={priceFormatted}
+        isDirectBooking={isDirect}
+      />
     </main>
   );
 }
