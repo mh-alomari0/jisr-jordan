@@ -1,18 +1,8 @@
 import Link from "next/link";
 import {
-  ArrowLeft,
-  BriefcaseBusiness,
-  ChevronLeft,
-  Code2,
-  GraduationCap,
-  Heart,
-  House,
-  LayoutGrid,
-  Palette,
-  Search,
-  Shapes,
-  Sparkles,
-  Wrench,
+  ArrowLeft, BriefcaseBusiness, ChevronLeft, Code2, GraduationCap,
+  House, LayoutGrid, MessageCircleMore, Package, PaintRoller,
+  Palette, Search, Shapes, ShieldCheck, Sparkles, Star, Wrench,
 } from "lucide-react";
 import SearchResultCard from "@/components/marketplace/search-result-card";
 import {
@@ -22,365 +12,211 @@ import {
 } from "@/lib/actions/marketplace-discovery";
 
 const categoryVisuals = {
-  "home-services": {
-    icon: House,
-    tone: "bg-[#d8f0e9] text-[#087a72]",
-  },
-  "technology-programming": {
-    icon: Code2,
-    tone: "bg-[#fde4df] text-[#c7584d]",
-  },
-  "education-training": {
-    icon: GraduationCap,
-    tone: "bg-[#fbe8ba] text-[#8a641c]",
-  },
-  "beauty-care": {
-    icon: Sparkles,
-    tone: "bg-[#f9dce8] text-[#a14670]",
-  },
-  "design-creative": {
-    icon: Palette,
-    tone: "bg-[#e2e3f7] text-[#5d5799]",
-  },
-  "maintenance-repair": {
-    icon: Wrench,
-    tone: "bg-[#e6e4db] text-[#607064]",
-  },
-  "other-services": {
-    icon: Shapes,
-    tone: "bg-[#dcefe5] text-[#267a57]",
-  },
+  "home-services": { icon: House, tone: "bg-[#d8f0e9] text-[#087a72]" },
+  "technology-programming": { icon: Code2, tone: "bg-[#dce9f8] text-[#326a96]" },
+  "education-training": { icon: GraduationCap, tone: "bg-[#fbe8ba] text-[#8a641c]" },
+  "beauty-care": { icon: Sparkles, tone: "bg-[#f9dce8] text-[#a14670]" },
+  "design-creative": { icon: Palette, tone: "bg-[#e2e3f7] text-[#5d5799]" },
+  "maintenance-repair": { icon: Wrench, tone: "bg-[#e6e4db] text-[#607064]" },
+  "other-services": { icon: Shapes, tone: "bg-[#dcefe5] text-[#267a57]" },
 } as const;
 
-function SectionHeading({
-  eyebrow,
-  title,
-  href,
-  action,
-}: {
-  eyebrow?: string;
-  title: string;
-  href?: string;
-  action?: string;
+function SectionHeading({ eyebrow, title, copy, href, action }: {
+  eyebrow?: string; title: string; copy?: string; href?: string; action?: string;
 }) {
   return (
-    <div className="mb-5 flex items-end justify-between gap-3">
+    <div className="mb-6 flex items-end justify-between gap-4">
       <div>
-        {eyebrow && (
-          <p className="mb-1.5 text-[10px] font-bold tracking-[.08em] text-brand">
-            {eyebrow}
-          </p>
-        )}
-        <h2 className="text-xl font-bold tracking-[-.04em] sm:text-2xl">
-          {title}
-        </h2>
+        {eyebrow && <p className="mb-1 text-[11px] font-bold text-brand">{eyebrow}</p>}
+        <h2 className="text-2xl font-black tracking-[-.05em] sm:text-3xl">{title}</h2>
+        {copy && <p className="mt-2 text-xs leading-6 text-muted sm:text-sm">{copy}</p>}
       </div>
-
       {href && action && (
-        <Link
-          href={href}
-          className="flex items-center gap-1 text-xs font-bold text-brand"
-        >
-          <ChevronLeft size={15} />
-          {action}
+        <Link href={href} className="hidden shrink-0 items-center gap-1 rounded-full border border-theme bg-surface px-4 py-2 text-xs font-bold text-brand transition hover:-translate-y-0.5 hover:shadow-soft active:scale-[.98] sm:flex">
+          <ChevronLeft size={15}/>{action}
         </Link>
       )}
     </div>
   );
 }
 
+function ObjectTile({ icon: Icon, label, className = "" }: {
+  icon: typeof Wrench; label: string; className?: string;
+}) {
+  return (
+    <div className={`flex flex-col items-center justify-center rounded-[1.6rem] border border-white/70 bg-[#fbf8f1] shadow-[0_16px_45px_rgba(4,66,64,.10)] ${className}`}>
+      <span className="flex h-20 w-20 items-center justify-center rounded-[1.5rem] bg-[#e1f3ef] text-[#087f79]">
+        <Icon strokeWidth={1.55} size={39}/>
+      </span>
+      <span className="mt-3 text-xs font-black text-[#164348]">{label}</span>
+    </div>
+  );
+}
+
 export default async function HomePage() {
-  const [
-    categoriesResult,
-    taxonomyResult,
-    providersResult,
-    listingsResult,
-    postsResult,
-  ] = await Promise.all([
-    getMarketplaceCategoriesAction(),
-    getHomeServiceTaxonomyAction(),
-    searchMarketplaceAction({
-      scope: "PROVIDERS",
-      pageSize: 4,
-    }),
-    searchMarketplaceAction({
-      scope: "LISTINGS",
-      pageSize: 4,
-    }),
-    searchMarketplaceAction({
-      scope: "POSTS",
-      pageSize: 4,
-    }),
-  ]);
+  const [categoriesResult, taxonomyResult, providersResult, listingsResult, postsResult] =
+    await Promise.all([
+      getMarketplaceCategoriesAction(),
+      getHomeServiceTaxonomyAction(),
+      searchMarketplaceAction({ scope: "PROVIDERS", pageSize: 4 }),
+      searchMarketplaceAction({ scope: "LISTINGS", pageSize: 4 }),
+      searchMarketplaceAction({ scope: "POSTS", pageSize: 4 }),
+    ]);
 
-  const categories = categoriesResult.categories || [];
-  const taxonomy = taxonomyResult.categories || [];
-  const serviceTypes = taxonomy
-    .flatMap((category) => category.serviceTypes || [])
-    .slice(0, 8);
-
+  const categories = (categoriesResult.categories || []).filter(
+    (c) => c.slug !== "business-consulting" && c.slug !== "events"
+  );
+  const serviceTypes = (taxonomyResult.categories || [])
+    .flatMap((c) => c.serviceTypes || []).slice(0, 8);
   const providers = providersResult.results || [];
   const listings = listingsResult.results || [];
   const posts = postsResult.results || [];
 
   return (
-    <div className="page-reveal pb-10 sm:pb-16">
-      <section className="mx-auto max-w-6xl px-4 pb-12 pt-8 sm:px-6 sm:pt-12 lg:pb-16 lg:pt-16">
-        <div className="relative overflow-hidden rounded-[2rem] bg-[#0b817a] px-5 py-8 text-white shadow-lift sm:px-10 sm:py-12 lg:min-h-[500px] lg:px-16 lg:py-16">
-          <div className="absolute -left-10 -top-16 h-48 w-48 rounded-full border-[22px] border-[#5bc2ad]/30 sm:h-72 sm:w-72" />
-          <div className="absolute -bottom-20 right-[18%] h-56 w-56 rounded-full bg-[#f9a48c]/20" />
+    <div className="page-reveal pb-14 sm:pb-20">
+      <section className="mx-auto max-w-6xl px-4 pb-12 pt-7 sm:px-6 sm:pt-12 lg:pb-16">
+        <div className="overflow-hidden rounded-[2.25rem] border border-[rgb(var(--primary)/.12)] bg-[#087f79] shadow-lift">
+          <div className="grid lg:grid-cols-2">
+            {/* RTL: text is first, so it sits on the right. */}
+            <div className="relative flex min-h-[500px] items-center overflow-hidden bg-gradient-to-br from-[#075a5e] via-[#087f79] to-[#0aa098] px-6 py-10 text-white sm:px-10 lg:px-12">
+              <div className="absolute -bottom-28 -right-20 h-72 w-72 rounded-full border-[30px] border-white/8"/>
+              <div className="relative w-full">
+               
+                <h1 className="mt-5 text-[2.7rem] font-black leading-[1.08] tracking-[-.075em] sm:text-5xl lg:text-[4rem]">
+                  الشغل عليك،
+                  <br/><span className="text-[#26d7cf]">وعلينا نكبّر اسمك.</span>
+                </h1>
+                <p className="mt-5 max-w-lg text-sm leading-7 text-[#d9f3ee]">
+                  بدك خدمة؟ دور عليها، شوف مين بناسبك، واحكي معه من جسر.
+                  عندك شغلة بتتقنها؟ ورّينا شغلك وخلي الناس تلاقيك.
+                </p>
 
-          <div className="relative max-w-2xl">
-            <h1 className="max-w-xl text-[2.35rem] font-bold leading-[1.2] tracking-[-.07em] sm:text-5xl lg:text-[4rem]">
-             الشغل عليك,
-              <br />
-              <span className="text-[#ffd39a]">
-               وعلينا نكبّر اسمك.
-              </span>
-            </h1>
+                <form action="/discover" role="search" className="mt-7">
+                  <div className="flex min-h-16 items-center gap-3 rounded-2xl bg-white px-3 py-2 text-[rgb(var(--text-main))] shadow-[0_20px_50px_rgba(2,45,42,.22)]">
+                    <Search size={20} className="shrink-0 text-[#159d95]"/>
+                    <input name="q" type="search" maxLength={120}
+                      placeholder="شو بدك تنجز اليوم؟"
+                      className="min-w-0 flex-1 bg-transparent text-sm outline-none"/>
+                    <button className="min-h-11 rounded-xl bg-[#159d95] px-5 text-xs font-bold text-white transition hover:-translate-y-0.5 active:scale-[.97]">
+                      دور
+                    </button>
+                  </div>
+                </form>
 
-            <p className="mt-4 max-w-md text-sm leading-7 text-[#d7f2eb] sm:text-base">
-              ابحث عن الخدمة التي تحتاجها، وشوف الخيارات
-              المتاحة ومقدميها من مكان واحد.
-            </p>
-
-            <form
-              action="/discover"
-              role="search"
-              className="mt-7 max-w-xl"
-            >
-              <label
-                htmlFor="home-search"
-                className="sr-only"
-              >
-                ابحث عن خدمة
-              </label>
-
-              <div className="hero-search-shell flex h-14 items-center gap-3 rounded-2xl border border-white/20 px-4">
-                <Search
-                  size={20}
-                  className="shrink-0 text-[#1ea59d]"
-                />
-
-                <input
-                  id="home-search"
-                  name="q"
-                  type="search"
-                  maxLength={120}
-                  placeholder="شو بدك تصلّح أو تنجز اليوم؟"
-                  className="min-w-0 flex-1 bg-transparent text-sm outline-none"
-                />
-
-                <button
-                  type="submit"
-                  className="hidden rounded-xl bg-[#1ea59d] px-4 py-2 text-xs font-bold text-white transition active:scale-[0.97] sm:block"
-                >
-                  ابحث
-                </button>
+                <div className="mt-5 grid grid-cols-3 gap-2">
+                  {[
+                    [ShieldCheck, "اختار براحتك"],
+                    [MessageCircleMore, "احكي مباشرة"],
+                    [Star, "شوف التقييمات"],
+                  ].map(([Icon, text]) => {
+                    const I = Icon as typeof ShieldCheck;
+                    return <div key={String(text)} className="rounded-2xl border border-white/15 bg-white/10 p-3">
+                      <I size={16} className="text-[#a9eee6]"/>
+                      <p className="mt-2 text-[10px] font-bold">{String(text)}</p>
+                    </div>
+                  })}
+                </div>
               </div>
-            </form>
+            </div>
+
+            {/* Desktop object collage; completely hidden on mobile. */}
+            <div className="relative hidden min-h-[500px] bg-[#f4efe5] p-5 lg:block">
+              <div className="grid h-full grid-cols-2 grid-rows-2 gap-4">
+                <ObjectTile icon={Wrench} label="صيانة وإصلاح"/>
+                <ObjectTile icon={Code2} label="تقنية وبرمجة"/>
+                <ObjectTile icon={GraduationCap} label="تعليم وتدريب"/>
+                <ObjectTile icon={PaintRoller} label="دهان وتشطيب"/>
+              </div>
+              <div className="absolute left-1/2 top-1/2 flex h-24 w-24 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-[1.7rem] border-[5px] border-[#f4efe5] bg-[#0a9b92] text-2xl font-black text-white shadow-xl">
+                جسر
+              </div>
+            </div>
           </div>
+        </div>
+
+        {/* Mobile icon strip instead of imagery */}
+        <div className="mt-4 grid grid-cols-4 gap-2 lg:hidden">
+          {[ [House,"بيت"], [Wrench,"صيانة"], [Code2,"تقنية"], [GraduationCap,"تعليم"] ].map(([Icon,label]) => {
+            const I = Icon as typeof House;
+            return <div key={String(label)} className="rounded-2xl border border-theme bg-surface p-3 text-center">
+              <span className="mx-auto flex h-11 w-11 items-center justify-center rounded-xl bg-[rgb(var(--primary-soft))] text-brand"><I size={20}/></span>
+              <p className="mt-2 text-[10px] font-bold">{String(label)}</p>
+            </div>
+          })}
         </div>
       </section>
 
       <section className="mx-auto max-w-6xl px-4 sm:px-6">
-        <SectionHeading
-          eyebrow="دور على اللي بناسبك"
-          title="شو بدك تنجز؟"
-          href="/discover"
-          action="كل التصنيفات"
-        />
-
-        <div className="hide-scrollbar -mx-4 flex gap-3 overflow-x-auto px-4 pb-4 sm:mx-0 sm:grid sm:grid-cols-3 sm:gap-4 sm:overflow-visible sm:px-0 lg:grid-cols-4 xl:grid-cols-8">
-          {categories
-            .filter(
-              (category) =>
-                category.slug !== "business-consulting" &&
-                category.slug !== "events",
-            )
-            .slice(0, 8)
-            .map((category) => {
-              const visual =
-                categoryVisuals[
-                  category.slug as keyof typeof categoryVisuals
-                ] || {
-                  icon: LayoutGrid,
-                  tone: "bg-[#e6e4db] text-[#607064]",
-                };
-
-              const Icon = visual.icon;
-
-              return (
-                <Link
-                  key={category.id}
-                  href={`/discover?category=${category.id}`}
-                  className="home-category-card group flex min-w-[142px] flex-col rounded-2xl border border-theme bg-surface p-3.5 transition hover:-translate-y-1 hover:shadow-soft sm:min-w-0"
-                >
-                  <span
-                    className={`mb-5 flex h-12 w-12 items-center justify-center rounded-2xl ${visual.tone}`}
-                  >
-                    <Icon size={21} />
-                  </span>
-
-                  <h3 className="home-category-title line-clamp-2 text-sm font-bold leading-5 tracking-[-.03em]">
-                    {category.name_ar}
-                  </h3>
-
-                  <p className="home-category-copy mt-1 line-clamp-2 text-[10px] leading-5 text-muted">
-                    {category.description_ar ||
-                      "خدمات تناسب احتياجك"}
-                  </p>
-                </Link>
-              );
-            })}
+        <SectionHeading eyebrow="شو محتاج؟" title="اختار المجال وخلي الباقي علينا" copy="من هون بتوصل للخدمة والناس اللي بتقدمها." href="/discover" action="شوفهم كلهم"/>
+        <div className="hide-scrollbar -mx-4 flex gap-3 overflow-x-auto px-4 pb-4 sm:mx-0 sm:grid sm:grid-cols-3 sm:px-0 lg:grid-cols-4 xl:grid-cols-7">
+          {categories.slice(0,7).map((category) => {
+            const visual = categoryVisuals[category.slug as keyof typeof categoryVisuals] || {icon:LayoutGrid,tone:"bg-[#e6e4db] text-[#607064]"};
+            const Icon = visual.icon;
+            return (
+              <Link key={category.id} href={`/discover?category=${category.id}`}
+                className="group min-w-[145px] rounded-[1.5rem] border border-theme bg-surface p-4 transition duration-300 hover:-translate-y-1 hover:shadow-soft sm:min-w-0">
+                <span className={`flex h-14 w-14 items-center justify-center rounded-2xl ${visual.tone}`}><Icon size={24}/></span>
+                <h3 className="mt-5 line-clamp-2 text-sm font-black leading-5">{category.name_ar}</h3>
+                <p className="mt-1 line-clamp-2 text-[10px] leading-5 text-muted">{category.description_ar || "افتح وشوف شو موجود"}</p>
+              </Link>
+            );
+          })}
         </div>
       </section>
-
-      <section className="mx-auto mt-12 max-w-6xl px-4 sm:px-6 lg:mt-20">
-        <SectionHeading
-          eyebrow="اكتشف الخدمات"
-          title="خلي طلبك يوصل للشخص المناسب"
-          href="/discover"
-          action="اكتشف أكثر"
-        />
-
-        <div className="grid gap-4 md:grid-cols-[1.2fr_.8fr]">
-          <Link
-            href="/discover"
-            className="relative min-h-[230px] overflow-hidden rounded-3xl bg-[#f6d7ca] p-6 sm:p-8"
-          >
-            <div className="absolute -bottom-12 -left-5 h-48 w-48 rounded-full border-[26px] border-[#fff0df]/70" />
-
-            <div className="relative max-w-xs">
-              <h3 className="text-2xl font-bold leading-tight tracking-[-.05em] text-[#713f3c]">
-                سوق الخدمات
-                <br />
-                عم يكبر معك.
-              </h3>
-
-              <p className="mt-4 text-xs leading-6 text-[#875651]">
-                افتح المجال، اختار الخدمة، وبعدها شوف كل
-                مقدمي الخدمة المتاحين لها.
-              </p>
-            </div>
-
-            <span className="absolute bottom-6 left-6 flex h-14 w-14 items-center justify-center rounded-full border border-[#bf8177]/35 text-[#92534a]">
-              <ArrowLeft size={22} />
-            </span>
-          </Link>
-
-          <Link
-            href="/provider/apply"
-            className="min-h-[230px] rounded-3xl border border-theme bg-surface p-6 sm:p-8"
-          >
-            <span className="mb-8 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#fff3d9] text-[#8a641c]">
-              <BriefcaseBusiness size={20} />
-            </span>
-
-            <h3 className="text-xl font-bold tracking-[-.04em]">
-              بدك تبدأ كمزوّد؟
-            </h3>
-
-            <p className="mt-3 text-xs leading-6 text-muted">
-              اعرض خدماتك للناس اللي بتدور عليها، وخلي ملفك
-              وخدماتك تحت سيطرتك.
-            </p>
-
-            <span className="mt-7 inline-flex items-center gap-2 text-xs font-bold text-brand">
-              اعرف أكثر
-              <ArrowLeft size={14} />
-            </span>
-          </Link>
-        </div>
-      </section>
-
-      {providers.length > 0 && (
-        <section className="mx-auto mt-12 max-w-6xl px-4 sm:px-6 lg:mt-20">
-          <SectionHeading
-            eyebrow="أهل الخبرة"
-            title="ناس بتعرف شغلها"
-            href="/discover?scope=PROVIDERS"
-            action="شوف الكل"
-          />
-
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            {providers.map((result) => (
-              <SearchResultCard
-                key={result.result_id}
-                result={result}
-              />
-            ))}
-          </div>
-        </section>
-      )}
 
       {listings.length > 0 && (
-        <section className="mx-auto mt-12 max-w-6xl px-4 sm:px-6 lg:mt-20">
-          <SectionHeading
-            eyebrow="خدمات من أصحابها"
-            title="شوف وقارن"
-            href="/discover?scope=LISTINGS"
-            action="كل الخدمات"
-          />
-
+        <section className="mx-auto mt-14 max-w-6xl px-4 sm:px-6 lg:mt-20">
+          <SectionHeading eyebrow="شوف الشغل" title="خدمات جاهزة إلك" copy="شوف التفاصيل، قارن، واختار اللي بناسبك." href="/discover?scope=LISTINGS" action="كل الخدمات"/>
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            {listings.map((result) => (
-              <SearchResultCard
-                key={result.result_id}
-                result={result}
-              />
-            ))}
+            {listings.map((r)=><SearchResultCard key={r.result_id} result={r}/>)}
           </div>
         </section>
       )}
+
+      {providers.length > 0 && (
+        <section className="mx-auto mt-14 max-w-6xl px-4 sm:px-6 lg:mt-20">
+          <SectionHeading eyebrow="مين بقدر يساعدك؟" title="ناس بتعرف شغلها" copy="افتح الملف، شوف شغله، وقرر براحتك." href="/discover?scope=PROVIDERS" action="شوف الكل"/>
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            {providers.map((r)=><SearchResultCard key={r.result_id} result={r}/>)}
+          </div>
+        </section>
+      )}
+
+      <section className="mx-auto mt-14 max-w-6xl px-4 sm:px-6 lg:mt-20">
+        <div className="overflow-hidden rounded-[2rem] bg-gradient-to-l from-[#087f79] to-[#05535a] text-white">
+          <div className="grid items-center gap-6 p-7 sm:p-10 lg:grid-cols-[1fr_auto]">
+            <div>
+              <p className="text-[11px] font-bold text-[#bcece6]">عندك شغلة بتتقنها؟</p>
+              <h2 className="mt-2 text-3xl font-black tracking-[-.05em]">ورّينا شغلك.</h2>
+              <p className="mt-3 max-w-xl text-xs leading-6 text-white/75">
+                اعمل ملفك، نزّل خدماتك، وخلي اللي محتاج شغلك يوصلك.
+              </p>
+            </div>
+            <Link href="/provider/apply" className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-white px-6 text-sm font-black text-[#087f79] transition hover:-translate-y-0.5 active:scale-[.98]">
+              يلا نبدأ <ArrowLeft size={16}/>
+            </Link>
+          </div>
+        </div>
+      </section>
 
       {posts.length > 0 && (
-        <section className="mx-auto mt-12 max-w-6xl px-4 sm:px-6 lg:mt-20">
-          <SectionHeading
-            eyebrow="شغلهم بحكي عنهم"
-            title="أعمال من المجتمع"
-            href="/discover?scope=POSTS"
-            action="شوف الكل"
-          />
-
+        <section className="mx-auto mt-14 max-w-6xl px-4 sm:px-6 lg:mt-20">
+          <SectionHeading eyebrow="شغلهم بحكي عنهم" title="شوف شو عم ينعمل" copy="آخر شغل نازل من مجتمع جسر." href="/discover?scope=POSTS" action="شوف الكل"/>
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            {posts.map((result) => (
-              <SearchResultCard
-                key={result.result_id}
-                result={result}
-              />
-            ))}
+            {posts.map((r)=><SearchResultCard key={r.result_id} result={r}/>)}
           </div>
         </section>
       )}
 
-      {serviceTypes.length > 0 && (
-        <section className="mx-auto mt-12 max-w-6xl px-4 sm:px-6 lg:mt-20">
-          <SectionHeading
-            eyebrow="خدمات قريبة من طلبك"
-            title="خدمات ممكن تحتاجها"
-            href="/discover"
-            action="شوف الكل"
-          />
-
+      {listings.length === 0 && serviceTypes.length > 0 && (
+        <section className="mx-auto mt-14 max-w-6xl px-4 sm:px-6 lg:mt-20">
+          <SectionHeading eyebrow="مش عارف من وين تبدأ؟" title="هاي ممكن تفيدك" copy="اختار وحدة وشوف التفاصيل." href="/discover" action="كل الخدمات"/>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            {serviceTypes.slice(0, 8).map((service) => (
-              <Link
-                key={service.id}
-                href={`/service-types/${service.id}`}
-                className="rounded-2xl border border-theme bg-surface p-4 transition hover:-translate-y-1 hover:shadow-soft"
-              >
-                <span className="mb-5 flex h-11 w-11 items-center justify-center rounded-2xl bg-[rgb(var(--primary)/0.1)] text-brand">
-                  <Search size={18} />
-                </span>
-
-                <h3 className="line-clamp-2 text-sm font-bold leading-6">
-                  {service.title}
-                </h3>
-
-                <p className="mt-1 line-clamp-1 text-[10px] text-muted">
-                  {service.category_name}
-                </p>
+            {serviceTypes.map((s)=>(
+              <Link key={s.id} href={`/service-types/${s.id}`} className="rounded-2xl border border-theme bg-surface p-4 transition hover:-translate-y-1 hover:shadow-soft">
+                <span className="mb-5 flex h-11 w-11 items-center justify-center rounded-2xl bg-[rgb(var(--primary)/.1)] text-brand"><Package size={18}/></span>
+                <h3 className="line-clamp-2 text-sm font-black leading-6">{s.title}</h3>
+                <p className="mt-1 line-clamp-1 text-[10px] text-muted">{s.category_name}</p>
               </Link>
             ))}
           </div>
