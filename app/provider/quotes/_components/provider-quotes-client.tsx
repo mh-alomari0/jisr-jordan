@@ -1,18 +1,25 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
+  ArrowLeft,
   CalendarDays,
   CheckCircle2,
   Clock3,
   FileQuestion,
-  Send,
+  Sparkles,
   WalletCards,
+  XCircle,
 } from "lucide-react";
-import { respondToQuoteRequestAction } from "@/lib/actions/marketplace-transactions";
+import { createCODPaymentAction } from "@/lib/actions/cod-payment";
+import {
+  acceptProviderQuoteAction,
+  rejectProviderQuoteAction,
+} from "@/lib/actions/marketplace-transactions";
 
-interface ProviderQuoteRow {
+interface CustomerQuoteRow {
   id: string;
   amount: number;
   currency: string;
@@ -22,7 +29,7 @@ interface ProviderQuoteRow {
   expires_at: string;
 }
 
-interface ProviderQuoteRequestRow {
+interface CustomerQuoteRequestRow {
   id: string;
   requirements: string;
   budget: number | null;
@@ -36,307 +43,277 @@ interface ProviderQuoteRequestRow {
     delivery_type: string;
     pricing_model: string;
   } | null;
-  provider_quotes?: ProviderQuoteRow[] | null;
+  provider_quotes?: CustomerQuoteRow[] | null;
 }
 
-export default function ProviderQuotesClient({
+export default function CustomerQuotesClient({
   requests,
 }: {
-  requests: ProviderQuoteRequestRow[];
+  requests: CustomerQuoteRequestRow[];
 }) {
   const router = useRouter();
-  const [activeId, setActiveId] =
-    useState<string | null>(null);
+  const [activeId, setActiveId] = useState<string | null>(null);
   const [message, setMessage] = useState("");
   const [pending, setPending] = useState(false);
-  const [filter, setFilter] = useState("OPEN");
+  const today = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Amman",
+  }).format(new Date());
 
-  const visible = useMemo(() => {
-    if (filter === "ALL") return requests;
-    if (filter === "OPEN")
-      return requests.filter((request) =>
-        ["REQUESTED", "QUOTED"].includes(
-          request.status,
-        ),
-      );
-    return requests.filter(
-      (request) => request.status === filter,
-    );
-  }, [filter, requests]);
-
-  const submit = async (
-    requestId: string,
-    formData: FormData,
+  const accept = async (
+    quote: CustomerQuoteRow,
+    remote: boolean,
+    data: FormData,
   ) => {
     setPending(true);
     setMessage("");
 
-    const expires = new Date();
-    expires.setDate(expires.getDate() + 7);
+    const result = await acceptProviderQuoteAction({
+      quoteId: quote.id,
+      bookingDate: String(data.get("bookingDate")),
+      startTime: String(data.get("startTime")),
+      endTime: String(data.get("endTime")),
+      phone: String(data.get("phone")),
+      address: remote ? "خدمة عن بُعد" : String(data.get("address")),
+      idempotencyKey: crypto.randomUUID().replaceAll("-", ""),
+    });
 
-    const result =
-      await respondToQuoteRequestAction({
-        requestId,
-        amount: Number(formData.get("amount")),
-        timelineDays: Number(
-          formData.get("timelineDays"),
-        ),
-        message: String(
-          formData.get("message") || "",
-        ),
-        expiresAt: expires.toISOString(),
-      });
-
-    setPending(false);
-
-    if (!result.success) {
-      setMessage(
-        result.error || "تعذر إرسال العرض",
-      );
+    if (!result.success || !result.bookingId) {
+      setPending(false);
+      setMessage(result.error || "تعذر قبول العرض");
       return;
     }
 
-    setActiveId(null);
-    router.refresh();
+    const payment = await createCODPaymentAction(result.bookingId);
+    if (!payment.success) {
+      setMessage("تم إنشاء الطلب، ويمكنك اختيار الدفع النقدي من صفحة الحجز.");
+    }
+    router.push("/bookings/" + result.bookingId);
   };
 
-  const filters = [
-    ["OPEN", "المفتوحة"],
-    ["REQUESTED", "بانتظار الرد"],
-    ["QUOTED", "تم تسعيرها"],
-    ["ACCEPTED", "مقبولة"],
-    ["ALL", "الكل"],
-  ];
+  const reject = async (quoteId: string) => {
+    if (!window.confirm("هل أنت متأكد من رفض هذا العرض؟")) return;
+    const result = await rejectProviderQuoteAction(quoteId);
+    if (!result.success) setMessage(result.error || "تعذر رفض العرض");
+    else router.refresh();
+  };
+
+  if (!requests.length) {
+    return (
+      <div className="surface-card p-12 text-center space-y-3">
+        <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-3xl bg-[rgb(var(--primary-soft))] text-brand shadow-sm">
+          <FileQuestion size={26} />
+        </span>
+        <h2 className="text-lg font-black">لا توجد لديك طلبات عروض أسعار</h2>
+        <p className="text-xs text-muted max-w-sm mx-auto leading-6">
+          يمكنك طلب عرض سعر مخصص لأي خدمة تحتاج إلى تفاصيل محددة من دليل الخدمات.
+        </p>
+        <Link href="/discover" className="brand-button mt-4 text-xs font-black">
+          استكشف الخدمات
+        </Link>
+      </div>
+    );
+  }
 
   return (
-    <section>
-      <div className="hide-scrollbar mb-5 flex gap-2 overflow-x-auto pb-1">
-        {filters.map(([id, label]) => (
-          <button
-            key={id}
-            type="button"
-            onClick={() => setFilter(id)}
-            className={`shrink-0 rounded-full px-3 py-2 text-[10px] font-bold ${
-              filter === id
-                ? "bg-[rgb(var(--primary))] text-white"
-                : "border border-theme bg-surface text-muted"
-            }`}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
-
+    <div className="space-y-5">
       {message && (
         <p
           role="alert"
-          className="mb-4 rounded-2xl bg-[rgb(var(--danger)/0.1)] p-3 text-xs text-[rgb(var(--danger))]"
+          className="rounded-2xl bg-[rgb(var(--warning)/0.1)] p-4 text-xs font-bold text-[rgb(var(--warning))]"
         >
           {message}
         </p>
       )}
 
-      {visible.length ? (
-        <div className="space-y-4">
-          {visible.map((request) => {
-            const current =
-              request.provider_quotes?.find(
-                (quote) =>
-                  quote.status === "PENDING",
-              );
+      {requests.map((request) => {
+        const quote = request.provider_quotes?.find(
+          (item) => item.status === "PENDING",
+        );
+        const expired = quote
+          ? new Date(quote.expires_at) <= new Date()
+          : false;
+        const remote = request.service_listings?.delivery_type === "REMOTE";
 
-            const respondable = [
-              "REQUESTED",
-              "QUOTED",
-            ].includes(request.status);
+        return (
+          <article
+            key={request.id}
+            className="surface-card overflow-hidden p-5 sm:p-7 space-y-4"
+          >
+            <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
+              <div>
+                <span className="status-pill bg-surface-muted text-muted font-black">
+                  {request.status === "QUOTED"
+                    ? "وصلك عرض سعر 🎉"
+                    : request.status === "REQUESTED"
+                      ? "قيد دراسة الفني"
+                      : request.status}
+                </span>
 
-            return (
-              <article
-                key={request.id}
-                className="overflow-hidden rounded-[1.8rem] border border-theme bg-surface shadow-soft"
-              >
-                <div className="grid gap-5 p-5 sm:p-6 lg:grid-cols-[minmax(0,1fr)_220px]">
-                  <div>
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className="rounded-full bg-surface-muted px-2.5 py-1 text-[9px] font-bold text-muted">
-                        {request.status}
-                      </span>
+                <h2 className="mt-3 text-lg font-black sm:text-xl">
+                  {request.service_listings?.title || "طلب عرض سعر"}
+                </h2>
 
-                      <span className="text-[9px] text-muted">
-                        {new Date(
-                          request.created_at,
-                        ).toLocaleDateString(
-                          "ar-JO",
-                        )}
-                      </span>
-                    </div>
+                <p className="mt-2 text-xs leading-6 text-muted max-w-2xl">
+                  {request.requirements}
+                </p>
+              </div>
 
-                    <h2 className="mt-3 text-lg font-bold">
-                      {request.service_listings
-                        ?.title ||
-                        "طلب عرض سعر"}
-                    </h2>
+              {quote && (
+                <div className="rounded-2xl bg-[rgb(var(--primary-soft))] p-4 text-center sm:text-start shrink-0">
+                  <p className="text-[10px] font-bold text-muted">السعر المقدم</p>
+                  <strong className="mt-1 block text-2xl font-black text-brand">
+                    {quote.amount} د.أ
+                  </strong>
+                </div>
+              )}
+            </div>
 
-                    <p className="mt-3 whitespace-pre-wrap text-sm leading-7">
-                      {request.requirements}
-                    </p>
-
-                    <div className="mt-4 flex flex-wrap gap-3 text-[10px] text-muted">
-                      <span className="inline-flex items-center gap-1">
-                        <WalletCards size={13} />
-                        {request.budget
-                          ? `ميزانية العميل: ${request.budget} د.أ`
-                          : "لم يحدد ميزانية"}
-                      </span>
-
-                      {request.target_date && (
-                        <span className="inline-flex items-center gap-1">
-                          <CalendarDays size={13} />
-                          مستهدف:{" "}
-                          {new Date(
-                            request.target_date,
-                          ).toLocaleDateString(
-                            "ar-JO",
-                          )}
-                        </span>
-                      )}
-                    </div>
+            {quote ? (
+              <div className="border-t border-theme pt-4 space-y-4">
+                <div className="rounded-2xl bg-surface-muted p-4 space-y-2">
+                  <p className="text-xs leading-6 font-medium">
+                    {quote.message || "أرسل مقدم الخدمة عرضاً رسمياً لتنفيذ متطلباتك."}
+                  </p>
+                  <div className="flex flex-wrap gap-4 text-[11px] font-bold text-muted pt-1">
+                    <span className="inline-flex items-center gap-1.5">
+                      <Clock3 size={14} className="text-brand" /> مدة الإنجاز: {quote.timeline_days} أيام
+                    </span>
+                    <span className="inline-flex items-center gap-1.5">
+                      <CalendarDays size={14} className="text-brand" /> صالح لغاية:{" "}
+                      {new Date(quote.expires_at).toLocaleDateString("ar-JO")}
+                    </span>
                   </div>
-
-                  <aside className="rounded-2xl bg-surface-muted p-4">
-                    {current ? (
-                      <>
-                        <p className="text-[9px] font-bold text-brand">
-                          عرضك الحالي
-                        </p>
-                        <strong className="mt-1 block text-2xl text-brand">
-                          {current.amount} د.أ
-                        </strong>
-                        <p className="mt-2 flex items-center gap-1 text-[10px] text-muted">
-                          <Clock3 size={12} />
-                          {current.timeline_days} يوم
-                        </p>
-                        <p className="mt-1 text-[9px] text-muted">
-                          صالح حتى{" "}
-                          {new Date(
-                            current.expires_at,
-                          ).toLocaleDateString(
-                            "ar-JO",
-                          )}
-                        </p>
-                      </>
-                    ) : (
-                      <>
-                        <FileQuestion className="h-6 w-6 text-brand" />
-                        <p className="mt-3 text-xs font-bold">
-                          ما سعّرت الطلب بعد
-                        </p>
-                        <p className="mt-1 text-[9px] leading-5 text-muted">
-                          راجع التفاصيل ثم أرسل سعراً واضحاً.
-                        </p>
-                      </>
-                    )}
-                  </aside>
                 </div>
 
-                {respondable && (
-                  <div className="border-t border-theme p-5 sm:p-6">
-                    {activeId === request.id ? (
-                      <form
-                        action={(data) =>
-                          submit(request.id, data)
-                        }
-                        className="grid gap-3 sm:grid-cols-2"
-                      >
-                        <label className="text-xs font-bold">
-                          السعر النهائي بالدينار
+                {!expired && request.status === "QUOTED" && (
+                  activeId === quote.id ? (
+                    <form
+                      action={(data) => accept(quote, remote, data)}
+                      className="rounded-2xl border border-theme bg-surface-muted p-4 sm:p-5 grid gap-3 sm:grid-cols-3"
+                    >
+                      <label className="text-xs font-bold">
+                        موعد البدء
+                        <input
+                          name="bookingDate"
+                          type="date"
+                          min={today}
+                          defaultValue={request.target_date || ""}
+                          required
+                          className="form-field mt-1.5"
+                        />
+                      </label>
+
+                      <label className="text-xs font-bold">
+                        من
+                        <input
+                          name="startTime"
+                          type="time"
+                          defaultValue="09:00"
+                          required
+                          className="form-field mt-1.5"
+                        />
+                      </label>
+
+                      <label className="text-xs font-bold">
+                        إلى
+                        <input
+                          name="endTime"
+                          type="time"
+                          defaultValue="10:00"
+                          required
+                          className="form-field mt-1.5"
+                        />
+                      </label>
+
+                      <label className="text-xs font-bold sm:col-span-3">
+                        رقم الهاتف للتأكيد
+                        <input
+                          name="phone"
+                          inputMode="tel"
+                          dir="ltr"
+                          pattern="(077|078|079)[0-9]{7}"
+                          placeholder="0791234567"
+                          required
+                          className="form-field mt-1.5 text-right"
+                        />
+                      </label>
+
+                      {!remote && (
+                        <label className="text-xs font-bold sm:col-span-3">
+                          عنوان التنفيذ
                           <input
-                            name="amount"
-                            type="number"
-                            min="1"
-                            max="1000000"
-                            step="0.01"
+                            name="address"
+                            minLength={5}
+                            maxLength={500}
+                            placeholder="المدينة، المنطقة، الشارع"
                             required
                             className="form-field mt-1.5"
                           />
                         </label>
+                      )}
 
-                        <label className="text-xs font-bold">
-                          مدة التنفيذ بالأيام
-                          <input
-                            name="timelineDays"
-                            type="number"
-                            min="1"
-                            max="3650"
-                            required
-                            className="form-field mt-1.5"
-                          />
-                        </label>
+                      <div className="flex flex-wrap gap-2 sm:col-span-3 pt-2">
+                        <button
+                          disabled={pending}
+                          className="brand-button text-xs font-black"
+                        >
+                          <CheckCircle2 size={15} />
+                          {pending ? "جارٍ التأكيد..." : "تأكيد وقبول العرض"}
+                        </button>
 
-                        <label className="text-xs font-bold sm:col-span-2">
-                          رسالة وتفاصيل العرض
-                          <textarea
-                            name="message"
-                            maxLength={2000}
-                            rows={4}
-                            className="form-field mt-1.5"
-                            placeholder="وضح شو بيشمل السعر وأي تفاصيل مهمة للعميل..."
-                          />
-                        </label>
-
-                        <div className="flex flex-wrap gap-2 sm:col-span-2">
-                          <button
-                            disabled={pending}
-                            className="brand-button gap-1.5"
-                          >
-                            <Send size={14} />
-                            {pending
-                              ? "جارٍ الإرسال..."
-                              : "إرسال عرض صالح 7 أيام"}
-                          </button>
-
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setActiveId(null)
-                            }
-                            className="secondary-button"
-                          >
-                            إلغاء
-                          </button>
-                        </div>
-                      </form>
-                    ) : (
+                        <button
+                          type="button"
+                          onClick={() => setActiveId(null)}
+                          className="secondary-button text-xs font-bold"
+                        >
+                          إلغاء
+                        </button>
+                      </div>
+                    </form>
+                  ) : (
+                    <div className="flex flex-wrap items-center gap-2 pt-2">
                       <button
                         type="button"
-                        onClick={() =>
-                          setActiveId(request.id)
-                        }
-                        className="brand-button gap-1.5"
+                        onClick={() => setActiveId(quote.id)}
+                        className="brand-button !min-h-[42px] text-xs font-black shadow-md"
                       >
-                        <CheckCircle2 size={14} />
-                        {current
-                          ? "إرسال عرض جديد"
-                          : "إرسال عرض سعر"}
+                        <WalletCards size={15} /> قبول العرض وبدء الحجز
                       </button>
-                    )}
-                  </div>
+
+                      <button
+                        type="button"
+                        onClick={() => reject(quote.id)}
+                        className="secondary-button !min-h-[42px] text-xs font-bold text-[rgb(var(--danger))]"
+                      >
+                        <XCircle size={15} /> رفض العرض
+                      </button>
+
+                      {request.service_listings?.slug && (
+                        <Link
+                          href={`/listings/${request.service_listings.slug}`}
+                          className="secondary-button !min-h-[42px] ms-auto text-xs font-bold"
+                        >
+                          عرض تفاصيل الخدمة <ArrowLeft size={14} />
+                        </Link>
+                      )}
+                    </div>
+                  )
                 )}
-              </article>
-            );
-          })}
-        </div>
-      ) : (
-        <div className="rounded-[1.8rem] border border-dashed border-[rgb(var(--primary)/0.28)] bg-[rgb(var(--primary)/0.025)] p-10 text-center">
-          <FileQuestion className="mx-auto h-8 w-8 text-brand" />
-          <h3 className="mt-3 font-bold">
-            ما في طلبات ضمن هذه الفئة
-          </h3>
-          <p className="mt-2 text-xs text-muted">
-            الطلبات الجديدة رح تظهر هون أول ما يرسلها العملاء.
-          </p>
-        </div>
-      )}
-    </section>
+
+                {expired && (
+                  <p className="text-xs font-bold text-[rgb(var(--danger))]">
+                    انتهت صلاحية هذا العرض، يرجى تقديم طلب جديد.
+                  </p>
+                )}
+              </div>
+            ) : (
+              <div className="rounded-2xl border border-dashed border-theme p-4 text-center text-xs text-muted">
+                ⏳ طلبك وصل لمقدم الخدمة وبانتظار تقدير السعر المناسب لك.
+              </div>
+            )}
+          </article>
+        );
+      })}
+    </div>
   );
 }

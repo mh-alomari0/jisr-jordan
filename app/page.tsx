@@ -6,15 +6,11 @@ import {
   GraduationCap,
   House,
   LayoutGrid,
-  MessageCircleMore,
-  Package,
   PaintRoller,
   Palette,
   Search,
   Shapes,
-  ShieldCheck,
   Sparkles,
-  Star,
   Wrench,
 } from "lucide-react";
 import SearchResultCard from "@/components/marketplace/search-result-card";
@@ -129,17 +125,12 @@ export default async function HomePage() {
       <section className="mx-auto max-w-6xl px-4 pb-8 pt-4 sm:px-6 sm:pt-8 lg:pb-14">
         <div className="overflow-hidden rounded-[2.4rem] border border-[rgb(var(--primary)/.15)] bg-[#087f79] shadow-lift">
           <div className="grid lg:grid-cols-2">
-            <div className="relative flex min-h-[460px] items-center overflow-hidden bg-gradient-to-br from-[#065053] via-[#087f79] to-[#0ba59d] px-6 py-10 text-white sm:px-10 lg:px-12">
+            <div className="relative flex min-h-[420px] items-center overflow-hidden bg-gradient-to-br from-[#065053] via-[#087f79] to-[#0ba59d] px-6 py-10 text-white sm:px-10 lg:px-12">
               <div className="absolute -bottom-28 -right-20 h-72 w-72 rounded-full border-[30px] border-white/10" />
               <div className="absolute -top-16 -left-16 h-56 w-56 rounded-full bg-[#ffc985]/15 blur-2xl" />
 
               <div className="relative w-full">
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-[11px] font-black text-[#a6f0e7] backdrop-blur-md">
-                  <Sparkles size={13} />
-                  سوق الخدمات الأول في الأردن
-                </span>
-
-                <h1 className="mt-4 text-[2.6rem] font-black leading-[1.1] tracking-[-.075em] sm:text-5xl lg:text-[3.8rem]">
+                <h1 className="text-[2.6rem] font-black leading-[1.1] tracking-[-.075em] sm:text-5xl lg:text-[3.8rem]">
                   الشغل عليك،
                   <br />
                   <span className="text-[#26d7cf]">وعلينا نكبّر اسمك.</span>
@@ -164,32 +155,11 @@ export default async function HomePage() {
                     </button>
                   </div>
                 </form>
-
-                <div className="mt-6 grid grid-cols-3 gap-2">
-                  {[
-                    [ShieldCheck, "ضمان وموثوقية"],
-                    [MessageCircleMore, "محادثة فورية"],
-                    [Star, "تقييمات حقيقية"],
-                  ].map(([Icon, text]) => {
-                    const I = Icon as typeof ShieldCheck;
-                    return (
-                      <div
-                        key={String(text)}
-                        className="flex items-center gap-2 rounded-2xl border border-white/15 bg-white/10 p-2.5 backdrop-blur-sm"
-                      >
-                        <I size={17} className="shrink-0 text-[#a9eee6]" />
-                        <p className="text-[10px] font-bold sm:text-xs">
-                          {String(text)}
-                        </p>
-                      </div>
-                    );
-                  })}
-                </div>
               </div>
             </div>
 
             {/* Desktop Visual */}
-            <div className="relative hidden min-h-[460px] bg-[#f4efe5] p-6 lg:block">
+            <div className="relative hidden min-h-[420px] bg-[#f4efe5] p-6 lg:block">
               <div className="grid h-full grid-cols-2 grid-rows-2 gap-4">
                 <ObjectTile icon={Wrench} label="صيانة وإصلاح" />
                 <ObjectTile icon={Code2} label="تقنية وبرمجة" />

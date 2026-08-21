@@ -13,10 +13,13 @@ import {
   ArrowRight,
   CalendarDays,
   Camera,
+  Check,
+  CheckCheck,
   Flag,
   ImageIcon,
   LoaderCircle,
   MessageCircle,
+  Paperclip,
   Send,
   ShieldCheck,
   Video,
@@ -42,7 +45,7 @@ type Context = Record<string, unknown> & {
   contact_allowed?: boolean;
 };
 
-function time(value: string) {
+function formatTime(value: string) {
   return new Date(value).toLocaleTimeString("ar-JO", {
     hour: "2-digit",
     minute: "2-digit",
@@ -118,19 +121,23 @@ export default function ConversationClient({
 
   const send = () =>
     startTransition(async () => {
+      if (!body.trim()) return;
       setError("");
+
+      const currentBody = body;
+      setBody("");
 
       const result = await sendTextMessageAction({
         conversationId,
-        body,
+        body: currentBody,
       });
 
       if (!result.success) {
         setError(result.error || "تعذر إرسال الرسالة");
+        setBody(currentBody);
         return;
       }
 
-      setBody("");
       await syncLatest();
     });
 
@@ -190,31 +197,21 @@ export default function ConversationClient({
     startTransition(async () => {
       if (!cursor) return;
 
-      const result = await getConversationAction(
-        conversationId,
-        cursor,
-      );
+      const result = await getConversationAction(conversationId, cursor);
 
       if (!result.success) {
         setError(result.error || "تعذر تحميل الرسائل السابقة");
         return;
       }
 
-      setMessages((current) => [
-        ...result.messages,
-        ...current,
-      ]);
+      setMessages((current) => [...result.messages, ...current]);
       setHasMore(result.hasMore);
       setCursor(result.nextCursor);
     });
 
   const report = (id: string) =>
     startTransition(async () => {
-      const result = await reportMessageAction(
-        id,
-        "CONTACT_SHARING",
-      );
-
+      const result = await reportMessageAction(id, "CONTACT_SHARING");
       setError(
         result.success
           ? "تم إرسال البلاغ للمراجعة."
@@ -223,196 +220,192 @@ export default function ConversationClient({
     });
 
   return (
-    <div className="mx-auto flex h-[calc(100dvh-4rem-env(safe-area-inset-bottom))] max-w-5xl flex-col bg-surface md:my-6 md:h-[calc(100dvh-8rem)] md:overflow-hidden md:rounded-[2rem] md:border md:border-theme md:shadow-soft">
-      <header className="flex min-h-20 items-center gap-3 border-b border-theme bg-surface px-3 sm:px-5">
-        <Link
-          href="/messages"
-          aria-label="العودة إلى الرسائل"
-          className="flex h-10 w-10 items-center justify-center rounded-2xl hover:bg-surface-muted"
-        >
-          <ArrowRight className="h-5 w-5" />
-        </Link>
+    <div className="mx-auto flex h-[calc(100dvh-4.2rem-env(safe-area-inset-bottom))] max-w-5xl flex-col bg-[rgb(var(--canvas))] md:my-6 md:h-[calc(100dvh-8rem)] md:overflow-hidden md:rounded-[2.4rem] md:border md:border-theme md:shadow-lift">
+      {/* Header */}
+      <header className="flex min-h-[68px] items-center justify-between border-b border-theme bg-[rgb(var(--surface)/0.92)] px-3.5 backdrop-blur-2xl sm:px-6">
+        <div className="flex items-center gap-3">
+          <Link
+            href="/messages"
+            aria-label="العودة إلى الرسائل"
+            className="flex h-10 w-10 items-center justify-center rounded-2xl bg-surface-muted text-muted transition active:scale-95"
+          >
+            <ArrowRight className="h-5 w-5" />
+          </Link>
 
-        <span className="relative flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-[rgb(var(--primary-soft))] font-bold text-brand">
-          {context.counterpart_avatar_url ? (
-            <Image
-              src={context.counterpart_avatar_url}
-              alt=""
-              fill
-              sizes="44px"
-              className="object-cover"
-            />
-          ) : (
-            String(context.counterpart_name || "ج").slice(0, 1)
-          )}
-        </span>
-
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-1">
-            <h1 className="truncate text-sm font-bold">
-              {String(
-                context.counterpart_name || "محادثة جسر",
-              )}
-            </h1>
-
-            {Boolean(context.counterpart_verified) && (
-              <ShieldCheck
-                className="h-4 w-4 text-[rgb(var(--success))]"
-                aria-label="موثّق"
+          <div className="relative flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-[rgb(var(--primary-soft))] font-black text-brand shadow-sm">
+            {context.counterpart_avatar_url ? (
+              <Image
+                src={context.counterpart_avatar_url}
+                alt=""
+                fill
+                sizes="44px"
+                className="object-cover"
               />
+            ) : (
+              String(context.counterpart_name || "ج").slice(0, 1)
             )}
           </div>
 
-          {context.listing_title && (
-            <p className="truncate text-[10px] font-bold text-brand">
-              {String(context.listing_title)}
-            </p>
-          )}
+          <div className="min-w-0">
+            <div className="flex items-center gap-1.5">
+              <h1 className="truncate text-sm font-black">
+                {String(context.counterpart_name || "محادثة جسر")}
+              </h1>
+
+              {Boolean(context.counterpart_verified) && (
+                <ShieldCheck
+                  className="h-4 w-4 text-[rgb(var(--success))]"
+                  aria-label="موثّق"
+                />
+              )}
+            </div>
+
+            {context.listing_title && (
+              <p className="truncate text-[10px] font-bold text-brand">
+                {String(context.listing_title)}
+              </p>
+            )}
+          </div>
         </div>
 
-        {context.booking_id ? (
-          <Link
-            href={`/bookings/${context.booking_id}`}
-            className="secondary-button !min-h-9 !px-3 !py-1.5 text-xs"
-          >
-            <CalendarDays className="me-1 h-4 w-4" />
-            الحجز
-          </Link>
-        ) : context.listing_slug ? (
-          <Link
-            href={`/listings/${context.listing_slug}`}
-            className="brand-button !min-h-9 !px-3 !py-1.5 text-xs"
-          >
-            عرض الخدمة
-          </Link>
-        ) : null}
+        <div>
+          {context.booking_id ? (
+            <Link
+              href={`/bookings/${context.booking_id}`}
+              className="secondary-button !min-h-[38px] !rounded-xl !px-3 text-xs font-bold"
+            >
+              <CalendarDays className="me-1 h-3.5 w-3.5 text-brand" />
+              تفاصيل الحجز
+            </Link>
+          ) : context.listing_slug ? (
+            <Link
+              href={`/listings/${context.listing_slug}`}
+              className="brand-button !min-h-[38px] !rounded-xl !px-3 text-xs font-bold"
+            >
+              عرض الخدمة
+            </Link>
+          ) : null}
+        </div>
       </header>
 
+      {/* Security notice */}
       {!context.contact_allowed && (
-        <div className="border-b border-[rgb(var(--primary)/0.2)] bg-[rgb(var(--primary-soft)/0.55)] px-4 py-2 text-center text-[10px] leading-5 text-muted">
-          خليك داخل جسر قبل تأكيد المعاملة. مشاركة رقم أو بريد أو
-          وسيلة دفع خارجية قد تتجاوز حماية المنصة.
+        <div className="border-b border-[rgb(var(--primary)/0.2)] bg-[rgb(var(--primary-soft)/0.6)] px-4 py-2 text-center text-[10px] font-bold text-brand">
+          🔒 الحماية مفعلة: يرجى إتمام الاتفاق داخل منصة جسر لضمان حقوقك ومتابعة الطلب بأمان.
         </div>
       )}
 
+      {/* Messages Scroll Area */}
       <main
-        className="min-h-0 flex-1 overflow-y-auto bg-[rgb(var(--canvas))] px-3 py-4 sm:px-6"
+        className="min-h-0 flex-1 overflow-y-auto px-3 py-4 sm:px-6 space-y-3"
         aria-live="polite"
       >
         {hasMore && (
-          <div className="mb-4 text-center">
+          <div className="text-center">
             <button
               type="button"
               onClick={loadOlder}
               disabled={pending}
-              className="secondary-button !min-h-9 text-xs"
+              className="secondary-button !min-h-[34px] !rounded-full text-[11px]"
             >
-              تحميل الرسائل السابقة
+              {pending ? "جارٍ التحميل..." : "تحميل الرسائل السابقة"}
             </button>
           </div>
         )}
 
         {messages.length === 0 && (
-          <div className="mx-auto max-w-sm py-16 text-center">
-            <MessageCircle className="mx-auto h-10 w-10 text-brand" />
-            <h2 className="mt-4 font-bold">ابدأ المحادثة</h2>
-            <p className="mt-2 text-xs leading-6 text-muted">
-              احكيله شو محتاج أو ابعث صورة أو فيديو قصير يوضح
-              المشكلة.
+          <div className="mx-auto max-w-xs py-16 text-center">
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-3xl bg-[rgb(var(--primary-soft))] text-brand shadow-sm">
+              <MessageCircle size={28} />
+            </div>
+            <h2 className="mt-4 text-base font-black">ابدأ المحادثة الآن</h2>
+            <p className="mt-1 text-xs leading-6 text-muted">
+              استفسر عن التفاصيل، حدد الموعد، أو أرسل صورة توضح طلبك.
             </p>
           </div>
         )}
 
-        <div className="space-y-2.5">
-          {messages.map((message) => {
-            const own = message.sender_id === currentUserId;
+        {messages.map((message) => {
+          const own = message.sender_id === currentUserId;
 
-            return (
-              <div
-                key={message.id}
-                className={`group flex ${
-                  own ? "justify-start" : "justify-end"
+          return (
+            <div
+              key={message.id}
+              className={`flex ${own ? "justify-start" : "justify-end"}`}
+            >
+              <article
+                className={`relative max-w-[85%] sm:max-w-[75%] rounded-[1.4rem] p-3.5 shadow-sm transition-transform active:scale-[0.99] ${
+                  own
+                    ? "rounded-br-sm bg-gradient-to-l from-[#0b8f87] to-[#07766f] text-white"
+                    : "rounded-bl-sm border border-theme bg-surface text-[rgb(var(--text-main))]"
                 }`}
               >
-                <article
-                  className={`relative max-w-[84%] rounded-2xl px-3.5 py-2.5 shadow-sm ${
-                    own
-                      ? "rounded-br-md bg-[rgb(var(--primary))] text-white"
-                      : "rounded-bl-md border border-theme bg-surface"
+                {message.message_type === "IMAGE" && message.media_url && (
+                  <button
+                    type="button"
+                    onClick={() => window.open(message.media_url!, "_blank")}
+                    className="relative mb-2 block aspect-[4/3] w-64 max-w-full overflow-hidden rounded-2xl bg-black/10 shadow-inner"
+                  >
+                    <Image
+                      src={message.media_url}
+                      alt="مرفق صورة"
+                      fill
+                      sizes="256px"
+                      className="object-cover"
+                    />
+                  </button>
+                )}
+
+                {message.message_type === "VIDEO" && message.media_url && (
+                  <video
+                    src={message.media_url}
+                    controls
+                    preload="metadata"
+                    className="mb-2 max-h-72 w-64 max-w-full rounded-2xl"
+                  />
+                )}
+
+                {message.body && (
+                  <p className="whitespace-pre-wrap break-words text-xs sm:text-sm leading-6 font-medium">
+                    {message.body}
+                  </p>
+                )}
+
+                <div
+                  className={`mt-1.5 flex items-center justify-between gap-3 text-[10px] ${
+                    own ? "text-white/75" : "text-muted"
                   }`}
                 >
-                  {message.message_type === "IMAGE" &&
-                    message.media_url && (
-                      <button
-                        type="button"
-                        onClick={() =>
-                          window.open(
-                            message.media_url!,
-                            "_blank",
-                            "noopener,noreferrer",
-                          )
-                        }
-                        className="relative mb-2 block aspect-[4/3] w-56 max-w-full overflow-hidden rounded-xl bg-black/10"
-                        aria-label="فتح الصورة"
-                      >
-                        <Image
-                          src={message.media_url}
-                          alt="مرفق داخل المحادثة"
-                          fill
-                          sizes="224px"
-                          className="object-cover"
-                        />
-                      </button>
-                    )}
-
-                  {message.message_type === "VIDEO" &&
-                    message.media_url && (
-                      <video
-                        src={message.media_url}
-                        controls
-                        preload="metadata"
-                        className="mb-2 max-h-72 w-64 max-w-full rounded-xl"
-                      />
-                    )}
-
-                  {message.body && (
-                    <p className="whitespace-pre-wrap break-words text-sm leading-6">
-                      {message.body}
-                    </p>
-                  )}
-
-                  <div
-                    className={`mt-1 flex items-center justify-between gap-4 text-[9px] ${
-                      own ? "text-white/75" : "text-muted"
-                    }`}
-                  >
-                    <time>{time(message.created_at)}</time>
-
-                    {!own && (
-                      <button
-                        type="button"
-                        onClick={() => report(message.id)}
-                        className="opacity-60 hover:opacity-100"
-                        aria-label="الإبلاغ عن الرسالة"
-                      >
-                        <Flag className="h-3 w-3" />
-                      </button>
-                    )}
+                  <div className="flex items-center gap-1">
+                    <time>{formatTime(message.created_at)}</time>
+                    {own && <CheckCheck className="h-3 w-3" />}
                   </div>
-                </article>
-              </div>
-            );
-          })}
-        </div>
+
+                  {!own && (
+                    <button
+                      type="button"
+                      onClick={() => report(message.id)}
+                      className="opacity-50 hover:opacity-100 transition"
+                      title="إبلاغ"
+                    >
+                      <Flag className="h-3 w-3" />
+                    </button>
+                  )}
+                </div>
+              </article>
+            </div>
+          );
+        })}
 
         <div ref={bottomRef} />
       </main>
 
-      <footer className="border-t border-theme bg-surface px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 sm:px-5">
+      {/* Input Bar */}
+      <footer className="border-t border-theme bg-[rgb(var(--surface)/0.95)] px-3 pb-[max(0.6rem,env(safe-area-inset-bottom))] pt-2.5 backdrop-blur-2xl sm:px-5">
         {(error || uploadProgress) && (
           <p
             role="status"
-            className="mb-2 rounded-xl bg-[rgb(var(--primary-soft))] px-3 py-2 text-[11px]"
+            className="mb-2 rounded-xl bg-[rgb(var(--primary-soft))] px-3 py-1.5 text-[11px] font-bold text-brand"
           >
             {uploadProgress || error}
           </p>
@@ -435,7 +428,7 @@ export default function ConversationClient({
             type="button"
             onClick={() => fileInput.current?.click()}
             disabled={Boolean(uploadProgress)}
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-theme text-brand hover:bg-surface-muted"
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-theme bg-surface text-muted transition hover:text-brand active:scale-95"
             aria-label="إرفاق صورة أو فيديو"
           >
             <Camera className="h-5 w-5" />
@@ -445,14 +438,9 @@ export default function ConversationClient({
             <span className="sr-only">اكتب رسالتك</span>
             <textarea
               value={body}
-              onChange={(event) =>
-                setBody(event.target.value)
-              }
+              onChange={(event) => setBody(event.target.value)}
               onKeyDown={(event) => {
-                if (
-                  event.key === "Enter" &&
-                  !event.shiftKey
-                ) {
+                if (event.key === "Enter" && !event.shiftKey) {
                   event.preventDefault();
                   if (body.trim()) send();
                 }
@@ -460,7 +448,7 @@ export default function ConversationClient({
               rows={1}
               maxLength={4000}
               placeholder="اكتب رسالتك…"
-              className="form-field max-h-32 resize-none !rounded-2xl"
+              className="form-field max-h-28 resize-none !rounded-2xl py-3"
             />
           </label>
 
@@ -468,26 +456,15 @@ export default function ConversationClient({
             type="button"
             onClick={send}
             disabled={pending || !body.trim()}
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[rgb(var(--primary))] text-white disabled:opacity-40"
-            aria-label="إرسال الرسالة"
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[rgb(var(--primary))] text-white shadow-md transition active:scale-95 disabled:opacity-40"
+            aria-label="إرسال"
           >
             {pending ? (
               <LoaderCircle className="h-5 w-5 animate-spin" />
             ) : (
-              <Send className="h-5 w-5" />
+              <Send className="h-5 w-5 rotate-180" />
             )}
           </button>
-        </div>
-
-        <div className="mt-1 flex gap-3 px-14 text-[9px] text-muted">
-          <span className="inline-flex items-center gap-1">
-            <ImageIcon className="h-3 w-3" />
-            JPG/PNG/WebP · 8MB
-          </span>
-          <span className="inline-flex items-center gap-1">
-            <Video className="h-3 w-3" />
-            MP4/WebM · 25MB
-          </span>
         </div>
       </footer>
     </div>

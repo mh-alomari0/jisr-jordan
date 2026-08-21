@@ -29,17 +29,29 @@ import {
 } from "@/lib/marketplace";
 
 export const metadata: Metadata = {
-  title: "استكشاف الخدمات",
+  title: "استكشاف الخدمات | جسر الأردن",
   description:
-    "كل خدمات جسر الأردن مرتبة حسب المجال، ثم اختر الخدمة وقارن بين مقدميها.",
+    "تصفح جميع الخدمات ومقدميها في الأردن، وقارن العروض والأسعار بكل سهولة.",
 };
 
 const scopes = [
   { value: "ALL", label: "الكل" },
   { value: "LISTINGS", label: "عروض الخدمات" },
   { value: "PROVIDERS", label: "مقدمو الخدمة" },
-  { value: "POSTS", label: "المنشورات" },
+  { value: "POSTS", label: "المنشورات والأعمال" },
 ] as const;
+
+const jordanCities = [
+  { name: "الكل", value: "", icon: "🇯🇴" },
+  { name: "عَمّان", value: "عمان", icon: "🏛️" },
+  { name: "إربد", value: "إربد", icon: "🌾" },
+  { name: "الزرقاء", value: "الزرقاء", icon: "🏙️" },
+  { name: "العقبة", value: "العقبة", icon: "🌊" },
+  { name: "السلط", value: "السلط", icon: "🌿" },
+  { name: "مادبا", value: "مادبا", icon: "🎨" },
+  { name: "جرش", value: "جرش", icon: "🏛️" },
+  { name: "عجلون", value: "عجلون", icon: "🏰" },
+];
 
 const categoryVisuals = [
   { icon: Wrench, tone: "bg-[#d8f0e9] text-[#087a72]" },
@@ -64,7 +76,7 @@ function one(value: string | string[] | undefined) {
 }
 
 function cleanServiceDescription(value: string | null | undefined) {
-  if (!value) return "شوف مقدمي هذه الخدمة وقارن بينهم قبل الطلب.";
+  if (!value) return "تصفح مقدمي هذه الخدمة وقارن بينهم قبل الطلب.";
   return value.replace(/السعر\s+يشمل[\s\S]*$/u, "").trim();
 }
 
@@ -75,6 +87,7 @@ function buildQueryString(
     category: string | null;
     delivery: string | null;
     pricing: string | null;
+    area: string | null;
   },
   changes: Record<string, string | null>,
 ) {
@@ -85,6 +98,7 @@ function buildQueryString(
   if (current.category) next.set("category", current.category);
   if (current.delivery) next.set("delivery", current.delivery);
   if (current.pricing) next.set("pricing", current.pricing);
+  if (current.area) next.set("area", current.area);
 
   for (const [key, value] of Object.entries(changes)) {
     if (value) next.set(key, value);
@@ -111,10 +125,8 @@ export default async function DiscoverPage({
   const category = one(params.category) || null;
   const delivery = one(params.delivery) || null;
   const pricing = one(params.pricing) || null;
-  const page = Math.max(
-    1,
-    Number.parseInt(one(params.page) || "1", 10) || 1,
-  );
+  const area = one(params.area) || null;
+  const page = Math.max(1, Number.parseInt(one(params.page) || "1", 10) || 1);
 
   const [categoriesResult, taxonomyResult] = await Promise.all([
     getMarketplaceCategoriesAction(),
@@ -137,15 +149,10 @@ export default async function DiscoverPage({
     0,
   );
 
-  const browsingServices = !q;
+  const browsingServices = !q && !area;
 
   const searchResult = browsingServices
-    ? {
-        success: true as const,
-        results: [],
-        hasMore: false,
-        page: 1,
-      }
+    ? { success: true as const, results: [], hasMore: false, page: 1 }
     : await searchMarketplaceAction({
         query: q,
         scope,
@@ -160,86 +167,98 @@ export default async function DiscoverPage({
 
   const hrefFor = (changes: Record<string, string | null>) =>
     buildQueryString(
-      { q, scope, category, delivery, pricing },
+      { q, scope, category, delivery, pricing, area },
       changes,
     );
 
-  const hasFilters = Boolean(delivery || pricing);
+  const hasFilters = Boolean(delivery || pricing || area);
 
   return (
-    <div className="page-reveal pb-12 sm:pb-16">
-      <section className="mx-auto max-w-6xl px-4 pb-8 pt-8 sm:px-6 sm:pb-10 sm:pt-12">
+    <div className="page-reveal pb-16 sm:pb-24">
+      {/* Header & Search */}
+      <section className="mx-auto max-w-6xl px-4 pb-6 pt-5 sm:px-6 sm:pb-8 sm:pt-8">
         <div className="max-w-2xl">
-          <p className="text-[10px] font-bold tracking-[.08em] text-brand">
-            دليل جسر
+          <p className="text-[11px] font-black tracking-wide text-brand">
+            دليل الخدمات
           </p>
 
-          <h1 className="mt-2 text-3xl font-bold leading-tight tracking-[-.06em] sm:text-5xl">
+          <h1 className="mt-2 text-2xl font-black leading-tight tracking-[-.05em] sm:text-4xl">
             {selectedCategory ? (
               <>
-                {selectedCategory.name_ar}
+                خدمات {selectedCategory.name_ar}
                 <br />
-                <span className="text-brand">كل خدمات المجال قدامك.</span>
+                <span className="text-brand">قارن واطلب الأنسب لك.</span>
               </>
             ) : (
               <>
-                كل خدمات جسر
+                استكشف كل خدمات جسر
                 <br />
-                <span className="text-brand">مرتبة وواضحة.</span>
+                <span className="text-brand">في جميع مدن الأردن.</span>
               </>
             )}
           </h1>
-
-          <p className="mt-3 max-w-xl text-sm leading-7 text-muted">
-            {selectedCategory
-              ? `نعرض لك كل أنواع الخدمات الموجودة داخل ${selectedCategory.name_ar}. اختَر الخدمة وبعدها قارن مقدميها.`
-              : `عندنا ${categories.length} مجالات رئيسية و${totalServiceTypes} نوع خدمة فعّال حالياً. اختَر المجال أو انزل وشوف كل الخدمات بالتفصيل.`}
-          </p>
         </div>
 
-        <form
-          action="/discover"
-          role="search"
-          className="mt-7 max-w-2xl"
-        >
+        <form action="/discover" role="search" className="mt-5 max-w-2xl">
           <label htmlFor="discover-search" className="sr-only">
             ابحث عن خدمة أو مقدم خدمة
           </label>
 
-          <div className="flex h-14 items-center gap-3 rounded-2xl border border-theme bg-surface px-4 shadow-soft focus-within:border-[rgb(var(--primary))]">
-            <Search
-              size={20}
-              className="shrink-0 text-brand"
-              aria-hidden="true"
-            />
+          <div className="flex h-[54px] items-center gap-2 rounded-2xl border border-theme bg-surface px-3 shadow-soft focus-within:border-[rgb(var(--primary))]">
+            <Search size={19} className="ms-1 shrink-0 text-brand" aria-hidden="true" />
 
             <input
               id="discover-search"
               name="q"
               defaultValue={q}
               maxLength={120}
-              placeholder="مثلاً: كشف تسريب مياه، مدرس رياضيات، تصميم شعار..."
-              className="min-w-0 flex-1 bg-transparent text-sm outline-none"
+              placeholder="مثلاً: كشف تسريب مياه، مدرس رياضيات، كهربائي..."
+              className="min-w-0 flex-1 bg-transparent px-2 text-xs font-bold outline-none sm:text-sm"
             />
 
             <button
               type="submit"
-              className="rounded-xl bg-[rgb(var(--primary))] px-4 py-2 text-xs font-bold text-white transition hover:bg-[rgb(var(--primary-strong))]"
+              className="brand-button !min-h-[40px] !rounded-xl !px-5 text-xs font-black"
             >
-              ابحث
+              بحث
             </button>
           </div>
         </form>
+
+        {/* 🇯🇴 Jordan Cities Quick Slider */}
+        <div className="mt-4">
+          <div className="mobile-snap-row -mx-4 px-4 py-1 sm:mx-0 sm:px-0">
+            {jordanCities.map((city) => {
+              const active = (area || "") === city.value;
+              return (
+                <Link
+                  key={city.name}
+                  href={hrefFor({
+                    area: active ? null : city.value || null,
+                    page: null,
+                  })}
+                  className={`inline-flex items-center gap-1.5 rounded-2xl px-3.5 py-2 text-xs font-bold transition-all duration-200 active:scale-95 ${
+                    active
+                      ? "bg-[rgb(var(--primary))] text-white shadow-md"
+                      : "border border-theme bg-surface text-muted hover:border-[rgb(var(--primary)/0.3)] hover:text-brand"
+                  }`}
+                >
+                  <span>{city.icon}</span>
+                  <span>{city.name}</span>
+                </Link>
+              );
+            })}
+          </div>
+        </div>
       </section>
 
+      {/* Main Category Carousel */}
       <section className="mx-auto max-w-6xl px-4 sm:px-6">
-        <div className="mb-5 flex items-end justify-between gap-3">
+        <div className="mb-4 flex items-end justify-between gap-3">
           <div>
-            <p className="text-[10px] font-bold tracking-[.08em] text-brand">
-              المجالات الرئيسية
-            </p>
-            <h2 className="mt-1 text-xl font-bold tracking-[-.04em] sm:text-2xl">
-              اختَر مجال، أو شوفهم كلهم
+            <p className="text-[10px] font-black text-brand">المجالات الرئيسية</p>
+            <h2 className="text-lg font-black sm:text-xl">
+              اختر المجال المطلوب
             </h2>
           </div>
 
@@ -254,10 +273,9 @@ export default async function DiscoverPage({
           )}
         </div>
 
-        <div className="hide-scrollbar -mx-4 flex gap-3 overflow-x-auto px-4 pb-4 sm:mx-0 sm:grid sm:grid-cols-4 sm:gap-4 sm:overflow-visible sm:px-0 lg:grid-cols-8">
+        <div className="mobile-snap-row -mx-4 px-4 pb-3 sm:mx-0 sm:grid sm:grid-cols-4 sm:gap-4 sm:overflow-visible sm:px-0 lg:grid-cols-8">
           {categories.map((parent, index) => {
-            const visual =
-              categoryVisuals[index % categoryVisuals.length];
+            const visual = categoryVisuals[index % categoryVisuals.length];
             const Icon = visual.icon;
             const selected = category === parent.id;
 
@@ -266,28 +284,26 @@ export default async function DiscoverPage({
                 key={parent.id}
                 href={hrefFor({
                   category: selected ? null : parent.id,
-                  q: null,
                   page: null,
                 })}
-                aria-current={selected ? "page" : undefined}
-                className={`home-category-card group flex min-w-[142px] flex-col rounded-2xl border p-3.5 transition hover:-translate-y-1 hover:shadow-soft sm:min-w-0 ${
+                className={`group flex min-w-[135px] flex-col rounded-[1.6rem] border p-3.5 transition hover:-translate-y-1 hover:shadow-soft active:scale-95 sm:min-w-0 ${
                   selected
-                    ? "border-[rgb(var(--primary))] bg-[rgb(var(--primary)/0.07)]"
+                    ? "border-[rgb(var(--primary))] bg-[rgb(var(--primary)/0.08)] shadow-sm"
                     : "border-theme bg-surface"
                 }`}
               >
                 <span
-                  className={`mb-5 flex h-12 w-12 items-center justify-center rounded-2xl ${visual.tone}`}
+                  className={`mb-3 flex h-11 w-11 items-center justify-center rounded-2xl ${visual.tone}`}
                 >
-                  <Icon size={21} />
+                  <Icon size={20} />
                 </span>
 
-                <h3 className="home-category-title line-clamp-2 text-sm font-bold leading-5 tracking-[-.03em]">
+                <h3 className="line-clamp-1 text-xs font-black">
                   {parent.name_ar}
                 </h3>
 
-                <p className="home-category-copy mt-1 line-clamp-3 text-[10px] leading-5 text-muted">
-                  {parent.description_ar || "خدمات تناسب احتياجك"}
+                <p className="mt-1 line-clamp-2 text-[10px] text-muted">
+                  {parent.description_ar || "استكشف الخدمات"}
                 </p>
               </Link>
             );
@@ -295,360 +311,141 @@ export default async function DiscoverPage({
         </div>
       </section>
 
+      {/* Services List / Search Results */}
       {browsingServices ? (
-        <section className="mx-auto mt-10 max-w-6xl px-4 sm:px-6 lg:mt-14">
-          <div className="mb-7 flex flex-wrap items-end justify-between gap-3">
+        <section className="mx-auto mt-8 max-w-6xl px-4 sm:px-6 lg:mt-12">
+          <div className="mb-6 flex items-end justify-between">
             <div>
-              <p className="text-[10px] font-bold tracking-[.08em] text-brand">
-                كل الخدمات بالتفصيل
-              </p>
-              <h2 className="mt-1 text-2xl font-bold tracking-[-.045em] sm:text-3xl">
+              <p className="text-[10px] font-black text-brand">قائمة الخدمات</p>
+              <h2 className="text-xl font-black sm:text-2xl">
                 {selectedCategory
                   ? `خدمات ${selectedCategory.name_ar}`
-                  : "اختَر الخدمة اللي محتاجها"}
+                  : "جميع الخدمات المتاحة"}
               </h2>
-              <p className="mt-2 text-xs leading-6 text-muted">
-                كل خدمة تحت هي نوع خدمة ثابت على جسر. لما تفتحها بنعرض لك كل مقدميها وعروضهم وأسعارهم.
-              </p>
             </div>
-
-            <span className="rounded-full bg-surface-muted px-3 py-1.5 text-[10px] font-bold text-muted">
+            <span className="status-pill bg-surface-muted text-muted font-black">
               {totalServiceTypes} خدمة
             </span>
           </div>
 
-          {visibleGroups.length > 0 ? (
-            <div className="space-y-10">
-              {visibleGroups.map((group, groupIndex) => {
-                const services = group.serviceTypes || [];
-                const visual =
-                  categoryVisuals[
-                    groupIndex % categoryVisuals.length
-                  ];
-                const Icon = visual.icon;
+          <div className="space-y-8">
+            {visibleGroups.map((group, groupIndex) => {
+              const services = group.serviceTypes || [];
+              const visual = categoryVisuals[groupIndex % categoryVisuals.length];
+              const Icon = visual.icon;
 
-                return (
-                  <section
-                    key={group.id}
-                    className="scroll-mt-24"
-                    aria-labelledby={`group-${group.id}`}
-                  >
-                    <div className="mb-4 flex items-center gap-3">
-                      <span
-                        className={`flex h-11 w-11 items-center justify-center rounded-2xl ${visual.tone}`}
+              return (
+                <section key={group.id} className="scroll-mt-24">
+                  <div className="mb-3.5 flex items-center gap-2.5">
+                    <span
+                      className={`flex h-10 w-10 items-center justify-center rounded-2xl ${visual.tone}`}
+                    >
+                      <Icon size={18} />
+                    </span>
+                    <h3 className="text-base font-black sm:text-lg">
+                      {group.name_ar}
+                    </h3>
+                  </div>
+
+                  <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                    {services.map((service, index) => (
+                      <Link
+                        key={service.id}
+                        href={`/service-types/${service.id}`}
+                        className="group surface-card flex min-h-[140px] flex-col justify-between p-4 active:scale-[0.98]"
                       >
-                        <Icon size={19} />
-                      </span>
+                        <div>
+                          <div className="flex items-center justify-between">
+                            <span
+                              className={`flex h-10 w-10 items-center justify-center rounded-xl ${
+                                serviceTones[index % serviceTones.length]
+                              }`}
+                            >
+                              <Grid2X2 size={18} />
+                            </span>
+                            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-surface-muted text-muted transition group-hover:bg-brand group-hover:text-white">
+                              <ArrowLeft size={14} />
+                            </span>
+                          </div>
 
-                      <div>
-                        <h3
-                          id={`group-${group.id}`}
-                          className="text-lg font-bold tracking-[-.035em] sm:text-xl"
-                        >
-                          {group.name_ar}
-                        </h3>
+                          <h4 className="mt-3 text-sm font-black tracking-tight">
+                            {service.title}
+                          </h4>
 
-                        <p className="mt-0.5 text-[10px] text-muted">
-                          {group.description_ar ||
-                            `${services.length} خدمات ضمن هذا المجال`}
-                        </p>
-                      </div>
-                    </div>
+                          <p className="mt-1 line-clamp-2 text-[11px] leading-5 text-muted">
+                            {cleanServiceDescription(service.description)}
+                          </p>
+                        </div>
 
-                    {services.length > 0 ? (
-                      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                        {services.map((service, index) => (
-                          <Link
-                            key={service.id}
-                            href={`/service-types/${service.id}`}
-                            className="group flex min-h-[180px] flex-col justify-between rounded-3xl border border-theme bg-surface p-5 transition hover:-translate-y-1 hover:border-[rgb(var(--primary)/0.45)] hover:shadow-soft"
-                          >
-                            <div className="flex items-start justify-between gap-4">
-                              <span
-                                className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl ${
-                                  serviceTones[
-                                    index % serviceTones.length
-                                  ]
-                                }`}
-                              >
-                                <Grid2X2 size={20} />
-                              </span>
+                        <span className="mt-3 inline-flex items-center gap-1 text-[10px] font-black text-brand">
+                          عرض مقدمي الخدمة <ArrowLeft size={12} />
+                        </span>
+                      </Link>
+                    ))}
+                  </div>
+                </section>
+              );
+            })}
+          </div>
+        </section>
+      ) : (
+        <section className="mx-auto mt-6 max-w-6xl px-4 sm:px-6">
+          {/* Scope Filters */}
+          <div className="flex flex-wrap items-center gap-2 mb-6">
+            {scopes.map((item) => {
+              const active = scope === item.value;
+              return (
+                <Link
+                  key={item.value}
+                  href={hrefFor({
+                    tab: item.value === "ALL" ? null : item.value,
+                    page: null,
+                  })}
+                  className={`rounded-full px-4 py-2 text-[11px] font-black transition-all ${
+                    active
+                      ? "bg-[rgb(var(--primary))] text-white shadow-sm"
+                      : "border border-theme bg-surface text-muted hover:text-brand"
+                  }`}
+                >
+                  {item.label}
+                </Link>
+              );
+            })}
+          </div>
 
-                              <span className="flex h-9 w-9 items-center justify-center rounded-full border border-theme text-muted transition group-hover:bg-[rgb(var(--primary))] group-hover:text-white">
-                                <ArrowLeft size={15} />
-                              </span>
-                            </div>
+          <div className="mb-4">
+            <h2 className="text-xl font-black">
+              نتائج البحث {q ? `عن: "${q}"` : area ? `في ${area}` : ""}
+            </h2>
+            <p className="mt-1 text-xs text-muted">
+              {results.length} نتيجة متوفرة
+            </p>
+          </div>
 
-                            <div className="mt-5">
-                              <p className="text-[9px] font-bold text-brand">
-                                {service.category_name ||
-                                  group.name_ar}
-                              </p>
-
-                              <h4 className="mt-1 text-base font-bold leading-7 tracking-[-.03em]">
-                                {service.title}
-                              </h4>
-
-                              <p className="mt-1 line-clamp-3 text-[11px] leading-6 text-muted">
-                                {cleanServiceDescription(
-                                  service.description,
-                                )}
-                              </p>
-
-                              <span className="mt-4 inline-flex items-center gap-1 text-[10px] font-bold text-brand">
-                                شوف مقدمي الخدمة
-                                <ArrowLeft size={13} />
-                              </span>
-                            </div>
-                          </Link>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="rounded-3xl border border-dashed border-[rgb(var(--primary)/0.32)] bg-[rgb(var(--primary)/0.025)] p-8 text-center">
-                        <p className="text-sm font-bold">
-                          ما في أنواع خدمات مضافة داخل هذا المجال بعد
-                        </p>
-
-                        <p className="mt-2 text-[11px] leading-6 text-muted">
-                          المجال موجود، لكن جدول الخدمات ما فيه أنواع فعالة مرتبطة فيه حالياً.
-                        </p>
-                      </div>
-                    )}
-                  </section>
-                );
-              })}
+          {searchResult.success && results.length > 0 ? (
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {results.map((result) => (
+                <SearchResultCard
+                  key={result.result_type + result.result_id}
+                  result={result}
+                />
+              ))}
             </div>
           ) : (
-            <div className="empty-state py-14">
-              <span className="empty-state-icon">
-                <Grid2X2 size={23} />
+            <div className="surface-card p-10 text-center space-y-3">
+              <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-[rgb(var(--primary-soft))] text-brand">
+                <Search size={24} />
               </span>
-
-              <h3 className="text-base font-bold">
-                ما في خدمات مضافة لهذا المجال بعد
-              </h3>
-
-              <p className="mx-auto mt-2 max-w-md text-xs leading-6 text-muted">
-                المجال موجود، لكن ما في Service Types فعالة مرتبطة فيه حالياً.
+              <h3 className="text-base font-black">لا توجد نتائج مطابقة</h3>
+              <p className="text-xs text-muted">
+                جرّب البحث بكلمة أخرى أو اختر محافظة مختلفة.
               </p>
-
-              <Link href="/discover" className="brand-button mt-5">
-                عرض كل المجالات
-                <ArrowLeft size={14} />
+              <Link href="/discover" className="brand-button mt-2">
+                عرض كل الخدمات
               </Link>
             </div>
           )}
         </section>
-      ) : (
-        <>
-          <section
-            id="filters"
-            className="mx-auto mt-8 max-w-6xl scroll-mt-24 px-4 sm:px-6"
-          >
-            <div className="flex flex-wrap items-center gap-2">
-              {scopes.map((item) => {
-                const active = scope === item.value;
-
-                return (
-                  <Link
-                    key={item.value}
-                    href={hrefFor({
-                      tab:
-                        item.value === "ALL"
-                          ? null
-                          : item.value,
-                      page: null,
-                    })}
-                    aria-current={active ? "page" : undefined}
-                    className={`rounded-full px-4 py-2 text-[11px] font-bold transition ${
-                      active
-                        ? "bg-[rgb(var(--primary))] text-white"
-                        : "border border-theme bg-surface hover:text-brand"
-                    }`}
-                  >
-                    {item.label}
-                  </Link>
-                );
-              })}
-            </div>
-
-            <details className="mt-4 rounded-3xl border border-theme bg-surface">
-              <summary className="flex cursor-pointer list-none items-center justify-between gap-3 p-4 sm:p-5">
-                <div>
-                  <p className="text-[10px] font-bold text-brand">
-                    نتائج البحث
-                  </p>
-                  <h2 className="mt-1 text-base font-bold">
-                    صفّي النتائج إذا احتجت
-                  </h2>
-                </div>
-
-                <SlidersHorizontal
-                  size={18}
-                  className="text-muted"
-                />
-              </summary>
-
-              <form
-                action="/discover"
-                className="grid gap-3 border-t border-theme p-4 sm:grid-cols-2 sm:p-5 lg:grid-cols-3"
-              >
-                {q && <input type="hidden" name="q" value={q} />}
-                {scope !== "ALL" && (
-                  <input
-                    type="hidden"
-                    name="tab"
-                    value={scope}
-                  />
-                )}
-
-                <label className="text-[11px] font-bold">
-                  طريقة تقديم الخدمة
-                  <select
-                    name="delivery"
-                    defaultValue={delivery || ""}
-                    className="form-field mt-1.5"
-                  >
-                    <option value="">الكل</option>
-                    {Object.entries(
-                      deliveryTypeLabels,
-                    ).map(([value, label]) => (
-                      <option key={value} value={value}>
-                        {label}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-
-                <label className="text-[11px] font-bold">
-                  نظام التسعير
-                  <select
-                    name="pricing"
-                    defaultValue={pricing || ""}
-                    className="form-field mt-1.5"
-                  >
-                    <option value="">الكل</option>
-                    {Object.entries(
-                      pricingModelLabels,
-                    ).map(([value, label]) => (
-                      <option key={value} value={value}>
-                        {label}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-
-                <div className="flex items-end gap-2">
-                  <button
-                    className="brand-button flex-1"
-                    type="submit"
-                  >
-                    تطبيق
-                  </button>
-
-                  {hasFilters && (
-                    <Link
-                      href={
-                        q
-                          ? `/discover?q=${encodeURIComponent(q)}`
-                          : "/discover"
-                      }
-                      className="secondary-button"
-                    >
-                      مسح
-                    </Link>
-                  )}
-                </div>
-              </form>
-            </details>
-          </section>
-
-          <section className="mx-auto mt-10 max-w-6xl px-4 sm:px-6 lg:mt-12">
-            <div className="mb-5">
-              <p className="text-[10px] font-bold tracking-[.08em] text-brand">
-                نتائج جسر
-              </p>
-
-              <h2 className="mt-1 text-xl font-bold tracking-[-.04em] sm:text-2xl">
-                نتائج البحث عن: {q}
-              </h2>
-
-              <p
-                aria-live="polite"
-                className="mt-1 text-[11px] text-muted"
-              >
-                {results.length} نتيجة في هذه الصفحة
-              </p>
-            </div>
-
-            {searchResult.success ? (
-              results.length ? (
-                <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                  {results.map((result) => (
-                    <SearchResultCard
-                      key={
-                        result.result_type +
-                        result.result_id
-                      }
-                      result={result}
-                    />
-                  ))}
-                </div>
-              ) : (
-                <div className="empty-state py-14">
-                  <span className="empty-state-icon">
-                    <Search size={23} />
-                  </span>
-
-                  <h3 className="text-base font-bold">
-                    ما لقينا نتيجة مطابقة
-                  </h3>
-
-                  <p className="mx-auto mt-2 max-w-md text-xs leading-6 text-muted">
-                    جرّب كلمة أبسط، أو امسح البحث وشوف كل الخدمات مرتبة حسب المجال.
-                  </p>
-
-                  <Link href="/discover" className="brand-button mt-5">
-                    عرض كل الخدمات
-                  </Link>
-                </div>
-              )
-            ) : (
-              <div
-                role="alert"
-                className="rounded-3xl border border-[rgb(var(--danger)/0.35)] bg-surface p-8 text-center text-sm"
-              >
-                {searchResult.error}
-              </div>
-            )}
-
-            {(page > 1 || searchResult.hasMore) && (
-              <div className="mt-7 flex justify-center gap-2">
-                {page > 1 && (
-                  <Link
-                    href={hrefFor({
-                      page: String(page - 1),
-                    })}
-                    className="secondary-button"
-                  >
-                    السابق
-                  </Link>
-                )}
-
-                {searchResult.hasMore && (
-                  <Link
-                    href={hrefFor({
-                      page: String(page + 1),
-                    })}
-                    className="secondary-button"
-                  >
-                    التالي
-                  </Link>
-                )}
-              </div>
-            )}
-          </section>
-        </>
       )}
     </div>
   );

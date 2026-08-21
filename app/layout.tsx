@@ -1,9 +1,10 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Cairo } from "next/font/google";
 import Navbar from "@/components/navbar";
 import Footer from "@/components/footer";
 import MobileBottomNav from "@/components/mobile-bottom-nav";
 import PwaRegistration from "@/components/pwa-registration";
+import OfflineStatus from "@/components/common/offline-status";
 import { getPublicAppOrigin } from "@/lib/app-url";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import "./globals.css";
@@ -13,6 +14,17 @@ const cairo = Cairo({
   variable: "--font-cairo",
   display: "swap",
 });
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 5,
+  userScalable: true,
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#f9f8f4" },
+    { media: "(prefers-color-scheme: dark)", color: "#0e1b1d" },
+  ],
+};
 
 export const metadata: Metadata = {
   metadataBase: new URL(getPublicAppOrigin()),
@@ -87,9 +99,14 @@ export default async function RootLayout({
       className={cairo.variable}
       suppressHydrationWarning
     >
-      <body className="flex min-h-screen flex-col font-cairo antialiased">
+      <body className="flex min-h-screen flex-col font-cairo antialiased selection:bg-[rgb(var(--primary)/0.25)]">
+        {/* 📲 PWA Registration & Install Banner */}
         <PwaRegistration />
 
+        {/* 🌐 Offline / Network Status Banner */}
+        <OfflineStatus />
+
+        {/* Theme Initializer Script */}
         <script
           dangerouslySetInnerHTML={{
             __html:
@@ -97,24 +114,29 @@ export default async function RootLayout({
           }}
         />
 
+        {/* Accessibility Skip Link */}
         <a
           href="#main-content"
-          className="fixed start-3 top-2 z-[100] -translate-y-20 rounded-lg bg-[rgb(var(--primary))] px-4 py-2 text-sm font-bold text-white transition focus:translate-y-0"
+          className="fixed start-3 top-2 z-[100] -translate-y-20 rounded-xl bg-[rgb(var(--primary))] px-4 py-2 text-xs font-black text-white shadow-lg transition focus:translate-y-0"
         >
-          انتقل إلى المحتوى
+          انتقل إلى المحتوى الرئيسي
         </a>
 
+        {/* Top Navigation Bar */}
         <Navbar
           userRole={userRole}
           isAuthenticated={Boolean(user)}
         />
 
+        {/* Main Page Content */}
         <main id="main-content" className="flex-1">
           {children}
         </main>
 
+        {/* Footer */}
         <Footer />
 
+        {/* Mobile Floating Bottom Bar */}
         <MobileBottomNav userRole={userRole} />
       </body>
     </html>

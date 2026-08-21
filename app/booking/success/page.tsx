@@ -1,7 +1,16 @@
 import Link from "next/link";
+import {
+  ArrowLeft,
+  CalendarDays,
+  Check,
+  CheckCircle2,
+  Clock3,
+  QrCode,
+  Sparkles,
+} from "lucide-react";
 
 export const metadata = {
-  title: "تم استلام الحجز | جسر الأردن",
+  title: "تم استلام الحجز بنجاح | جسر الأردن",
 };
 
 export default async function BookingSuccessPage({
@@ -11,35 +20,81 @@ export default async function BookingSuccessPage({
 }) {
   const { id } = await searchParams;
   const bookingId = id && /^[0-9a-f-]{36}$/i.test(id) ? id : null;
-  return (
-    <div className="min-h-[70vh] flex items-center justify-center p-6 dir-rtl">
-      <div className="max-w-md w-full bg-white border rounded-2xl p-8 text-center shadow-sm space-y-6">
-        <div className="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto text-2xl font-bold">
-          ✓
-        </div>
 
-        <div className="space-y-2">
-          <h1 className="text-2xl font-bold text-gray-900">تم استلام حجزك بنجاح</h1>
-          <p className="text-gray-600 text-sm">
-            طلبك قيد المراجعة. افتح تفاصيل الحجز لاختيار الدفع عند إكمال الخدمة ومتابعة التعيين والحالة.
+  return (
+    <main className="min-h-[75vh] flex items-center justify-center px-4 py-8">
+      <div className="w-full max-w-md space-y-6">
+        {/* Celebration Header */}
+        <div className="text-center space-y-2">
+          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-3xl bg-[rgb(var(--primary-soft))] text-brand shadow-md animate-bounce">
+            <Check className="h-8 w-8 stroke-[3]" />
+          </div>
+          <h1 className="text-2xl font-black tracking-tight sm:text-3xl">
+            تم استلام طلبك بنجاح! 🎉
+          </h1>
+          <p className="text-xs text-muted leading-6">
+            تم تسجيل حجزك داخل منصة جسر، وسيصلك إشعار فوري عند تأكيد الموعد من مقدم الخدمة.
           </p>
         </div>
 
-        <div className="pt-4 border-t flex flex-col gap-3">
+        {/* 🎫 Digital Perforated Ticket Card */}
+        <div className="surface-card relative overflow-hidden !rounded-[2rem] border-2 border-dashed border-[rgb(var(--primary)/0.3)] bg-surface p-6 shadow-lift">
+          <div className="flex items-center justify-between border-b border-theme pb-4">
+            <div>
+              <span className="status-pill bg-[rgb(var(--primary-soft))] text-brand font-black">
+                حجز موثق
+              </span>
+              <p className="text-[10px] font-bold text-muted mt-1.5">
+                رقم الحجز: #{bookingId ? bookingId.slice(0, 8) : "JISR-BOOKING"}
+              </p>
+            </div>
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-surface-muted text-muted">
+              <QrCode size={22} />
+            </div>
+          </div>
+
+          <div className="py-4 space-y-3 text-xs">
+            <div className="flex items-center justify-between">
+              <span className="text-muted flex items-center gap-1.5">
+                <CalendarDays size={14} className="text-brand" /> حالة الطلب
+              </span>
+              <strong className="text-[rgb(var(--warning))] font-black">
+                قيد المراجعة والتأكيد
+              </strong>
+            </div>
+
+            <div className="flex items-center justify-between">
+              <span className="text-muted flex items-center gap-1.5">
+                <Clock3 size={14} className="text-brand" /> طريقة الدفع
+              </span>
+              <strong className="font-bold">الدفع عند الاستلام (نقدي)</strong>
+            </div>
+          </div>
+
+          <div className="border-t border-theme pt-4 text-center">
+            <p className="text-[10px] text-muted leading-5">
+              💡 يمكنك متابعة حالة الطلب أو مراسلة مقدم الخدمة مباشرة من صفحة تفاصيل الحجز.
+            </p>
+          </div>
+        </div>
+
+        {/* Action Buttons */}
+        <div className="space-y-2.5">
           <Link
             href={bookingId ? `/bookings/${bookingId}` : "/bookings"}
-            className="w-full bg-black text-white py-2.5 rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors block"
+            className="brand-button w-full text-xs font-black shadow-md"
           >
-            {bookingId ? "فتح تفاصيل الحجز" : "استعراض سجل حجوزاتي"}
+            فتح تفاصيل وتتبع الحجز <ArrowLeft size={15} />
           </Link>
+
           <Link
             href="/"
-            className="w-full bg-gray-100 text-gray-700 py-2.5 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors block"
+            className="secondary-button w-full text-xs font-bold"
           >
             العودة للرئيسية
           </Link>
         </div>
       </div>
-    </div>
+    </main>
   );
 }

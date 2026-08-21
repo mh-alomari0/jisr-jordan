@@ -3,6 +3,16 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import {
+  BriefcaseBusiness,
+  CheckCircle2,
+  Clock3,
+  LoaderCircle,
+  MapPin,
+  ShieldCheck,
+  Sparkles,
+  XCircle,
+} from "lucide-react";
 import { applyAsProviderAction } from "@/lib/actions/provider-onboarding";
 import { JORDAN_CITIES } from "@/lib/constants";
 
@@ -28,7 +38,6 @@ export default function ProviderApplyClient({
   const router = useRouter();
   const status = existingProfile?.application_status;
 
-  // If already approved, send to the provider dashboard
   useEffect(() => {
     if (status === "APPROVED") {
       router.push("/provider");
@@ -74,7 +83,6 @@ export default function ProviderApplyClient({
 
     if (res.success) {
       setSuccess(true);
-      // Reset the form for a clean slate
       setBio("");
       setServiceAreas([]);
       setExperience("");
@@ -85,83 +93,64 @@ export default function ProviderApplyClient({
     setLoading(false);
   }
 
-  // --- Already approved: redirecting ---
-  if (status === "APPROVED") {
-    return (
-      <div className="bg-white border rounded-xl shadow-sm p-6 text-center dir-rtl">
-        <p className="text-sm text-gray-600">جاري تحويلك إلى بوابة المزودين...</p>
-      </div>
-    );
-  }
-
-  // --- Pending verification: under review ---
+  // --- 1. If Pending Verification ---
   if (status === "PENDING_VERIFICATION") {
     return (
-      <div className="bg-white border rounded-xl shadow-sm p-8 text-center dir-rtl space-y-4">
-        <div className="w-14 h-14 mx-auto rounded-full bg-amber-100 flex items-center justify-center">
-          <svg className="w-7 h-7 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
+      <div className="surface-card p-8 sm:p-12 text-center space-y-4 max-w-lg mx-auto shadow-lift">
+        <div className="flex h-16 w-16 mx-auto items-center justify-center rounded-3xl bg-[rgb(var(--warning)/0.12)] text-[rgb(var(--warning))] shadow-sm">
+          <Clock3 size={32} />
         </div>
-        <h1 className="text-xl font-bold text-gray-900">طلبك قيد المراجعة</h1>
-        <p className="text-sm text-gray-600 max-w-md mx-auto">
-          تم استلام طلب الانضمام كمقدم خدمة، وسيقوم فريق الإدارة بمراجعته خلال فترة قصيرة.
-          سيتم إشعارك فور اتخاذ القرار.
+        <h1 className="text-2xl font-black">طلبك قيد المراجعة والتدقيق</h1>
+        <p className="text-xs sm:text-sm text-muted leading-6">
+          استلمنا طلب انضمامك إلى شبكة مزودي جسر الأردن، ويقوم فريق الإدارة حالياً بمراجعة البيانات واعتمادها. سنقوم بإشعارك فور اكتمال التفعيل.
         </p>
-        <div className="pt-2">
-          <Link
-            href="/"
-            className="inline-block bg-gray-100 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors"
-          >
-            العودة للرئيسية
-          </Link>
-        </div>
+        <Link href="/" className="brand-button mt-4 text-xs font-black">
+          العودة للرئيسية
+        </Link>
       </div>
     );
   }
 
-  // --- Rejected or never applied: show the form (allow re-application) ---
+  // --- 2. If Rejected ---
   const rejected = status === "REJECTED";
 
   return (
-    <div className="bg-white border rounded-xl shadow-sm p-6 dir-rtl text-right space-y-6">
-      <div className="space-y-1 border-b pb-4">
-        <h1 className="text-2xl font-bold text-gray-900">انضم كمقدم خدمة</h1>
-        <p className="text-sm text-gray-600">
-          املأ بياناتك أدناه، وسيقوم فريق جسر الأردن بمراجعة طلبك للانضمام إلى شبكة المزودين المعتمدين.
+    <div className="surface-card p-6 sm:p-10 space-y-6 shadow-lift">
+      <div className="space-y-1.5 border-b border-theme pb-5">
+        <span className="inline-flex items-center gap-1.5 status-pill bg-[rgb(var(--primary-soft))] text-brand font-black">
+          <Sparkles size={13} /> انضم لنخبة المحترفين
+        </span>
+        <h1 className="text-2xl font-black sm:text-3xl">سجّل كمقدم خدمة معتمد</h1>
+        <p className="text-xs sm:text-sm text-muted">
+          أضف نبذة عن خبراتك والخدمات التي تتقنها لتصل إلى آلاف الزبائن في الأردن.
         </p>
       </div>
 
       {rejected && (
-        <div className="bg-rose-50 border border-rose-200 text-rose-700 text-sm rounded-lg p-3" role="alert">
-          تم رفض طلبك السابق. يمكنك تعديل البيانات وإعادة التقديم من جديد.
+        <div className="rounded-2xl bg-[rgb(var(--danger)/0.08)] border border-[rgb(var(--danger)/0.2)] p-4 text-xs text-[rgb(var(--danger))] font-bold">
+          تم رفض طلبك السابق. يمكنك تعديل البيانات وإعادة التقديم الآن.
         </div>
       )}
 
       {success ? (
-        <div className="space-y-4 text-center py-6">
-          <div className="w-14 h-14 mx-auto rounded-full bg-emerald-100 flex items-center justify-center">
-            <svg className="w-7 h-7 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-            </svg>
+        <div className="py-8 text-center space-y-4">
+          <div className="flex h-16 w-16 mx-auto items-center justify-center rounded-3xl bg-[rgb(var(--success)/0.12)] text-[rgb(var(--success))] shadow-sm">
+            <CheckCircle2 size={32} />
           </div>
-          <h2 className="text-lg font-bold text-gray-900">تم تقديم طلبك بنجاح</h2>
-          <p className="text-sm text-gray-600 max-w-md mx-auto">
-            تم تقديم طلبك بنجاح، سيتم مراجعته من قبل الإدارة. سيتم إشعارك فور صدور القرار.
+          <h2 className="text-xl font-black">تم إرسال طلبك بنجاح! 🎉</h2>
+          <p className="text-xs sm:text-sm text-muted max-w-md mx-auto leading-6">
+            شكراً لاهتمامك بالانضمام إلى جسر. سنقوم بمراجعة حسابك والتواصل معك قريباً.
           </p>
-          <Link
-            href="/"
-            className="inline-block bg-gray-100 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors"
-          >
+          <Link href="/" className="brand-button mt-2 text-xs font-black">
             العودة للرئيسية
           </Link>
         </div>
       ) : (
-        <form onSubmit={handleSubmit} className="space-y-5">
+        <form onSubmit={handleSubmit} className="space-y-6">
           {/* Bio */}
           <div>
-            <label htmlFor="bio" className="block text-sm font-medium mb-1 text-slate-700">
-              نبذة تعريفية عن خبرتك
+            <label htmlFor="bio" className="block text-xs font-black mb-1.5">
+              نبذة تعريفية عنك وعن مهارتك <span className="text-[rgb(var(--danger))]">*</span>
             </label>
             <textarea
               id="bio"
@@ -169,96 +158,90 @@ export default function ProviderApplyClient({
               maxLength={1000}
               value={bio}
               onChange={(e) => setBio(e.target.value)}
-              placeholder="اكتب نبذة مختصرة عن خبرتك المهنية والمجالات التي تتميز بها..."
-              className="w-full border border-slate-300 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-sky-500 focus:border-sky-500 resize-none"
+              placeholder="اكتب نبذة واضحة عن اختصاصك وسنوات خبرتك وأهم الأعمال التي أنجزتها..."
+              className="form-field !rounded-2xl text-xs py-3"
             />
-            <div className="flex justify-between mt-1">
-              <p className="text-xs text-slate-500">10 أحرف على الأقل</p>
-              <p className="text-xs text-slate-400">{bio.length}/1000</p>
+            <div className="flex justify-between mt-1 text-[10px] text-muted">
+              <span>10 أحرف كحد أدنى</span>
+              <span>{bio.length}/1000</span>
             </div>
           </div>
 
           {/* Service Areas */}
           <div>
-            <span className="block text-sm font-medium mb-2 text-slate-700">
-              مناطق الخدمة
-            </span>
+            <label className="block text-xs font-black mb-2">
+              محافظات ومناطق تقديم الخدمة <span className="text-[rgb(var(--danger))]">*</span>
+            </label>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
               {JORDAN_CITIES.map((city) => {
                 const checked = serviceAreas.includes(city);
                 return (
-                  <label
+                  <button
                     key={city}
-                    className={`flex items-center gap-2 p-2.5 rounded-lg border cursor-pointer text-sm transition-colors ${
+                    type="button"
+                    onClick={() => setServiceAreas((prev) => toggleArrayItem(prev, city))}
+                    className={`flex items-center justify-between p-3 rounded-2xl border text-xs font-bold transition-all active:scale-95 ${
                       checked
-                        ? "border-sky-600 bg-sky-50 text-sky-900 font-medium"
-                        : "border-slate-200 hover:border-slate-300"
+                        ? "border-[rgb(var(--primary))] bg-[rgb(var(--primary-soft))] text-brand shadow-sm"
+                        : "border-theme bg-surface text-muted hover:border-[rgb(var(--primary)/0.3)]"
                     }`}
                   >
-                    <input
-                      type="checkbox"
-                      checked={checked}
-                      onChange={() => setServiceAreas((prev) => toggleArrayItem(prev, city))}
-                      className="w-4 h-4 accent-sky-600"
-                    />
                     <span>{city}</span>
-                  </label>
+                    {checked && <CheckCircle2 size={15} className="text-brand shrink-0" />}
+                  </button>
                 );
               })}
             </div>
-            <p className="text-xs text-slate-500 mt-1">حدد منطقة خدمة واحدة على الأقل</p>
+            <p className="text-[10px] text-muted mt-1.5">اختر محافظة واحدة على الأقل</p>
           </div>
 
           {/* Experience */}
           <div>
-            <label htmlFor="experience" className="block text-sm font-medium mb-1 text-slate-700">
-              الخبرة المهنية <span className="text-slate-400 font-normal">(اختياري)</span>
+            <label htmlFor="experience" className="block text-xs font-black mb-1.5">
+              سنوات الخبرة أو الشهادات (اختياري)
             </label>
-            <textarea
+            <input
               id="experience"
-              rows={3}
-              maxLength={500}
+              type="text"
+              maxLength={100}
               value={experience}
               onChange={(e) => setExperience(e.target.value)}
-              placeholder="عدد سنوات الخبرة، الشهادات، أو الأعمال السابقة..."
-              className="w-full border border-slate-300 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-sky-500 focus:border-sky-500 resize-none"
+              placeholder="مثلاً: خبرة 7 سنوات، شهادة معتمدة في التمديدات الصحية..."
+              className="form-field !rounded-2xl text-xs"
             />
           </div>
 
-          {/* Services */}
+          {/* Available Services */}
           <div>
-            <span className="block text-sm font-medium mb-2 text-slate-700">
-              الخدمات التي تقدمها
-            </span>
+            <label className="block text-xs font-black mb-2">
+              الخدمات التي تقدمها <span className="text-[rgb(var(--danger))]">*</span>
+            </label>
             {groupedServices.length === 0 ? (
-              <p className="text-xs text-slate-500">لا توجد خدمات متاحة حالياً.</p>
+              <p className="text-xs text-muted">لا توجد خدمات متاحة حالياً.</p>
             ) : (
               <div className="space-y-4">
                 {groupedServices.map(([category, items]) => (
                   <div key={category} className="space-y-2">
-                    <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
+                    <h3 className="text-[11px] font-black text-brand">
                       {category}
                     </h3>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                       {items.map((s) => {
                         const checked = serviceIds.includes(s.id);
                         return (
-                          <label
+                          <button
                             key={s.id}
-                            className={`flex items-center gap-2 p-2.5 rounded-lg border cursor-pointer text-sm transition-colors ${
+                            type="button"
+                            onClick={() => setServiceIds((prev) => toggleArrayItem(prev, s.id))}
+                            className={`flex items-center justify-between p-3 rounded-2xl border text-xs font-bold transition-all text-start active:scale-95 ${
                               checked
-                                ? "border-sky-600 bg-sky-50 text-sky-900 font-medium"
-                                : "border-slate-200 hover:border-slate-300"
+                                ? "border-[rgb(var(--primary))] bg-[rgb(var(--primary-soft))] text-brand shadow-sm"
+                                : "border-theme bg-surface text-muted hover:border-[rgb(var(--primary)/0.3)]"
                             }`}
                           >
-                            <input
-                              type="checkbox"
-                              checked={checked}
-                              onChange={() => setServiceIds((prev) => toggleArrayItem(prev, s.id))}
-                              className="w-4 h-4 accent-sky-600"
-                            />
-                            <span>{s.title}</span>
-                          </label>
+                            <span className="truncate">{s.title}</span>
+                            {checked && <CheckCircle2 size={15} className="text-brand shrink-0 ms-2" />}
+                          </button>
                         );
                       })}
                     </div>
@@ -266,11 +249,11 @@ export default function ProviderApplyClient({
                 ))}
               </div>
             )}
-            <p className="text-xs text-slate-500 mt-1">اختر خدمة واحدة على الأقل</p>
+            <p className="text-[10px] text-muted mt-1.5">اختر خدمة واحدة على الأقل</p>
           </div>
 
           {error && (
-            <div className="bg-rose-50 border border-rose-200 text-rose-700 text-sm rounded-lg p-3" role="alert">
+            <div className="rounded-2xl bg-[rgb(var(--danger)/0.08)] p-4 text-xs font-bold text-[rgb(var(--danger))]">
               {error}
             </div>
           )}
@@ -278,9 +261,13 @@ export default function ProviderApplyClient({
           <button
             type="submit"
             disabled={!canSubmit}
-            className="w-full py-3 bg-sky-600 hover:bg-sky-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-semibold rounded-lg transition-colors"
+            className="brand-button w-full text-xs font-black shadow-md"
           >
-            {loading ? "جاري التقديم..." : "تقديم طلب الانضمام"}
+            {loading ? (
+              <LoaderCircle className="h-5 w-5 animate-spin" />
+            ) : (
+              "إرسال طلب الانضمام"
+            )}
           </button>
         </form>
       )}
