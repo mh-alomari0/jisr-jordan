@@ -47,7 +47,7 @@ function SectionHeading({
     <div className="mb-5 flex items-end justify-between gap-4">
       <div>
         {eyebrow && (
-          <p className="mb-1 text-[11px] font-black text-brand tracking-wide">
+          <p className="mb-1 text-[11px] font-black tracking-wide text-brand">
             {eyebrow}
           </p>
         )}
@@ -60,6 +60,7 @@ function SectionHeading({
           </p>
         )}
       </div>
+
       {href && action && (
         <Link
           href={href}
@@ -89,7 +90,9 @@ function ObjectTile({
       <span className="flex h-20 w-20 items-center justify-center rounded-[1.5rem] bg-[#e1f3ef] text-[#087f79]">
         <Icon strokeWidth={1.7} size={38} />
       </span>
-      <span className="mt-3 text-xs font-black text-[#164348]">{label}</span>
+      <span className="mt-3 text-xs font-black text-[#164348]">
+        {label}
+      </span>
     </div>
   );
 }
@@ -110,45 +113,52 @@ export default async function HomePage() {
   ]);
 
   const categories = (categoriesResult.categories || []).filter(
-    (c) => c.slug !== "business-consulting" && c.slug !== "events"
+    (c) => c.slug !== "business-consulting" && c.slug !== "events",
   );
+
   const serviceTypes = (taxonomyResult.categories || [])
     .flatMap((c) => c.serviceTypes || [])
     .slice(0, 8);
+
   const providers = providersResult.results || [];
   const listings = listingsResult.results || [];
   const posts = postsResult.results || [];
 
   return (
     <div className="page-reveal pb-16 sm:pb-24">
-      {/* Hero Section */}
       <section className="mx-auto max-w-6xl px-4 pb-8 pt-4 sm:px-6 sm:pt-8 lg:pb-14">
         <div className="overflow-hidden rounded-[2.4rem] border border-[rgb(var(--primary)/.15)] bg-[#087f79] shadow-lift">
           <div className="grid lg:grid-cols-2">
             <div className="relative flex min-h-[420px] items-center overflow-hidden bg-gradient-to-br from-[#065053] via-[#087f79] to-[#0ba59d] px-6 py-10 text-white sm:px-10 lg:px-12">
               <div className="absolute -bottom-28 -right-20 h-72 w-72 rounded-full border-[30px] border-white/10" />
-              <div className="absolute -top-16 -left-16 h-56 w-56 rounded-full bg-[#ffc985]/15 blur-2xl" />
+              <div className="absolute -left-16 -top-16 h-56 w-56 rounded-full bg-[#ffc985]/15 blur-2xl" />
 
               <div className="relative w-full">
                 <h1 className="text-[2.6rem] font-black leading-[1.1] tracking-[-.075em] sm:text-5xl lg:text-[3.8rem]">
                   الشغل عليك،
                   <br />
-                  <span className="text-[#26d7cf]">وعلينا نكبّر اسمك.</span>
+                  <span className="text-[#26d7cf]">
+                    وعلينا نكبّر اسمك.
+                  </span>
                 </h1>
 
                 <p className="mt-4 max-w-lg text-xs leading-6 text-[#d9f3ee] sm:text-sm sm:leading-7">
-                  بدك خدمة؟ دور عليها، قارن بين أفضل الكفاءات، وتواصل مباشرة بأمان. عندك شغلة بتتقنها؟ انضم وخلي الكل يلاقيك.
+                  بدك خدمة؟ دور عليها، قارن بين أفضل الكفاءات، وتواصل مباشرة
+                  بأمان. عندك شغلة بتتقنها؟ انضم وخلي الكل يلاقيك.
                 </p>
 
                 <form action="/discover" role="search" className="mt-6">
                   <div className="flex min-h-[58px] items-center gap-2 rounded-2xl bg-white p-2 text-[rgb(var(--text-main))] shadow-[0_20px_50px_rgba(2,45,42,.24)]">
-                    <Search size={20} className="ms-2 shrink-0 text-[#087f79]" />
+                    <Search
+                      size={20}
+                      className="ms-2 shrink-0 text-[#087f79]"
+                    />
                     <input
                       name="q"
                       type="search"
                       maxLength={120}
                       placeholder="شو حابب تنجز اليوم؟ (صيانة، تعليم، برمجة...)"
-                      className="min-w-0 flex-1 bg-transparent px-2 text-xs font-bold outline-none sm:text-sm text-gray-800 placeholder:text-gray-400"
+                      className="min-w-0 flex-1 bg-transparent px-2 text-xs font-bold text-gray-800 outline-none placeholder:text-gray-400 sm:text-sm"
                     />
                     <button className="brand-button !min-h-[44px] !rounded-xl !px-6 text-xs font-black">
                       بحث
@@ -158,7 +168,6 @@ export default async function HomePage() {
               </div>
             </div>
 
-            {/* Desktop Visual */}
             <div className="relative hidden min-h-[420px] bg-[#f4efe5] p-6 lg:block">
               <div className="grid h-full grid-cols-2 grid-rows-2 gap-4">
                 <ObjectTile icon={Wrench} label="صيانة وإصلاح" />
@@ -173,7 +182,6 @@ export default async function HomePage() {
           </div>
         </div>
 
-        {/* Mobile Quick Category Shortcuts */}
         <div className="mt-4 grid grid-cols-4 gap-2.5 lg:hidden">
           {[
             [House, "خدمات بيت", "/discover?category=home-services"],
@@ -182,23 +190,25 @@ export default async function HomePage() {
             [GraduationCap, "تعليم", "/discover?category=education-training"],
           ].map(([Icon, label, href]) => {
             const I = Icon as typeof House;
+
             return (
               <Link
                 key={String(label)}
                 href={String(href)}
-                className="flex flex-col items-center justify-center rounded-2xl border border-theme bg-surface p-3 text-center shadow-sm active:scale-95 transition-transform"
+                className="flex flex-col items-center justify-center rounded-2xl border border-theme bg-surface p-3 text-center shadow-sm transition-transform active:scale-95"
               >
                 <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[rgb(var(--primary-soft))] text-brand">
                   <I size={20} />
                 </span>
-                <p className="mt-2 text-[10px] font-black">{String(label)}</p>
+                <p className="mt-2 text-[10px] font-black">
+                  {String(label)}
+                </p>
               </Link>
             );
           })}
         </div>
       </section>
 
-      {/* Categories Carousel */}
       <section className="mx-auto max-w-6xl px-4 sm:px-6">
         <SectionHeading
           eyebrow="تصفح المجالات"
@@ -207,14 +217,19 @@ export default async function HomePage() {
           href="/discover"
           action="عرض الكل"
         />
+
         <div className="mobile-snap-row -mx-4 px-4 pb-3 sm:mx-0 sm:grid sm:grid-cols-3 sm:gap-4 sm:overflow-visible sm:px-0 lg:grid-cols-7">
           {categories.slice(0, 7).map((category) => {
             const visual =
-              categoryVisuals[category.slug as keyof typeof categoryVisuals] || {
+              categoryVisuals[
+                category.slug as keyof typeof categoryVisuals
+              ] || {
                 icon: LayoutGrid,
                 tone: "bg-[#e6e4db] text-[#607064]",
               };
+
             const Icon = visual.icon;
+
             return (
               <Link
                 key={category.id}
@@ -238,7 +253,41 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* Listings */}
+      {serviceTypes.length > 0 && (
+        <section className="mx-auto mt-12 max-w-6xl px-4 sm:px-6 lg:mt-16">
+          <SectionHeading
+            eyebrow="شو بدك تنجز؟"
+            title="خدمات ممكن تحتاجها"
+            copy="اختار الخدمة نفسها، وبعدها شوف مين بقدمها."
+            href="/discover"
+            action="كل الخدمات"
+          />
+
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            {serviceTypes.map((service) => (
+              <Link
+                key={service.id}
+                href={`/service-types/${service.id}`}
+                className="group flex items-center justify-between gap-3 rounded-2xl border border-theme bg-surface p-4 transition hover:-translate-y-1 hover:shadow-soft active:scale-[.98]"
+              >
+                <div className="min-w-0">
+                  <h3 className="line-clamp-2 text-sm font-black leading-6">
+                    {service.title}
+                  </h3>
+                  <p className="mt-1 line-clamp-1 text-[10px] text-muted">
+                    {service.category_name}
+                  </p>
+                </div>
+
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[rgb(var(--primary-soft))] text-brand">
+                  <ChevronLeft size={17} />
+                </span>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
+
       {listings.length > 0 && (
         <section className="mx-auto mt-12 max-w-6xl px-4 sm:px-6 lg:mt-16">
           <SectionHeading
@@ -248,6 +297,7 @@ export default async function HomePage() {
             href="/discover?scope=LISTINGS"
             action="كل الخدمات"
           />
+
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {listings.map((r) => (
               <SearchResultCard key={r.result_id} result={r} />
@@ -256,7 +306,6 @@ export default async function HomePage() {
         </section>
       )}
 
-      {/* Providers */}
       {providers.length > 0 && (
         <section className="mx-auto mt-12 max-w-6xl px-4 sm:px-6 lg:mt-16">
           <SectionHeading
@@ -266,6 +315,7 @@ export default async function HomePage() {
             href="/discover?scope=PROVIDERS"
             action="كل المحترفين"
           />
+
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {providers.map((r) => (
               <SearchResultCard key={r.result_id} result={r} />
@@ -274,7 +324,6 @@ export default async function HomePage() {
         </section>
       )}
 
-      {/* Provider CTA Banner */}
       <section className="mx-auto mt-12 max-w-6xl px-4 sm:px-6 lg:mt-16">
         <div className="relative overflow-hidden rounded-[2.2rem] bg-gradient-to-l from-[#087f79] to-[#044c52] p-7 text-white shadow-lift sm:p-10">
           <div className="pointer-events-none absolute -left-16 -top-16 h-56 w-56 rounded-full border-[20px] border-white/10" />
@@ -287,9 +336,11 @@ export default async function HomePage() {
                 انضم لمجتمع جسر ووسّع قاعدة عملائك.
               </h2>
               <p className="mt-2 max-w-xl text-xs leading-6 text-white/80 sm:text-sm">
-                اعمل ملفك المهني، أضف خدماتك، وخلي الزبائن يوصلولك بكل سهولة وأمان.
+                اعمل ملفك المهني، أضف خدماتك، وخلي الزبائن يوصلولك بكل سهولة
+                وأمان.
               </p>
             </div>
+
             <Link
               href="/provider/apply"
               className="inline-flex min-h-[48px] items-center justify-center gap-2 rounded-2xl bg-white px-6 text-xs font-black text-[#087f79] shadow-lg transition hover:-translate-y-0.5 active:scale-[.98]"
@@ -300,7 +351,6 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* Recent Posts */}
       {posts.length > 0 && (
         <section className="mx-auto mt-12 max-w-6xl px-4 sm:px-6 lg:mt-16">
           <SectionHeading
@@ -310,6 +360,7 @@ export default async function HomePage() {
             href="/discover?scope=POSTS"
             action="عرض الكل"
           />
+
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {posts.map((r) => (
               <SearchResultCard key={r.result_id} result={r} />

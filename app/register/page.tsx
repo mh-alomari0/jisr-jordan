@@ -170,7 +170,7 @@ export default function RegisterPage() {
               )}
 
               <div>
-                <label className="block text-xs font-bold mb-1.5">الاسم الكامل</label>
+                <label className="block text-xs font-bold mb-1.5">كيف نناديك؟</label>
                 <div className="relative">
                   <User className="absolute end-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
                   <input
@@ -179,7 +179,7 @@ export default function RegisterPage() {
                     autoComplete="name"
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
-                    placeholder="مثلاً: أحمد العبداللات"
+                    placeholder="اكتب اسمك"
                     className="form-field pe-10 !rounded-2xl text-xs"
                   />
                 </div>
