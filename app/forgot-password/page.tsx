@@ -27,10 +27,7 @@ export default function ForgotPasswordPage() {
       const result = await requestPasswordResetAction(email);
 
       if (!result.success) {
-        setError(
-          result.error ||
-            "تعذر إرسال الطلب حالياً. حاول مرة أخرى لاحقاً.",
-        );
+        setError(result.error || "تعذر إرسال الطلب حالياً. جرّب بعد شوي.");
         setLoading(false);
         return;
       }
@@ -38,46 +35,59 @@ export default function ForgotPasswordPage() {
       setSent(true);
       setLoading(false);
     } catch {
-      setError("حدث خطأ غير متوقع. حاول مرة أخرى.");
+      setError("صار خطأ غير متوقع. جرّب مرة ثانية.");
       setLoading(false);
     }
   };
 
   return (
-    <main className="mx-auto my-6 grid min-h-[650px] max-w-5xl overflow-hidden rounded-[2rem] border border-theme bg-surface shadow-soft lg:grid-cols-[.9fr_1.1fr]">
-      <aside className="relative hidden overflow-hidden bg-[#f8e0d6] p-9 text-[#743b35] lg:flex lg:flex-col lg:justify-between">
-        <div className="absolute -left-20 -top-24 h-64 w-64 rounded-full border-[25px] border-white/35" />
-        <Link href="/" className="relative font-bold">جسر الأردن</Link>
-        <div className="relative">
-          <KeyRound className="h-10 w-10 text-[#0b817a]" />
+    <main className="mx-auto my-6 grid min-h-[640px] max-w-5xl overflow-hidden border border-theme bg-surface lg:grid-cols-[.9fr_1.1fr] lg:rounded-[1.75rem]">
+      <aside className="hidden bg-[#f4ddd4] p-10 text-[#643c37] lg:flex lg:flex-col lg:justify-between">
+        <Link href="/" className="text-sm font-bold">جسر الأردن</Link>
+
+        <div className="max-w-sm">
+          <KeyRound className="h-9 w-9 text-[#0b817a]" />
           <p className="mt-6 text-[10px] font-bold opacity-65">استعادة الحساب</p>
-          <h1 className="mt-2 text-4xl font-bold tracking-[-.055em]">نسيتها؟<br /><span className="text-[#0b817a]">بتصير.</span></h1>
-          <p className="mt-4 text-xs leading-7 opacity-75">أرسل طلب الاستعادة لبريدك، وكمل من الرابط الآمن اللي يوصلك.</p>
+          <h1 className="mt-2 text-4xl font-bold leading-[1.16] tracking-[-.055em]">
+            نسيتها؟
+            <br />
+            عادي، بتصير.
+          </h1>
+          <p className="mt-4 text-xs leading-7 opacity-75">
+            حط بريدك، وإذا الحساب مؤهل بنبعثلك رابط ترجع منه تدخل بأمان.
+          </p>
         </div>
-        <p className="relative text-[9px] opacity-55">لا نعرض إذا كان البريد مسجلاً أو لا، لحماية خصوصية الحسابات.</p>
+
+        <p className="text-[9px] opacity-55">
+          ما بنوضح إذا البريد مسجل أو لا، حفاظاً على خصوصية الحسابات.
+        </p>
       </aside>
 
       <section className="flex items-center p-5 sm:p-10 lg:p-14">
         <div className="mx-auto w-full max-w-md">
           <p className="text-[10px] font-bold text-brand">كلمة المرور</p>
-          <h2 className="mt-2 text-3xl font-bold tracking-[-.05em]">استرجع حسابك</h2>
-          <p className="mt-2 text-xs leading-6 text-muted">أدخل بريدك الإلكتروني وسنرسل مسار الاستعادة الآمن.</p>
+          <h2 className="mt-2 text-3xl font-bold tracking-[-.05em]">رجّع حسابك</h2>
+          <p className="mt-2 text-xs leading-6 text-muted">
+            اكتب بريدك وبنبعثلك تعليمات الاستعادة إذا كان الحساب مؤهلاً.
+          </p>
 
           {sent ? (
-            <div className="mt-7 rounded-[1.7rem] border border-[rgb(var(--success)/0.25)] bg-[rgb(var(--success)/0.06)] p-6 text-center">
+            <div className="mt-8 border-t border-theme pt-7 text-center">
               <CheckCircle2 className="mx-auto h-11 w-11 text-[rgb(var(--success))]" />
               <h3 className="mt-4 text-lg font-bold">راجع بريدك</h3>
-              <p className="mt-2 text-xs leading-6 text-muted">إذا كان البريد مؤهلاً، ستصلك تعليمات استعادة كلمة المرور.</p>
+              <p className="mt-2 text-xs leading-6 text-muted">
+                إذا كان البريد مؤهلاً، رح توصلك تعليمات استعادة كلمة المرور.
+              </p>
               <Link href="/login" className="secondary-button mt-5 w-full gap-2">
                 <ArrowRight size={14} />
-                العودة لتسجيل الدخول
+                رجوع لتسجيل الدخول
               </Link>
             </div>
           ) : (
             <form onSubmit={handleReset} className="mt-7 space-y-5">
               {error && (
-                <div role="alert" className="flex gap-2 rounded-2xl bg-[rgb(var(--danger)/0.08)] p-4 text-xs text-[rgb(var(--danger))]">
-                  <AlertCircle className="h-4 w-4 shrink-0" />
+                <div role="alert" className="flex items-start gap-2 border-s-2 border-[rgb(var(--danger))] bg-[rgb(var(--danger)/0.06)] px-4 py-3 text-xs leading-6 text-[rgb(var(--danger))]">
+                  <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
                   {error}
                 </div>
               )}
@@ -91,7 +101,7 @@ export default function ForgotPasswordPage() {
                     required
                     autoComplete="email"
                     value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    onChange={(event) => setEmail(event.target.value)}
                     placeholder="name@example.com"
                     className="form-field pe-10"
                   />
@@ -100,14 +110,14 @@ export default function ForgotPasswordPage() {
 
               <button type="submit" disabled={loading} className="brand-button w-full gap-2">
                 {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <KeyRound size={16} />}
-                {loading ? "جارٍ الإرسال..." : "إرسال رابط الاستعادة"}
+                {loading ? "جارٍ الإرسال..." : "ابعث رابط الاستعادة"}
               </button>
             </form>
           )}
 
           {!sent && (
             <Link href="/login" className="mt-6 block text-center text-xs font-bold text-brand">
-              العودة لتسجيل الدخول
+              رجوع لتسجيل الدخول
             </Link>
           )}
         </div>
