@@ -230,9 +230,97 @@
   }
 }
 
+/* Conversation polish: keep the messaging logic untouched and make the UI feel
+   like a mature product instead of a decorative landing-page component. */
+body:has(main[aria-live="polite"]) {
+  background: rgb(var(--canvas));
+}
+
+body:has(main[aria-live="polite"]) main[aria-live="polite"] {
+  background-image:
+    linear-gradient(rgb(var(--border) / 0.16) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(var(--border) / 0.16) 1px, transparent 1px);
+  background-size: 28px 28px;
+  background-position: center;
+}
+
+body:has(main[aria-live="polite"]) main[aria-live="polite"] article {
+  box-shadow: none !important;
+  border-radius: 1.15rem !important;
+}
+
+body:has(main[aria-live="polite"]) main[aria-live="polite"] article.bg-gradient-to-l {
+  background: rgb(var(--primary)) !important;
+}
+
+body:has(main[aria-live="polite"]) main[aria-live="polite"] article.border-theme {
+  background: rgb(var(--surface)) !important;
+  border-color: rgb(var(--border)) !important;
+}
+
+body:has(main[aria-live="polite"]) main[aria-live="polite"] article button[class*="shadow"] {
+  box-shadow: none !important;
+}
+
+body:has(main[aria-live="polite"]) main[aria-live="polite"] article + div button {
+  box-shadow: none !important;
+}
+
+body:has(main[aria-live="polite"]) main[aria-live="polite"] > div:first-child button,
+body:has(main[aria-live="polite"]) main[aria-live="polite"] button.secondary-button {
+  box-shadow: none !important;
+}
+
+body:has(main[aria-live="polite"]) footer:has(textarea[placeholder="اكتب رسالتك…"]) {
+  background: rgb(var(--surface)) !important;
+  backdrop-filter: none !important;
+}
+
+body:has(main[aria-live="polite"]) footer:has(textarea[placeholder="اكتب رسالتك…"]) .form-field {
+  border-radius: 1.25rem !important;
+  background: rgb(var(--surface-muted));
+  border-color: transparent;
+  box-shadow: none !important;
+}
+
+body:has(main[aria-live="polite"]) footer:has(textarea[placeholder="اكتب رسالتك…"]) button[class*="rounded-2xl"] {
+  border-radius: 999px !important;
+  box-shadow: none !important;
+}
+
+body:has(main[aria-live="polite"]) header:has(+ div + main[aria-live="polite"]),
+body:has(main[aria-live="polite"]) header:has(+ main[aria-live="polite"]) {
+  background: rgb(var(--surface)) !important;
+  backdrop-filter: none !important;
+}
+
+body:has(main[aria-live="polite"]) header:has(+ div + main[aria-live="polite"]) [class*="rounded-2xl"],
+body:has(main[aria-live="polite"]) header:has(+ main[aria-live="polite"]) [class*="rounded-2xl"] {
+  border-radius: 999px !important;
+  box-shadow: none !important;
+}
+
+@media (min-width: 768px) {
+  body:has(main[aria-live="polite"]) main[aria-live="polite"] {
+    background-size: 32px 32px;
+  }
+}
+
 @media (max-width: 767px) {
   body {
     padding-bottom: calc(5.5rem + env(safe-area-inset-bottom));
+  }
+
+  body:has(main[aria-live="polite"]) {
+    padding-bottom: 0;
+  }
+
+  body:has(main[aria-live="polite"]) main[aria-live="polite"] {
+    padding-inline: 0.65rem !important;
+  }
+
+  body:has(main[aria-live="polite"]) main[aria-live="polite"] article {
+    max-width: 86vw;
   }
 }
 
