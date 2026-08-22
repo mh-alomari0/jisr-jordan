@@ -7,8 +7,6 @@ import {
   FileQuestion,
   MessageCircle,
   Plus,
-  ShieldCheck,
-  Sparkles,
   TrendingUp,
   WalletCards,
 } from "lucide-react";
@@ -23,6 +21,12 @@ import ProviderBookingsClient from "./_components/provider-bookings-client";
 
 export const metadata = { title: "مساحة مقدم الخدمة | جسر الأردن" };
 
+const commissionStatusLabel: Record<string, string> = {
+  PENDING: "قيد المتابعة",
+  DUE: "مستحقة",
+  DISPUTED: "تحت المراجعة",
+};
+
 export default async function ProviderDashboardPage() {
   const [bookingsResult, listingsResult, quotesResult] = await Promise.all([
     getProviderBookingsAction(),
@@ -33,7 +37,7 @@ export default async function ProviderDashboardPage() {
   if (!bookingsResult.success) {
     return (
       <main className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
-        <div className="surface-card p-8 text-center text-sm text-[rgb(var(--danger))]">
+        <div className="border-y border-theme py-10 text-center text-sm text-[rgb(var(--danger))]">
           {bookingsResult.error}
         </div>
       </main>
@@ -80,172 +84,194 @@ export default async function ProviderDashboardPage() {
     0,
   );
 
+  const metrics = [
+    {
+      label: "خدمات منشورة",
+      value: publishedCount,
+      icon: BriefcaseBusiness,
+      href: "/provider/listings",
+    },
+    {
+      label: "عروض بحاجة رد",
+      value: openQuotes,
+      icon: FileQuestion,
+      href: "/provider/quotes",
+    },
+    {
+      label: "شغل جاري",
+      value: activeWork,
+      icon: CalendarCheck2,
+      href: "#work",
+    },
+    {
+      label: "شغل مكتمل",
+      value: completedWork,
+      icon: TrendingUp,
+      href: "#work",
+    },
+  ];
+
   return (
-    <main className="mx-auto max-w-6xl space-y-8 px-4 py-6 sm:px-6 sm:py-10">
-      {/* 💼 Header & Stats Hero */}
-      <section className="relative overflow-hidden rounded-[2.4rem] bg-gradient-to-br from-[#065053] via-[#087f79] to-[#0ba59d] p-6 text-white shadow-lift sm:p-9">
-        <div className="pointer-events-none absolute -left-20 -top-24 h-72 w-72 rounded-full border-[28px] border-white/10" />
-        <div className="pointer-events-none absolute -bottom-32 left-[46%] h-64 w-64 rounded-full bg-[#ffc985]/15 blur-xl" />
-
-        <div className="relative grid gap-8 lg:grid-cols-[1.15fr_.85fr] lg:items-end">
+    <main className="mx-auto max-w-6xl px-4 py-7 sm:px-6 sm:py-10">
+      <header className="border-b border-theme pb-6">
+        <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-[11px] font-black text-[#a6f0e7] backdrop-blur-md">
-              <Sparkles size={12} /> مساحة الشغل والإنجاز
-            </span>
-
-            <h1 className="mt-4 text-3xl font-black leading-tight sm:text-5xl">
-              أهلاً بعودتك 👋
-              <br />
-              <span className="text-[#ffc985]">كل شغلك بمكان واحد.</span>
+            <p className="text-xs font-bold text-brand">مساحة شغلك</p>
+            <h1 className="mt-1 text-3xl font-black tracking-[-.04em] sm:text-4xl">
+              شو عندك اليوم؟
             </h1>
-
-            <p className="mt-3 max-w-lg text-xs leading-6 text-[#d9f3ee] sm:text-sm">
-              تابع طلبات الزبائن، العروض المقدمة، والتزامات العمولات بكل وضوح وأمان.
+            <p className="mt-2 max-w-xl text-sm leading-7 text-muted">
+              الطلبات، عروض الأسعار، خدماتك وعمولات جسر — كلهم هون.
             </p>
-
-            <div className="mt-6 flex flex-wrap gap-2.5">
-              <Link
-                href="/provider/listings"
-                className="brand-button !min-h-[42px] !rounded-xl !bg-white !text-[#087f79] !shadow-lg"
-              >
-                <Plus size={16} /> أضف خدمة جديدة
-              </Link>
-
-              <Link
-                href="/messages"
-                className="secondary-button !min-h-[42px] !rounded-xl !border-white/20 !bg-white/10 !text-white hover:!bg-white/20"
-              >
-                <MessageCircle size={16} /> المحادثات
-              </Link>
-            </div>
           </div>
 
-          {/* Quick Metrics Grid */}
-          <div className="grid grid-cols-2 gap-3">
-            {[
-              { label: "خدمات منشورة", val: publishedCount, icon: BriefcaseBusiness, href: "/provider/listings" },
-              { label: "عروض أسعار مفتوحة", val: openQuotes, icon: FileQuestion, href: "/provider/quotes" },
-              { label: "طلبات قيد التنفيذ", val: activeWork, icon: CalendarCheck2, href: "#work" },
-              { label: "خدمات مكتملة", val: completedWork, icon: TrendingUp, href: "#work" },
-            ].map((m) => {
-              const Icon = m.icon;
-              return (
-                <Link
-                  key={m.label}
-                  href={m.href}
-                  className="rounded-3xl border border-white/15 bg-white/10 p-4 backdrop-blur-md transition-all hover:bg-white/20 active:scale-95"
-                >
-                  <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-white/15 text-[#c9eee8]">
-                    <Icon size={18} />
-                  </span>
-                  <strong className="mt-3 block text-2xl font-black">{m.val}</strong>
-                  <span className="text-[10px] text-[#d8efeb] font-bold">{m.label}</span>
-                </Link>
-              );
-            })}
+          <div className="flex flex-wrap gap-2">
+            <Link href="/provider/listings" className="brand-button !min-h-11">
+              <Plus size={16} />
+              أضف خدمة
+            </Link>
+            <Link href="/messages" className="secondary-button !min-h-11">
+              <MessageCircle size={16} />
+              الرسائل
+            </Link>
           </div>
         </div>
-      </section>
 
-      {/* Active Work Section */}
-      <section className="grid gap-6 lg:grid-cols-[1.3fr_.7fr]">
-        <div className="surface-card p-5 sm:p-6 space-y-4">
-          <div className="flex items-center justify-between border-b border-theme pb-4">
+        <div className="mt-6 grid grid-cols-2 border-y border-theme sm:grid-cols-4">
+          {metrics.map((metric, index) => {
+            const Icon = metric.icon;
+
+            return (
+              <Link
+                key={metric.label}
+                href={metric.href}
+                className={`flex items-center gap-3 px-2 py-4 transition hover:bg-surface-muted sm:px-4 ${
+                  index % 2 === 0 ? "border-e border-theme" : ""
+                } ${index < 2 ? "border-b border-theme sm:border-b-0" : ""} ${
+                  index > 0 ? "sm:border-s sm:border-theme" : ""
+                }`}
+              >
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[rgb(var(--primary-soft))] text-brand">
+                  <Icon size={17} />
+                </span>
+                <span className="min-w-0">
+                  <strong className="block text-xl font-black">{metric.value}</strong>
+                  <span className="block truncate text-[10px] font-bold text-muted sm:text-xs">
+                    {metric.label}
+                  </span>
+                </span>
+              </Link>
+            );
+          })}
+        </div>
+      </header>
+
+      <div className="mt-8 grid gap-8 lg:grid-cols-[minmax(0,1fr)_19rem]">
+        <section id="work" className="min-w-0">
+          <div className="mb-4 flex items-end justify-between gap-3">
             <div>
-              <p className="text-[10px] font-black text-brand">المهام العاجلة</p>
-              <h2 className="text-xl font-black">الطلبات الجارية</h2>
+              <p className="text-xs font-bold text-brand">الطلبات</p>
+              <h2 className="mt-1 text-2xl font-black">الشغل الجاري</h2>
             </div>
-            <span className="status-pill bg-[rgb(var(--primary-soft))] text-brand font-black">
+            <span className="text-xs font-bold text-muted">
               {activeWork} نشط
             </span>
           </div>
 
-          <div id="work">
-            <ProviderBookingsClient initialBookings={bookings} />
-          </div>
-        </div>
+          <ProviderBookingsClient initialBookings={bookings} />
+        </section>
 
-        {/* Commissions & Quotes Side Cards */}
-        <aside className="space-y-4">
-          {/* 💰 Wallet / Commission Card */}
-          <div className="surface-card p-5 sm:p-6 bg-gradient-to-br from-[#f8ede6] to-[#f4ded3] text-[#743b35]">
-            <div className="flex items-center justify-between">
-              <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/60 shadow-sm">
-                <WalletCards size={20} className="text-[#96473e]" />
-              </span>
-              <span className="status-pill bg-white/60 text-[#743b35] font-black">
-                عمولات مستحقة
-              </span>
+        <aside className="space-y-6">
+          <section className="border-t-2 border-[rgb(var(--accent-peach))] pt-4">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-[10px] font-bold text-muted">عمولات مستحقة</p>
+                <strong className="mt-1 block text-2xl font-black">
+                  {due.toFixed(2)} د.أ
+                </strong>
+              </div>
+              <WalletCards size={21} className="text-[rgb(var(--accent-peach))]" />
             </div>
-
-            <p className="mt-4 text-[10px] font-bold opacity-75">المبلغ المطلوب سداده</p>
-            <strong className="mt-1 block text-3xl font-black text-[#96473e]">
-              {due.toFixed(2)} د.أ
-            </strong>
-            <p className="mt-2 text-xs leading-5 opacity-80">
-              يتم احتساب العمولة تلقائياً عند إتمام الحجوزات داخل المنصة.
+            <p className="mt-2 text-xs leading-6 text-muted">
+              بتنحسب العمولة بعد إتمام الحجز داخل جسر.
             </p>
-
             <a
               href="#commissions"
-              className="mt-4 inline-flex items-center gap-1 text-xs font-black text-[#96473e] hover:underline"
+              className="mt-3 inline-flex items-center gap-1 text-xs font-black text-brand"
             >
-              عرض سجل العمولات <ArrowLeft size={13} />
+              شوف التفاصيل <ArrowLeft size={13} />
             </a>
-          </div>
+          </section>
 
-          {/* Quotes Shortcut */}
-          <Link
-            href="/provider/quotes"
-            className="surface-card block p-5 transition-transform hover:-translate-y-1 active:scale-[0.98]"
-          >
-            <div className="flex items-center gap-3">
-              <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[rgb(var(--primary-soft))] text-brand">
-                <FileQuestion size={18} />
-              </span>
-              <div>
-                <strong className="block text-sm font-black">طلبات عروض الأسعار</strong>
-                <span className="text-[10px] text-muted font-bold">
-                  {openQuotes ? `${openQuotes} طلب بانتظار تسعيرك` : "لا توجد طلبات جديدة"}
+          <section className="border-t border-theme pt-4">
+            <Link
+              href="/provider/quotes"
+              className="group flex items-center justify-between gap-3 py-1"
+            >
+              <div className="flex items-center gap-3">
+                <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[rgb(var(--primary-soft))] text-brand">
+                  <FileQuestion size={17} />
                 </span>
+                <div>
+                  <strong className="block text-sm">عروض الأسعار</strong>
+                  <span className="text-[10px] text-muted">
+                    {openQuotes
+                      ? `${openQuotes} بحاجة لمتابعة`
+                      : "ما في طلبات جديدة"}
+                  </span>
+                </div>
               </div>
-            </div>
-          </Link>
+              <ArrowLeft
+                size={15}
+                className="text-muted transition group-hover:-translate-x-0.5"
+              />
+            </Link>
+          </section>
         </aside>
-      </section>
+      </div>
 
-      {/* Commissions History Ledger */}
-      <section id="commissions" className="surface-card p-5 sm:p-6 space-y-4">
-        <div>
-          <p className="text-[10px] font-black text-brand">سجل العمليات</p>
-          <h2 className="text-xl font-black">تفاصيل عمولات منصة جسر</h2>
+      <section id="commissions" className="mt-10 border-t border-theme pt-7">
+        <div className="mb-4 flex items-end justify-between gap-3">
+          <div>
+            <p className="text-xs font-bold text-brand">الحسابات</p>
+            <h2 className="mt-1 text-2xl font-black">العمولات</h2>
+          </div>
+          <p className="text-[10px] text-muted">آخر 15 عملية</p>
         </div>
 
         {(commissions || []).length > 0 ? (
-          <div className="overflow-x-auto">
-            <table className="w-full text-right text-xs">
-              <thead className="bg-surface-muted text-muted font-bold">
-                <tr>
-                  <th className="p-3 rounded-s-xl">قيمة الحجز</th>
-                  <th className="p-3">نسبة العمولة</th>
-                  <th className="p-3">عمولة جسر</th>
-                  <th className="p-3">صافي ربحك</th>
-                  <th className="p-3 rounded-e-xl">الحالة</th>
+          <div className="overflow-x-auto border-y border-theme">
+            <table className="w-full min-w-[620px] text-right text-xs">
+              <thead className="text-muted">
+                <tr className="border-b border-theme">
+                  <th className="px-3 py-3 font-bold">قيمة الحجز</th>
+                  <th className="px-3 py-3 font-bold">النسبة</th>
+                  <th className="px-3 py-3 font-bold">عمولة جسر</th>
+                  <th className="px-3 py-3 font-bold">صافي ربحك</th>
+                  <th className="px-3 py-3 font-bold">الحالة</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-theme">
                 {(commissions || []).slice(0, 15).map((item) => (
-                  <tr key={item.id} className="hover:bg-surface-muted/50">
-                    <td className="p-3 font-bold">{Number(item.gross_amount).toFixed(2)} د.أ</td>
-                    <td className="p-3">{Number(item.rate_percent).toFixed(1)}%</td>
-                    <td className="p-3 font-black text-brand">{Number(item.commission_amount).toFixed(2)} د.أ</td>
-                    <td className="p-3 font-black text-[rgb(var(--success))]">
-                      {(Number(item.gross_amount) - Number(item.commission_amount)).toFixed(2)} د.أ
+                  <tr key={item.id} className="hover:bg-surface-muted">
+                    <td className="px-3 py-3 font-bold">
+                      {Number(item.gross_amount).toFixed(2)} د.أ
                     </td>
-                    <td className="p-3">
-                      <span className="status-pill bg-surface-muted text-muted font-bold">
-                        {item.status}
-                      </span>
+                    <td className="px-3 py-3">
+                      {Number(item.rate_percent).toFixed(1)}%
+                    </td>
+                    <td className="px-3 py-3 font-bold text-brand">
+                      {Number(item.commission_amount).toFixed(2)} د.أ
+                    </td>
+                    <td className="px-3 py-3 font-black">
+                      {(
+                        Number(item.gross_amount) -
+                        Number(item.commission_amount)
+                      ).toFixed(2)}{" "}
+                      د.أ
+                    </td>
+                    <td className="px-3 py-3 text-muted">
+                      {commissionStatusLabel[item.status] || item.status}
                     </td>
                   </tr>
                 ))}
@@ -253,9 +279,10 @@ export default async function ProviderDashboardPage() {
             </table>
           </div>
         ) : (
-          <div className="p-8 text-center space-y-2 border border-dashed border-theme rounded-2xl">
-            <Banknote className="mx-auto h-7 w-7 text-brand" />
-            <p className="text-xs font-bold">لا توجد أي عمولات معلقة حالياً ✓</p>
+          <div className="border-y border-theme py-10 text-center">
+            <Banknote className="mx-auto h-6 w-6 text-muted" />
+            <p className="mt-3 text-sm font-bold">ما عليك عمولات معلقة</p>
+            <p className="mt-1 text-xs text-muted">حسابك مرتب لحد الآن.</p>
           </div>
         )}
       </section>
