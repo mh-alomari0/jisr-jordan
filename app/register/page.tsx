@@ -12,7 +12,6 @@ import {
   Loader2,
   Lock,
   Mail,
-  Sparkles,
   User,
   UserPlus,
 } from "lucide-react";
@@ -32,7 +31,6 @@ function GoogleMark() {
 
 export default function RegisterPage() {
   const router = useRouter();
-
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -67,11 +65,7 @@ export default function RegisterPage() {
     setLoading(true);
 
     try {
-      const result = await registerAction({
-        fullName,
-        email,
-        password,
-      });
+      const result = await registerAction({ fullName, email, password });
 
       if (!result.success) {
         setError(result.error || "تعذر إكمال التسجيل.");
@@ -98,8 +92,7 @@ export default function RegisterPage() {
 
     try {
       const callback =
-        `${window.location.origin}/auth/callback?next=` +
-        encodeURIComponent("/");
+        `${window.location.origin}/auth/callback?next=` + encodeURIComponent("/");
 
       const { error: oauthError } = await supabase.auth.signInWithOAuth({
         provider: "google",
@@ -110,9 +103,7 @@ export default function RegisterPage() {
       });
 
       if (oauthError) {
-        setError(
-          "تعذر فتح التسجيل بجوجل. تأكد أن Google مفعّل داخل Supabase.",
-        );
+        setError("تعذر فتح التسجيل بجوجل. حاول مرة ثانية.");
         setGoogleLoading(false);
       }
     } catch {
@@ -122,91 +113,76 @@ export default function RegisterPage() {
   };
 
   return (
-    <main className="mx-auto my-4 grid min-h-[700px] max-w-6xl overflow-hidden rounded-[2.5rem] border border-theme bg-surface shadow-lift lg:grid-cols-2">
-      <aside className="relative hidden overflow-hidden bg-gradient-to-br from-[#065053] via-[#087f79] to-[#0ba59d] p-10 text-white lg:flex lg:flex-col lg:justify-between">
-        <div className="absolute -left-24 -top-28 h-80 w-80 rounded-full border-[30px] border-white/10" />
-        <div className="absolute -bottom-32 right-[-20px] h-72 w-72 rounded-full bg-[#ffc985]/18" />
+    <main className="mx-auto my-5 grid min-h-[700px] max-w-6xl overflow-hidden border border-theme bg-surface lg:grid-cols-[0.92fr_1.08fr] lg:rounded-[1.75rem]">
+      <aside className="relative hidden bg-[#0b817a] p-10 text-white lg:flex lg:flex-col lg:justify-between">
+        <Link href="/" className="inline-flex items-center gap-2.5 text-sm font-bold">
+          <span className="brand-mark h-10 w-10 text-lg">ج</span>
+          جسر الأردن
+        </Link>
 
-        <div className="relative">
-          <Link href="/" className="inline-flex items-center gap-2.5 text-base font-black">
-            <span className="brand-mark h-10 w-10 text-lg">ج</span>
-            جسر الأردن
-          </Link>
-        </div>
-
-        <div className="relative max-w-md space-y-3">
-          <span className="status-pill bg-white/15 font-black text-[#a6f0e7]">
-            <Sparkles size={12} className="me-1" /> خطوتك الأولى
-          </span>
-          <h2 className="text-4xl font-black leading-tight sm:text-5xl">
-            سجّل حسابك
+        <div className="max-w-md">
+          <p className="text-[10px] font-bold tracking-[.08em] text-[#c9eee8]">
+            أول مرة معنا؟
+          </p>
+          <h2 className="mt-3 text-4xl font-bold leading-[1.16] tracking-[-.055em] xl:text-5xl">
+            اعمل حسابك،
             <br />
-            وخلّي الباقي علينا.
+            والباقي بيمشي خطوة خطوة.
           </h2>
-          <p className="text-xs leading-7 text-[#d9f3ee] sm:text-sm">
-            تصفح مقدمي الخدمة، قارن الخيارات، واحكي مباشرة داخل جسر.
+          <p className="mt-5 max-w-sm text-sm leading-8 text-[#d9f2ee]">
+            دور على الخدمة اللي بدك إياها، احكي مع مقدمها، وتابع طلبك من نفس المكان.
           </p>
         </div>
 
-        <p className="relative text-[10px] text-white/60">
-          منصة جسر الأردن · سوق المهارات والخدمات
+        <p className="text-[9px] text-white/55">
+          جسر الأردن · خدمات ومهارات من ناس حقيقيين
         </p>
       </aside>
 
-      <section className="flex items-center p-6 sm:p-10 lg:p-12">
+      <section className="flex items-center p-5 sm:p-10 lg:p-14">
         <div className="mx-auto w-full max-w-md">
-          <Link href="/" className="mb-6 inline-flex items-center gap-2 text-sm font-black lg:hidden">
+          <Link href="/" className="mb-8 inline-flex items-center gap-2 text-sm font-bold lg:hidden">
             <span className="brand-mark h-9 w-9 text-base">ج</span>
             جسر الأردن
           </Link>
 
-          <span className="status-pill bg-[rgb(var(--primary-soft))] font-black text-brand">
-            حساب جديد
-          </span>
-          <h1 className="mt-2 text-2xl font-black sm:text-3xl">
-            مرحباً بك في جسر 👋
+          <p className="text-[10px] font-bold text-brand">إنشاء حساب</p>
+          <h1 className="mt-2 text-3xl font-bold tracking-[-.05em]">
+            كيف نناديك؟
           </h1>
-          <p className="mt-1 text-xs leading-6 text-muted">
-            أنشئ حسابك وابدأ من مكان واحد.
+          <p className="mt-2 text-xs leading-6 text-muted">
+            خلينا نبدأ باسمك، وبعدها كم شغلة بسيطة وبتكون جاهز.
           </p>
 
           {success ? (
-            <div className="mt-6 space-y-3 rounded-3xl border border-[rgb(var(--success)/0.3)] bg-[rgb(var(--success)/0.08)] p-6 text-center">
-              <CheckCircle2 className="mx-auto h-12 w-12 text-[rgb(var(--success))]" />
-              <h2 className="text-lg font-black">تم إنشاء الحساب!</h2>
-              <p className="text-xs leading-6 text-muted">
+            <div className="mt-8 border-t border-theme pt-7 text-center">
+              <CheckCircle2 className="mx-auto h-11 w-11 text-[rgb(var(--success))]" />
+              <h2 className="mt-3 text-lg font-bold">تم إنشاء الحساب</h2>
+              <p className="mt-2 text-xs leading-6 text-muted">
                 {requiresConfirmation
-                  ? "بعثنالك رسالة تأكيد على بريدك. أكد البريد وبعدها ادخل على جسر."
-                  : "تم التسجيل، جاري تحويلك لتسجيل الدخول..."}
+                  ? "بعثنالك رسالة تأكيد على بريدك. أكد البريد وبعدها ارجع ادخل على جسر."
+                  : "تمام، حسابك جاهز. بنحوّلك لتسجيل الدخول..."}
               </p>
 
               {requiresConfirmation && (
-                <Link
-                  href="/login/otp?mode=signup"
-                  className="brand-button mt-2 w-full text-xs font-black"
-                >
+                <Link href="/login/otp?mode=signup" className="brand-button mt-5 w-full text-xs">
                   تأكيد الحساب برمز البريد
                 </Link>
               )}
             </div>
           ) : (
             <>
-              <form onSubmit={handleRegister} className="mt-6 space-y-4">
+              <form onSubmit={handleRegister} className="mt-7 space-y-4">
                 {error && (
-                  <div
-                    role="alert"
-                    className="flex items-center gap-2 rounded-2xl bg-[rgb(var(--danger)/0.08)] p-4 text-xs font-bold text-[rgb(var(--danger))]"
-                  >
-                    <AlertCircle className="h-4 w-4 shrink-0" />
+                  <div role="alert" className="flex items-start gap-2 border-s-2 border-[rgb(var(--danger))] bg-[rgb(var(--danger)/0.06)] px-4 py-3 text-xs leading-6 text-[rgb(var(--danger))]">
+                    <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
                     {error}
                   </div>
                 )}
 
-                <div>
-                  <label className="mb-1.5 block text-xs font-bold">
-                    كيف نناديك؟
-                  </label>
-                  <div className="relative">
+                <label className="block text-xs font-bold">
+                  الاسم
+                  <div className="relative mt-1.5">
                     <User className="absolute end-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
                     <input
                       type="text"
@@ -215,16 +191,14 @@ export default function RegisterPage() {
                       value={fullName}
                       onChange={(e) => setFullName(e.target.value)}
                       placeholder="اكتب اسمك"
-                      className="form-field pe-10 !rounded-2xl text-xs"
+                      className="form-field pe-10"
                     />
                   </div>
-                </div>
+                </label>
 
-                <div>
-                  <label className="mb-1.5 block text-xs font-bold">
-                    البريد الإلكتروني
-                  </label>
-                  <div className="relative">
+                <label className="block text-xs font-bold">
+                  البريد الإلكتروني
+                  <div className="relative mt-1.5">
                     <Mail className="absolute end-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
                     <input
                       type="email"
@@ -233,16 +207,14 @@ export default function RegisterPage() {
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       placeholder="name@example.com"
-                      className="form-field pe-10 !rounded-2xl text-xs"
+                      className="form-field pe-10"
                     />
                   </div>
-                </div>
+                </label>
 
-                <div>
-                  <label className="mb-1.5 block text-xs font-bold">
-                    كلمة المرور
-                  </label>
-                  <div className="relative">
+                <label className="block text-xs font-bold">
+                  كلمة المرور
+                  <div className="relative mt-1.5">
                     <Lock className="absolute end-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
                     <input
                       minLength={8}
@@ -251,24 +223,23 @@ export default function RegisterPage() {
                       autoComplete="new-password"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      className="form-field px-10 !rounded-2xl text-xs"
+                      className="form-field px-10"
                       placeholder="••••••••"
                     />
                     <button
                       type="button"
-                      onClick={() => setShowPassword((v) => !v)}
+                      onClick={() => setShowPassword((value) => !value)}
                       className="absolute start-3.5 top-1/2 -translate-y-1/2 text-muted"
+                      aria-label={showPassword ? "إخفاء كلمة المرور" : "إظهار كلمة المرور"}
                     >
                       {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                     </button>
                   </div>
-                </div>
+                </label>
 
-                <div>
-                  <label className="mb-1.5 block text-xs font-bold">
-                    تأكيد كلمة المرور
-                  </label>
-                  <div className="relative">
+                <label className="block text-xs font-bold">
+                  تأكيد كلمة المرور
+                  <div className="relative mt-1.5">
                     <Lock className="absolute end-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
                     <input
                       minLength={8}
@@ -277,44 +248,31 @@ export default function RegisterPage() {
                       autoComplete="new-password"
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
-                      className="form-field px-10 !rounded-2xl text-xs"
+                      className="form-field px-10"
                       placeholder="••••••••"
                     />
                     <button
                       type="button"
-                      onClick={() => setShowConfirmPassword((v) => !v)}
+                      onClick={() => setShowConfirmPassword((value) => !value)}
                       className="absolute start-3.5 top-1/2 -translate-y-1/2 text-muted"
+                      aria-label={showConfirmPassword ? "إخفاء كلمة المرور" : "إظهار كلمة المرور"}
                     >
                       {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                     </button>
                   </div>
-                </div>
+                </label>
 
-                <div className="flex flex-wrap gap-2 text-[10px] text-muted">
+                <div className="space-y-1.5 text-[10px] text-muted">
                   {passwordChecks.map(([label, ok]) => (
-                    <span
-                      key={label}
-                      className={`inline-flex items-center gap-1 rounded-lg px-2 py-1 ${
-                        ok
-                          ? "bg-[rgb(var(--success)/0.1)] font-bold text-[rgb(var(--success))]"
-                          : "bg-surface-muted"
-                      }`}
-                    >
-                      {ok && <Check size={12} />} {label}
-                    </span>
+                    <p key={label} className={`flex items-center gap-1.5 ${ok ? "font-bold text-[rgb(var(--success))]" : ""}`}>
+                      <Check size={12} className={ok ? "opacity-100" : "opacity-25"} />
+                      {label}
+                    </p>
                   ))}
                 </div>
 
-                <button
-                  type="submit"
-                  disabled={loading || googleLoading}
-                  className="brand-button mt-2 w-full text-xs font-black shadow-md"
-                >
-                  {loading ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <UserPlus size={16} />
-                  )}
+                <button type="submit" disabled={loading || googleLoading} className="brand-button mt-2 w-full text-xs">
+                  {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <UserPlus size={16} />}
                   {loading ? "جارٍ إنشاء الحساب..." : "إنشاء الحساب"}
                 </button>
               </form>
@@ -329,23 +287,17 @@ export default function RegisterPage() {
                 type="button"
                 onClick={handleGoogleRegister}
                 disabled={googleLoading || loading}
-                className="flex min-h-12 w-full items-center justify-center gap-3 rounded-2xl border border-theme bg-white px-4 text-xs font-bold text-[#222] shadow-sm transition hover:-translate-y-0.5 hover:shadow-soft active:scale-[.98] disabled:opacity-60"
+                className="flex min-h-12 w-full items-center justify-center gap-3 border border-theme bg-surface px-4 text-xs font-bold transition hover:bg-surface-muted active:scale-[.98] disabled:opacity-60"
               >
-                {googleLoading ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <GoogleMark />
-                )}
-                {googleLoading
-                  ? "بنفتح جوجل..."
-                  : "المتابعة باستخدام Google"}
+                {googleLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <GoogleMark />}
+                {googleLoading ? "بنفتح جوجل..." : "المتابعة باستخدام Google"}
               </button>
             </>
           )}
 
-          <p className="mt-6 border-t border-theme pt-4 text-center text-xs text-muted">
+          <p className="mt-7 border-t border-theme pt-5 text-center text-xs text-muted">
             عندك حساب؟{" "}
-            <Link href="/login" className="font-black text-brand">
+            <Link href="/login" className="font-bold text-brand">
               تسجيل الدخول
             </Link>
           </p>
