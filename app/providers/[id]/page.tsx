@@ -1,28 +1,12 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
-import {
-  ArrowLeft,
-  BriefcaseBusiness,
-  CheckCircle2,
-  Clock3,
-  Images,
-  MapPin,
-  Monitor,
-  ShieldCheck,
-  Sparkles,
-  Star,
-} from "lucide-react";
+import { Star } from "lucide-react";
 import { notFound } from "next/navigation";
 import FavoriteButton from "@/components/marketplace/favorite-button";
 import MessageProviderButton from "@/components/marketplace/message-provider-button";
 import { getPublicProviderAction } from "@/lib/actions/marketplace-discovery";
-import {
-  deliveryTypeLabels,
-  pricingModelLabels,
-  type DeliveryType,
-  type PricingModel,
-} from "@/lib/marketplace";
+import type { PricingModel } from "@/lib/marketplace";
 
 function text(value: unknown, fallback = "") {
   return typeof value === "string" ? value : fallback;
@@ -30,12 +14,6 @@ function text(value: unknown, fallback = "") {
 
 function number(value: unknown) {
   return typeof value === "number" ? value : Number(value || 0);
-}
-
-function strings(value: unknown) {
-  return Array.isArray(value)
-    ? value.filter((item): item is string => typeof item === "string")
-    : [];
 }
 
 function records(value: unknown) {
@@ -70,17 +48,14 @@ export async function generateMetadata({
 
   return {
     title: text(result.provider.name, "مقدم خدمة"),
-    description:
-      text(result.provider.headline) || text(result.provider.bio),
+    description: text(result.provider.headline) || text(result.provider.bio),
   };
 }
 
 export default async function PublicProviderPage({
   params,
-  searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ reviews?: string }>;
 }) {
   const { id } = await params;
   const result = await getPublicProviderAction(id);
@@ -90,31 +65,18 @@ export default async function PublicProviderPage({
   const provider = result.provider;
   const name = text(provider.name, "مقدم خدمة");
   const listings = records(provider.listings);
-  const posts = records(provider.posts);
-  const skills = strings(provider.skills);
-  const areas = strings(provider.service_areas);
   const rating = number(provider.average_rating);
   const reviews = number(provider.review_count);
   const completed = number(provider.completed_bookings);
-
-  const experienceStartYear = provider.experience_start_year
-    ? number(provider.experience_start_year)
-    : null;
-
-  const experienceYears = experienceStartYear
-    ? Math.max(0, new Date().getFullYear() - experienceStartYear)
-    : null;
-
   const avatar = text(provider.avatar_path);
   const cover = text(provider.cover_path);
   const primaryListing = listings[0];
 
   return (
-    <main className="mx-auto max-w-6xl px-4 py-5 sm:px-6 sm:py-10 space-y-7">
-      {/* Hero Profile Card */}
-      <section className="surface-card overflow-hidden !rounded-[2.4rem] shadow-soft">
-        <div className="relative h-44 sm:h-64 bg-gradient-to-r from-[#065b60] to-[#0b817a]">
-          {cover && (
+    <main className="mx-auto max-w-6xl space-y-8 px-4 py-5 sm:px-6 sm:py-10">
+      <section>
+        {cover && (
+          <div className="relative h-40 overflow-hidden rounded-[1.6rem] bg-surface-muted sm:h-56">
             <Image
               src={cover}
               alt=""
@@ -122,20 +84,19 @@ export default async function PublicProviderPage({
               sizes="(max-width: 1200px) 100vw, 1152px"
               className="object-cover"
             />
-          )}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
-        </div>
+          </div>
+        )}
 
-        <div className="px-5 pb-6 sm:px-8 sm:pb-8">
-          <div className="-mt-12 flex flex-col gap-4 sm:-mt-16 sm:flex-row sm:items-end sm:justify-between">
+        <div className={cover ? "-mt-8 px-1 sm:-mt-10 sm:px-4" : ""}>
+          <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
             <div className="flex items-end gap-4">
-              <div className="relative flex h-24 w-24 sm:h-28 sm:w-28 shrink-0 items-center justify-center overflow-hidden rounded-[2rem] border-4 border-surface bg-[rgb(var(--primary-soft))] text-3xl font-black text-brand shadow-lg">
+              <div className="relative flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-full border-4 border-[rgb(var(--bg))] bg-[rgb(var(--primary-soft))] text-2xl font-black text-brand sm:h-24 sm:w-24">
                 {avatar ? (
                   <Image
                     src={avatar}
                     alt=""
                     fill
-                    sizes="112px"
+                    sizes="96px"
                     className="object-cover"
                   />
                 ) : (
@@ -143,125 +104,100 @@ export default async function PublicProviderPage({
                 )}
               </div>
 
-              <div>
-                <div className="flex items-center gap-1.5">
-                  <h1 className="text-xl font-black sm:text-3xl">{name}</h1>
-                  <ShieldCheck className="h-5 w-5 text-[rgb(var(--success))]" />
-                </div>
+              <div className="pb-1">
+                <h1 className="text-2xl font-black tracking-[-.04em] sm:text-3xl">
+                  {name}
+                </h1>
                 {text(provider.headline) && (
-                  <p className="mt-1 text-xs font-bold text-muted sm:text-sm">
+                  <p className="mt-1 text-xs text-muted sm:text-sm">
                     {text(provider.headline)}
                   </p>
                 )}
               </div>
             </div>
 
-            <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
+            <div className="flex flex-wrap gap-2">
               <MessageProviderButton
                 providerId={id}
                 listingId={primaryListing ? text(primaryListing.id) : null}
                 className="secondary-button !min-h-[44px]"
               />
-
               {primaryListing && (
                 <Link
                   href={`/listings/${text(primaryListing.slug)}`}
                   className="brand-button !min-h-[44px]"
                 >
-                  طلب خدمة
+                  اطلب خدمة
                 </Link>
               )}
-
               <FavoriteButton type="PROVIDER" id={id} />
             </div>
           </div>
 
           {text(provider.bio) && (
-            <p className="mt-5 max-w-3xl text-xs leading-7 sm:text-sm sm:leading-8 text-muted">
+            <p className="mt-5 max-w-3xl text-xs leading-7 text-muted sm:text-sm sm:leading-8">
               {text(provider.bio)}
             </p>
           )}
 
-          {/* Quick Stats Grid */}
-          <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
-            <div className="rounded-2xl bg-surface-muted p-3.5 text-center">
-              <strong className="block text-lg font-black">{completed}</strong>
-              <span className="text-[10px] font-bold text-muted">خدمة مكتملة</span>
-            </div>
-
-            <div className="rounded-2xl bg-surface-muted p-3.5 text-center">
-              <strong className="flex items-center justify-center gap-1 text-lg font-black">
-                {rating || "—"}
-                <Star className="h-4 w-4 text-[rgb(var(--warning))] fill-current" />
-              </strong>
-              <span className="text-[10px] font-bold text-muted">{reviews} تقييم</span>
-            </div>
-
-            <div className="rounded-2xl bg-surface-muted p-3.5 text-center">
-              <strong className="block text-lg font-black">{listings.length}</strong>
-              <span className="text-[10px] font-bold text-muted">خدمات معروضة</span>
-            </div>
-
-            {experienceYears !== null && (
-              <div className="rounded-2xl bg-surface-muted p-3.5 text-center">
-                <strong className="block text-lg font-black">{experienceYears} سنوات</strong>
-                <span className="text-[10px] font-bold text-muted">خبرة في المجال</span>
-              </div>
-            )}
+          <div className="mt-6 flex flex-wrap gap-x-6 gap-y-2 border-y border-theme py-4 text-[11px] text-muted">
+            <span><strong className="text-[rgb(var(--text-main))]">{completed}</strong> خدمة مكتملة</span>
+            <span className="inline-flex items-center gap-1">
+              <Star className="h-3 w-3 fill-current text-[rgb(var(--warning))]" />
+              <strong className="text-[rgb(var(--text-main))]">{rating || "—"}</strong>
+              ({reviews} تقييم)
+            </span>
+            <span><strong className="text-[rgb(var(--text-main))]">{listings.length}</strong> خدمات معروضة</span>
           </div>
         </div>
       </section>
 
-      {/* Sticky Tab Navigation */}
-      <nav className="sticky top-16 z-20 -mx-4 flex gap-2 overflow-x-auto border-y border-theme bg-[rgb(var(--surface)/0.95)] px-4 py-2.5 backdrop-blur-2xl sm:mx-0 sm:rounded-2xl sm:border">
-        {[
-          ["#provider-listings", "عروض الخدمات"],
-          ["#provider-posts", "سابقة الأعمال"],
-          ["#provider-reviews", "آراء العملاء"],
-        ].map(([href, label]) => (
-          <a
-            key={href}
-            href={href}
-            className="shrink-0 rounded-full px-4 py-1.5 text-xs font-black text-muted transition hover:bg-surface-muted hover:text-brand"
-          >
-            {label}
-          </a>
-        ))}
-      </nav>
-
-      {/* Services Listings */}
-      <section id="provider-listings" className="scroll-mt-28 space-y-4">
-        <h2 className="text-xl font-black">خدمات {name}</h2>
-
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {listings.map((listing) => (
-            <article
-              key={text(listing.id)}
-              className="surface-card overflow-hidden p-4 space-y-3"
-            >
-              <h3 className="font-black text-sm line-clamp-1">
-                {text(listing.title)}
-              </h3>
-              <p className="text-xs text-muted line-clamp-2">
-                {text(listing.short_description)}
-              </p>
-              <div className="flex items-center justify-between border-t border-theme pt-3">
-                <strong className="text-sm font-black text-brand">
-                  {priceLabel(
-                    text(listing.pricing_model) as PricingModel,
-                    listing.base_price ? number(listing.base_price) : null,
-                  )}
-                </strong>
-                <Link
-                  href={`/listings/${text(listing.slug)}`}
-                  className="brand-button !min-h-[36px] !px-3 text-xs"
-                >
-                  التفاصيل
-                </Link>
-              </div>
-            </article>
-          ))}
+      <section>
+        <div className="mb-4 flex items-end justify-between gap-4">
+          <div>
+            <p className="text-[10px] font-bold text-brand">الخدمات</p>
+            <h2 className="mt-1 text-xl font-black">شو بقدّم {name}؟</h2>
+          </div>
         </div>
+
+        {listings.length ? (
+          <div className="divide-y divide-[rgb(var(--border))] border-y border-theme">
+            {listings.map((listing) => (
+              <article
+                key={text(listing.id)}
+                className="grid gap-3 py-4 sm:grid-cols-[1fr_auto] sm:items-center"
+              >
+                <div className="min-w-0">
+                  <h3 className="text-sm font-black">{text(listing.title)}</h3>
+                  {text(listing.short_description) && (
+                    <p className="mt-1 line-clamp-2 text-xs leading-5 text-muted">
+                      {text(listing.short_description)}
+                    </p>
+                  )}
+                </div>
+
+                <div className="flex items-center justify-between gap-4 sm:justify-end">
+                  <strong className="text-sm font-black text-brand">
+                    {priceLabel(
+                      text(listing.pricing_model) as PricingModel,
+                      listing.base_price ? number(listing.base_price) : null,
+                    )}
+                  </strong>
+                  <Link
+                    href={`/listings/${text(listing.slug)}`}
+                    className="text-xs font-bold text-brand hover:underline"
+                  >
+                    التفاصيل
+                  </Link>
+                </div>
+              </article>
+            ))}
+          </div>
+        ) : (
+          <div className="border-y border-theme py-10 text-center text-sm text-muted">
+            ما في خدمات منشورة حالياً.
+          </div>
+        )}
       </section>
     </main>
   );
