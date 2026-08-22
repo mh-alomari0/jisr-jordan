@@ -4,7 +4,6 @@ import { useMemo, useState } from "react";
 import {
   CalendarDays,
   CheckCircle2,
-  Clock3,
   MapPin,
   Phone,
   Play,
@@ -15,10 +14,10 @@ import {
 } from "@/lib/actions/provider-bookings";
 
 const statusLabels: Record<string, string> = {
-  PENDING: "قيد الانتظار",
+  PENDING: "بانتظار التأكيد",
   CONFIRMED: "مؤكد",
-  ASSIGNED: "معيّن إليك",
-  IN_PROGRESS: "قيد التنفيذ",
+  ASSIGNED: "جاهز تبدأه",
+  IN_PROGRESS: "الشغل بلّش",
   COMPLETED: "مكتمل",
   CANCELLED: "ملغي",
 };
@@ -28,32 +27,31 @@ export default function ProviderBookingsClient({
 }: {
   initialBookings: ProviderBookingItem[];
 }) {
-  const [bookings, setBookings] =
-    useState<ProviderBookingItem[]>(initialBookings);
+  const [bookings, setBookings] = useState<ProviderBookingItem[]>(initialBookings);
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const [filterStatus, setFilterStatus] = useState("ACTIVE");
 
   const filters = [
     {
       id: "ACTIVE",
-      label: "النشطة",
+      label: "الجارية",
       count: bookings.filter((b) =>
         ["ASSIGNED", "IN_PROGRESS"].includes(b.status),
       ).length,
     },
     {
       id: "ASSIGNED",
-      label: "المعيّنة",
+      label: "جاهزة",
       count: bookings.filter((b) => b.status === "ASSIGNED").length,
     },
     {
       id: "IN_PROGRESS",
-      label: "قيد التنفيذ",
+      label: "شغال عليها",
       count: bookings.filter((b) => b.status === "IN_PROGRESS").length,
     },
     {
       id: "COMPLETED",
-      label: "المكتملة",
+      label: "خلصت",
       count: bookings.filter((b) => b.status === "COMPLETED").length,
     },
     {
@@ -70,9 +68,7 @@ export default function ProviderBookingsClient({
         ["ASSIGNED", "IN_PROGRESS"].includes(booking.status),
       );
     }
-    return bookings.filter(
-      (booking) => booking.status === filterStatus,
-    );
+    return bookings.filter((booking) => booking.status === filterStatus);
   }, [bookings, filterStatus]);
 
   const handleStatusUpdate = async (
@@ -81,10 +77,7 @@ export default function ProviderBookingsClient({
   ) => {
     setLoadingId(bookingId);
 
-    const result = await updateProviderBookingStatusAction(
-      bookingId,
-      newStatus,
-    );
+    const result = await updateProviderBookingStatusAction(bookingId, newStatus);
 
     if (result.success) {
       setBookings((current) =>
@@ -103,7 +96,7 @@ export default function ProviderBookingsClient({
 
   return (
     <div>
-      <div className="hide-scrollbar flex gap-2 overflow-x-auto pb-3">
+      <div className="hide-scrollbar flex gap-5 overflow-x-auto border-b border-theme pb-2">
         {filters.map((filter) => {
           const active = filterStatus === filter.id;
 
@@ -112,118 +105,98 @@ export default function ProviderBookingsClient({
               key={filter.id}
               type="button"
               onClick={() => setFilterStatus(filter.id)}
-              className={`shrink-0 rounded-full px-3 py-2 text-[10px] font-bold transition ${
-                active
-                  ? "bg-[rgb(var(--primary))] text-white"
-                  : "border border-theme bg-surface text-muted hover:text-brand"
+              className={`relative shrink-0 pb-2 text-xs font-bold transition ${
+                active ? "text-brand" : "text-muted hover:text-[rgb(var(--text-main))]"
               }`}
             >
-              {filter.label} ({filter.count})
+              {filter.label}
+              <span className="ms-1 text-[10px] opacity-70">{filter.count}</span>
+              {active && (
+                <span className="absolute inset-x-0 -bottom-[9px] h-0.5 bg-[rgb(var(--primary))]" />
+              )}
             </button>
           );
         })}
       </div>
 
       {filteredBookings.length === 0 ? (
-        <div className="mt-2 rounded-[1.6rem] border border-dashed border-[rgb(var(--primary)/0.25)] bg-[rgb(var(--primary)/0.02)] px-5 py-10 text-center">
+        <div className="py-12 text-center">
           <CheckCircle2 className="mx-auto h-7 w-7 text-brand" />
-          <h3 className="mt-3 text-sm font-bold">
-            ما في طلبات ضمن هذه الفئة
-          </h3>
+          <h3 className="mt-3 text-sm font-bold">ما في شغل هون حالياً</h3>
           <p className="mt-1 text-[11px] leading-6 text-muted">
-            لما يوصل طلب جديد أو يبدأ شغل حالي رح يظهر هون.
+            أول ما يوصل طلب ضمن هاي الحالة رح يبين مباشرة.
           </p>
         </div>
       ) : (
-        <div className="mt-2 space-y-3">
+        <div className="divide-y divide-theme">
           {filteredBookings.map((booking) => {
             const amount =
-              booking.agreed_amount ??
-              booking.services?.price ??
-              null;
+              booking.agreed_amount ?? booking.services?.price ?? null;
 
             return (
-              <article
-                key={booking.id}
-                className="rounded-[1.6rem] border border-theme bg-surface p-4 transition hover:border-[rgb(var(--primary)/0.35)] sm:p-5"
-              >
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <span className="inline-flex rounded-full bg-surface-muted px-2.5 py-1 text-[9px] font-bold text-muted">
-                      {statusLabels[booking.status] || booking.status}
-                    </span>
-
-                    <h3 className="mt-2 line-clamp-2 text-base font-bold leading-7">
-                      {booking.services?.title || "خدمة بدون عنوان"}
-                    </h3>
-
-                    {booking.workflow_type &&
-                      booking.workflow_type !== "LEGACY_HOME" && (
-                        <p className="mt-1 text-[10px] text-brand">
-                          {booking.workflow_type === "QUOTE_PROJECT"
-                            ? "طلب مبني على عرض سعر"
-                            : "حجز مباشر"}
-                        </p>
-                      )}
-                  </div>
-
-                  {amount != null && (
-                    <strong className="rounded-2xl bg-[rgb(var(--primary-soft))] px-3 py-2 text-sm text-brand">
-                      {Number(amount).toFixed(2)} د.أ
-                    </strong>
-                  )}
-                </div>
-
-                <div className="mt-4 grid gap-2 border-t border-theme pt-4 sm:grid-cols-2">
-                  {(booking.booking_date || booking.start_time) && (
-                    <div className="flex items-center gap-2 text-[10px] text-muted">
-                      <CalendarDays size={14} className="text-brand" />
-                      <span>
-                        {booking.booking_date || "بدون تاريخ"}
-                        {booking.start_time
-                          ? ` · ${booking.start_time}`
-                          : ""}
+              <article key={booking.id} className="py-5 first:pt-4 last:pb-0">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                      <h3 className="text-base font-black leading-7">
+                        {booking.services?.title || "خدمة بدون عنوان"}
+                      </h3>
+                      <span className="text-[10px] font-bold text-brand">
+                        {statusLabels[booking.status] || booking.status}
                       </span>
                     </div>
-                  )}
 
-                  {booking.phone && (
-                    <div className="flex items-center gap-2 text-[10px] text-muted">
-                      <Phone size={14} className="text-brand" />
-                      <span>{booking.phone}</span>
+                    <div className="mt-2 flex flex-wrap gap-x-5 gap-y-2 text-[11px] text-muted">
+                      {(booking.booking_date || booking.start_time) && (
+                        <span className="inline-flex items-center gap-1.5">
+                          <CalendarDays size={13} />
+                          {booking.booking_date || "بدون تاريخ"}
+                          {booking.start_time ? ` · ${booking.start_time}` : ""}
+                        </span>
+                      )}
+
+                      {booking.phone && (
+                        <span className="inline-flex items-center gap-1.5" dir="ltr">
+                          <Phone size={13} />
+                          {booking.phone}
+                        </span>
+                      )}
                     </div>
-                  )}
 
-                  {booking.address && (
-                    <div className="flex items-start gap-2 text-[10px] leading-5 text-muted sm:col-span-2">
-                      <MapPin
-                        size={14}
-                        className="mt-0.5 shrink-0 text-brand"
-                      />
-                      <span>{booking.address}</span>
-                    </div>
-                  )}
-                </div>
+                    {booking.address && (
+                      <p className="mt-2 flex items-start gap-1.5 text-[11px] leading-5 text-muted">
+                        <MapPin size={13} className="mt-1 shrink-0" />
+                        <span>{booking.address}</span>
+                      </p>
+                    )}
 
-                {(booking.status === "ASSIGNED" ||
-                  booking.status === "IN_PROGRESS") && (
-                  <div className="mt-4 flex gap-2">
+                    {booking.workflow_type && booking.workflow_type !== "LEGACY_HOME" && (
+                      <p className="mt-2 text-[10px] text-muted">
+                        {booking.workflow_type === "QUOTE_PROJECT"
+                          ? "طلب ناتج عن عرض سعر"
+                          : "حجز مباشر"}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="flex shrink-0 items-center gap-3 sm:flex-col sm:items-end">
+                    {amount != null && (
+                      <strong className="text-sm text-brand">
+                        {Number(amount).toFixed(2)} د.أ
+                      </strong>
+                    )}
+
                     {booking.status === "ASSIGNED" && (
                       <button
                         type="button"
                         disabled={loadingId === booking.id}
                         onClick={() =>
-                          handleStatusUpdate(
-                            booking.id,
-                            "IN_PROGRESS",
-                          )
+                          handleStatusUpdate(booking.id, "IN_PROGRESS")
                         }
-                        className="brand-button gap-2 !min-h-10 flex-1"
+                        className="inline-flex min-h-9 items-center gap-1.5 rounded-lg bg-[rgb(var(--primary))] px-3 text-[11px] font-bold text-white disabled:opacity-50"
                       >
-                        <Play size={14} />
-                        {loadingId === booking.id
-                          ? "جارٍ التحديث..."
-                          : "ابدأ التنفيذ"}
+                        <Play size={13} />
+                        {loadingId === booking.id ? "جاري..." : "ابدأ الشغل"}
                       </button>
                     )}
 
@@ -232,21 +205,16 @@ export default function ProviderBookingsClient({
                         type="button"
                         disabled={loadingId === booking.id}
                         onClick={() =>
-                          handleStatusUpdate(
-                            booking.id,
-                            "COMPLETED",
-                          )
+                          handleStatusUpdate(booking.id, "COMPLETED")
                         }
-                        className="brand-button gap-2 !min-h-10 flex-1"
+                        className="inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-theme px-3 text-[11px] font-bold text-brand disabled:opacity-50"
                       >
-                        <CheckCircle2 size={14} />
-                        {loadingId === booking.id
-                          ? "جارٍ التحديث..."
-                          : "إنهاء الخدمة"}
+                        <CheckCircle2 size={13} />
+                        {loadingId === booking.id ? "جاري..." : "خلصت الخدمة"}
                       </button>
                     )}
                   </div>
-                )}
+                </div>
               </article>
             );
           })}
