@@ -45,9 +45,9 @@ export default function MobileBottomNav({
   return (
     <nav
       aria-label="التنقل الرئيسي على الهاتف"
-      className="fixed inset-x-0 bottom-0 z-50 px-3 pb-[max(0.6rem,env(safe-area-inset-bottom))] pt-1 md:hidden pointer-events-none"
+      className="pointer-events-none fixed inset-x-0 bottom-0 z-50 px-3 pb-[max(0.6rem,env(safe-area-inset-bottom))] pt-1 md:hidden"
     >
-      <div className="pointer-events-auto mx-auto flex max-w-md items-center justify-around rounded-[2rem] border border-[rgb(var(--border)/0.8)] bg-[rgb(var(--surface)/0.88)] p-1.5 shadow-[0_12px_40px_rgb(var(--shadow)/0.18)] backdrop-blur-2xl transition-all duration-300">
+      <div className="pointer-events-auto mx-auto flex max-w-md items-center justify-around rounded-[2rem] border border-[rgb(var(--border)/0.8)] bg-[rgb(var(--surface)/0.88)] p-1.5 shadow-[0_12px_40px_rgb(var(--shadow)/0.18)] backdrop-blur-2xl">
         {links.map(({ href, label, icon: Icon, badge }) => {
           const active =
             href === "/"
@@ -59,34 +59,35 @@ export default function MobileBottomNav({
               key={href}
               href={href}
               aria-current={active ? "page" : undefined}
-              className={`relative flex flex-1 flex-col items-center justify-center py-1 transition-all duration-200 active:scale-90 ${
+              className={`relative flex min-w-0 flex-1 flex-col items-center justify-center rounded-[1.35rem] py-1 transition-[transform,color,background-color] duration-150 active:scale-[0.94] ${
                 active
                   ? "text-[rgb(var(--primary))]"
                   : "text-muted hover:text-[rgb(var(--text-main))]"
               }`}
             >
               <div
-                className={`relative flex h-8 w-12 items-center justify-center rounded-2xl transition-all duration-300 ${
+                className={`relative flex h-8 w-12 items-center justify-center rounded-[1.15rem] transition-[background-color,color] duration-150 ${
                   active
-                    ? "bg-[rgb(var(--primary)/0.16)] text-[rgb(var(--primary))] shadow-sm"
+                    ? "bg-[rgb(var(--primary)/0.14)] text-[rgb(var(--primary))]"
                     : "bg-transparent"
                 }`}
               >
                 <Icon
                   size={19}
-                  strokeWidth={active ? 2.5 : 1.8}
-                  className="transition-transform duration-200"
+                  strokeWidth={active ? 2.4 : 1.8}
                   aria-hidden="true"
                 />
+
                 {badge && (
-                  <span className="absolute 1.5 top-0 flex h-2 w-2">
-                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[rgb(var(--accent-peach))] opacity-75" />
-                    <span className="relative inline-flex h-2 w-2 rounded-full bg-[rgb(var(--accent-peach))]" />
-                  </span>
+                  <span
+                    className="absolute end-1 top-0.5 h-2 w-2 rounded-full border border-[rgb(var(--surface))] bg-[rgb(var(--accent-peach))]"
+                    aria-hidden="true"
+                  />
                 )}
               </div>
+
               <span
-                className={`mt-1 text-[10px] tracking-tight transition-all ${
+                className={`mt-1 max-w-full truncate px-1 text-[10px] tracking-tight ${
                   active ? "font-black" : "font-medium opacity-85"
                 }`}
               >
