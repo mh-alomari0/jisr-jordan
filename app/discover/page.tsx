@@ -11,7 +11,6 @@ import {
   Paintbrush,
   Plus,
   Search,
-  SlidersHorizontal,
   Sparkles,
   Wrench,
 } from "lucide-react";
@@ -21,36 +20,31 @@ import {
   getMarketplaceCategoriesAction,
   searchMarketplaceAction,
 } from "@/lib/actions/marketplace-discovery";
-import {
-  deliveryTypeLabels,
-  pricingModelLabels,
-  type DeliveryType,
-  type PricingModel,
-} from "@/lib/marketplace";
+import type { DeliveryType, PricingModel } from "@/lib/marketplace";
 
 export const metadata: Metadata = {
   title: "استكشاف الخدمات | جسر الأردن",
   description:
-    "تصفح جميع الخدمات ومقدميها في الأردن، وقارن العروض والأسعار بكل سهولة.",
+    "دور على الخدمة اللي تحتاجها في الأردن وشوف مقدميها وأعمالهم قبل ما تختار.",
 };
 
 const scopes = [
   { value: "ALL", label: "الكل" },
-  { value: "LISTINGS", label: "عروض الخدمات" },
+  { value: "LISTINGS", label: "خدمات جاهزة" },
   { value: "PROVIDERS", label: "مقدمو الخدمة" },
-  { value: "POSTS", label: "المنشورات والأعمال" },
+  { value: "POSTS", label: "أعمال منشورة" },
 ] as const;
 
 const jordanCities = [
-  { name: "الكل", value: "", icon: "🇯🇴" },
-  { name: "عَمّان", value: "عمان", icon: "🏛️" },
-  { name: "إربد", value: "إربد", icon: "🌾" },
-  { name: "الزرقاء", value: "الزرقاء", icon: "🏙️" },
-  { name: "العقبة", value: "العقبة", icon: "🌊" },
-  { name: "السلط", value: "السلط", icon: "🌿" },
-  { name: "مادبا", value: "مادبا", icon: "🎨" },
-  { name: "جرش", value: "جرش", icon: "🏛️" },
-  { name: "عجلون", value: "عجلون", icon: "🏰" },
+  { name: "كل الأردن", value: "" },
+  { name: "عَمّان", value: "عمان" },
+  { name: "إربد", value: "إربد" },
+  { name: "الزرقاء", value: "الزرقاء" },
+  { name: "العقبة", value: "العقبة" },
+  { name: "السلط", value: "السلط" },
+  { name: "مادبا", value: "مادبا" },
+  { name: "جرش", value: "جرش" },
+  { name: "عجلون", value: "عجلون" },
 ];
 
 const categoryVisuals = [
@@ -76,7 +70,7 @@ function one(value: string | string[] | undefined) {
 }
 
 function cleanServiceDescription(value: string | null | undefined) {
-  if (!value) return "تصفح مقدمي هذه الخدمة وقارن بينهم قبل الطلب.";
+  if (!value) return "شوف مين بقدم هاي الخدمة وقارن بينهم قبل ما تختار.";
   return value.replace(/السعر\s+يشمل[\s\S]*$/u, "").trim();
 }
 
@@ -135,9 +129,10 @@ export default async function DiscoverPage({
 
   const categories = categoriesResult.categories || [];
   const taxonomy = taxonomyResult.categories || [];
-  const category = requestedCategory && categories.some((item) => item.id === requestedCategory)
-    ? requestedCategory
-    : null;
+  const category =
+    requestedCategory && categories.some((item) => item.id === requestedCategory)
+      ? requestedCategory
+      : null;
 
   const selectedCategory = category
     ? categories.find((item) => item.id === category) || null
@@ -174,65 +169,70 @@ export default async function DiscoverPage({
       changes,
     );
 
-  const hasFilters = Boolean(delivery || pricing || area);
-
   return (
     <div className="page-reveal pb-16 sm:pb-24">
-      {/* Header & Search */}
-      <section className="mx-auto max-w-6xl px-4 pb-6 pt-5 sm:px-6 sm:pb-8 sm:pt-8">
-        <div className="max-w-2xl">
-          <p className="text-[11px] font-black tracking-wide text-brand">
-            دليل الخدمات
-          </p>
+      <section className="mx-auto max-w-6xl px-4 pb-7 pt-5 sm:px-6 sm:pb-9 sm:pt-8">
+        <div className="grid gap-5 lg:grid-cols-[1fr_.75fr] lg:items-end">
+          <div className="max-w-2xl">
+            <p className="text-[10px] font-black tracking-[.08em] text-brand">
+              دور على شغلتك
+            </p>
 
-          <h1 className="mt-2 text-2xl font-black leading-tight tracking-[-.05em] sm:text-4xl">
-            {selectedCategory ? (
-              <>
-                خدمات {selectedCategory.name_ar}
-                <br />
-                <span className="text-brand">قارن واطلب الأنسب لك.</span>
-              </>
-            ) : (
-              <>
-                استكشف كل خدمات جسر
-                <br />
-                <span className="text-brand">في جميع مدن الأردن.</span>
-              </>
-            )}
-          </h1>
+            <h1 className="mt-2 text-2xl font-black leading-tight tracking-[-.045em] sm:text-4xl">
+              {selectedCategory ? (
+                <>
+                  {selectedCategory.name_ar}
+                  <span className="mt-1 block text-base font-bold tracking-normal text-muted sm:text-lg">
+                    شوف الخدمات الموجودة واختار اللي أقرب لطلبك.
+                  </span>
+                </>
+              ) : (
+                <>
+                  شو بدك تنجز اليوم؟
+                  <span className="mt-1 block text-base font-bold tracking-normal text-muted sm:text-lg">
+                    اكتبها زي ما بتحكيها، حتى لو ما بتعرف اسم الخدمة.
+                  </span>
+                </>
+              )}
+            </h1>
+          </div>
+
+          <p className="hidden max-w-sm justify-self-end text-xs leading-6 text-muted lg:block">
+            جسر بجمع الخدمات ومقدميها بمكان واحد. دور، شوف التفاصيل، وبعدها قرر مين بناسبك.
+          </p>
         </div>
 
-        <form action="/discover" role="search" className="mt-5 max-w-2xl">
+        <form action="/discover" role="search" className="mt-5 max-w-3xl">
           <label htmlFor="discover-search" className="sr-only">
             ابحث عن خدمة أو مقدم خدمة
           </label>
 
-          <div className="flex h-[54px] items-center gap-2 rounded-2xl border border-theme bg-surface px-3 shadow-soft focus-within:border-[rgb(var(--primary))]">
-            <Search size={19} className="ms-1 shrink-0 text-brand" aria-hidden="true" />
+          <div className="flex min-h-[56px] items-center gap-2 rounded-[1.15rem] border border-theme bg-surface p-2 ps-3 shadow-[0_8px_24px_rgb(var(--shadow)/0.05)] focus-within:border-[rgb(var(--primary))]">
+            <Search size={19} className="shrink-0 text-brand" aria-hidden="true" />
 
             <input
               id="discover-search"
               name="q"
               defaultValue={q}
               maxLength={120}
-              placeholder="مثلاً: كشف تسريب مياه، مدرس رياضيات، كهربائي..."
-              className="min-w-0 flex-1 bg-transparent px-2 text-xs font-bold outline-none sm:text-sm"
+              placeholder="مثلاً: بدي حدا يصلح مواسير المي"
+              className="min-w-0 flex-1 bg-transparent px-1 text-xs font-bold outline-none placeholder:font-medium sm:px-2 sm:text-sm"
             />
 
             <button
               type="submit"
-              className="brand-button !min-h-[40px] !rounded-xl !px-5 text-xs font-black"
+              className="brand-button !min-h-[40px] !rounded-[.85rem] !px-4 text-xs font-black sm:!px-5"
             >
-              بحث
+              دور
             </button>
           </div>
         </form>
 
-        {/* 🇯🇴 Jordan Cities Quick Slider */}
-        <div className="mt-4">
-          <div className="mobile-snap-row -mx-4 px-4 py-1 sm:mx-0 sm:px-0">
+        <div className="mt-4 border-b border-theme pb-4">
+          <div className="mobile-snap-row -mx-4 px-4 sm:mx-0 sm:px-0">
             {jordanCities.map((city) => {
               const active = (area || "") === city.value;
+
               return (
                 <Link
                   key={city.name}
@@ -240,14 +240,13 @@ export default async function DiscoverPage({
                     area: active ? null : city.value || null,
                     page: null,
                   })}
-                  className={`inline-flex items-center gap-1.5 rounded-2xl px-3.5 py-2 text-xs font-bold transition-all duration-200 active:scale-95 ${
+                  className={`inline-flex items-center border-b-2 px-1 pb-2 text-xs font-bold transition active:opacity-70 ${
                     active
-                      ? "bg-[rgb(var(--primary))] text-white shadow-md"
-                      : "border border-theme bg-surface text-muted hover:border-[rgb(var(--primary)/0.3)] hover:text-brand"
+                      ? "border-[rgb(var(--primary))] text-brand"
+                      : "border-transparent text-muted hover:text-[rgb(var(--text-main))]"
                   }`}
                 >
-                  <span>{city.icon}</span>
-                  <span>{city.name}</span>
+                  {city.name}
                 </Link>
               );
             })}
@@ -255,28 +254,26 @@ export default async function DiscoverPage({
         </div>
       </section>
 
-      {/* Main Category Carousel */}
       <section className="mx-auto max-w-6xl px-4 sm:px-6">
         <div className="mb-4 flex items-end justify-between gap-3">
           <div>
-            <p className="text-[10px] font-black text-brand">المجالات الرئيسية</p>
+            <p className="text-[10px] font-black text-brand">المجالات</p>
             <h2 className="text-lg font-black sm:text-xl">
-              اختر المجال المطلوب
+              {selectedCategory ? "المجال المختار" : "من وين حاب تبدأ؟"}
             </h2>
           </div>
 
           {selectedCategory && (
             <Link
               href="/discover"
-              className="inline-flex items-center gap-1 text-xs font-bold text-brand"
+              className="inline-flex items-center gap-1 text-xs font-black text-brand"
             >
-              <ChevronLeft size={15} />
-              عرض كل المجالات
+              كل المجالات <ChevronLeft size={15} />
             </Link>
           )}
         </div>
 
-        <div className="mobile-snap-row -mx-4 px-4 pb-3 sm:mx-0 sm:grid sm:grid-cols-4 sm:gap-4 sm:overflow-visible sm:px-0 lg:grid-cols-8">
+        <div className="mobile-snap-row -mx-4 px-4 pb-3 sm:mx-0 sm:grid sm:grid-cols-4 sm:gap-3 sm:overflow-visible sm:px-0 lg:grid-cols-8">
           {categories.map((parent, index) => {
             const visual = categoryVisuals[index % categoryVisuals.length];
             const Icon = visual.icon;
@@ -289,24 +286,20 @@ export default async function DiscoverPage({
                   category: selected ? null : parent.id,
                   page: null,
                 })}
-                className={`group flex min-w-[135px] flex-col rounded-[1.6rem] border p-3.5 transition hover:-translate-y-1 hover:shadow-soft active:scale-95 sm:min-w-0 ${
+                className={`group min-w-[132px] border-b px-1 py-3 transition active:opacity-70 sm:min-w-0 sm:rounded-[1.1rem] sm:border sm:p-3 ${
                   selected
-                    ? "border-[rgb(var(--primary))] bg-[rgb(var(--primary)/0.08)] shadow-sm"
-                    : "border-theme bg-surface"
+                    ? "border-[rgb(var(--primary))] bg-[rgb(var(--primary)/0.06)]"
+                    : "border-theme sm:bg-surface"
                 }`}
               >
-                <span
-                  className={`mb-3 flex h-11 w-11 items-center justify-center rounded-2xl ${visual.tone}`}
-                >
-                  <Icon size={20} />
+                <span className={`flex h-10 w-10 items-center justify-center rounded-xl ${visual.tone}`}>
+                  <Icon size={19} />
                 </span>
 
-                <h3 className="line-clamp-1 text-xs font-black">
-                  {parent.name_ar}
-                </h3>
+                <h3 className="mt-2.5 line-clamp-1 text-xs font-black">{parent.name_ar}</h3>
 
-                <p className="mt-1 line-clamp-2 text-[10px] text-muted">
-                  {parent.description_ar || "استكشف الخدمات"}
+                <p className="mt-1 line-clamp-2 text-[10px] leading-5 text-muted">
+                  {parent.description_ar || "شوف الخدمات الموجودة"}
                 </p>
               </Link>
             );
@@ -314,24 +307,21 @@ export default async function DiscoverPage({
         </div>
       </section>
 
-      {/* Services List / Search Results */}
       {browsingServices ? (
-        <section className="mx-auto mt-8 max-w-6xl px-4 sm:px-6 lg:mt-12">
-          <div className="mb-6 flex items-end justify-between">
+        <section className="mx-auto mt-9 max-w-6xl px-4 sm:px-6 lg:mt-12">
+          <div className="mb-6 flex items-end justify-between gap-4">
             <div>
-              <p className="text-[10px] font-black text-brand">قائمة الخدمات</p>
+              <p className="text-[10px] font-black text-brand">الخدمات</p>
               <h2 className="text-xl font-black sm:text-2xl">
                 {selectedCategory
-                  ? `خدمات ${selectedCategory.name_ar}`
-                  : "جميع الخدمات المتاحة"}
+                  ? `شو موجود في ${selectedCategory.name_ar}؟`
+                  : "كل الخدمات الموجودة على جسر"}
               </h2>
             </div>
-            <span className="status-pill bg-surface-muted text-muted font-black">
-              {totalServiceTypes} خدمة
-            </span>
+            <span className="text-[11px] font-bold text-muted">{totalServiceTypes} خدمة</span>
           </div>
 
-          <div className="space-y-8">
+          <div className="space-y-10">
             {visibleGroups.map((group, groupIndex) => {
               const services = group.serviceTypes || [];
               const visual = categoryVisuals[groupIndex % categoryVisuals.length];
@@ -339,50 +329,40 @@ export default async function DiscoverPage({
 
               return (
                 <section key={group.id} className="scroll-mt-24">
-                  <div className="mb-3.5 flex items-center gap-2.5">
-                    <span
-                      className={`flex h-10 w-10 items-center justify-center rounded-2xl ${visual.tone}`}
-                    >
-                      <Icon size={18} />
+                  <div className="mb-3 flex items-center gap-2.5">
+                    <span className={`flex h-9 w-9 items-center justify-center rounded-xl ${visual.tone}`}>
+                      <Icon size={17} />
                     </span>
-                    <h3 className="text-base font-black sm:text-lg">
-                      {group.name_ar}
-                    </h3>
+                    <div>
+                      <h3 className="text-base font-black sm:text-lg">{group.name_ar}</h3>
+                      <p className="text-[10px] text-muted">{services.length} خدمة</p>
+                    </div>
                   </div>
 
-                  <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                  <div className="overflow-hidden rounded-[1.3rem] border border-theme bg-surface sm:grid sm:grid-cols-2 lg:grid-cols-3">
                     {services.map((service, index) => (
                       <Link
                         key={service.id}
                         href={`/service-types/${service.id}`}
-                        className="group surface-card flex min-h-[140px] flex-col justify-between p-4 active:scale-[0.98]"
+                        className="group flex min-h-[120px] gap-3 border-b border-theme p-4 transition hover:bg-surface-muted active:opacity-75 sm:border-e"
                       >
-                        <div>
-                          <div className="flex items-center justify-between">
-                            <span
-                              className={`flex h-10 w-10 items-center justify-center rounded-xl ${
-                                serviceTones[index % serviceTones.length]
-                              }`}
-                            >
-                              <Grid2X2 size={18} />
-                            </span>
-                            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-surface-muted text-muted transition group-hover:bg-brand group-hover:text-white">
-                              <ArrowLeft size={14} />
-                            </span>
+                        <span
+                          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${
+                            serviceTones[index % serviceTones.length]
+                          }`}
+                        >
+                          <Grid2X2 size={17} />
+                        </span>
+
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-start justify-between gap-2">
+                            <h4 className="text-sm font-black leading-6">{service.title}</h4>
+                            <ArrowLeft size={14} className="mt-1 shrink-0 text-brand" />
                           </div>
-
-                          <h4 className="mt-3 text-sm font-black tracking-tight">
-                            {service.title}
-                          </h4>
-
                           <p className="mt-1 line-clamp-2 text-[11px] leading-5 text-muted">
                             {cleanServiceDescription(service.description)}
                           </p>
                         </div>
-
-                        <span className="mt-3 inline-flex items-center gap-1 text-[10px] font-black text-brand">
-                          عرض مقدمي الخدمة <ArrowLeft size={12} />
-                        </span>
                       </Link>
                     ))}
                   </div>
@@ -392,11 +372,11 @@ export default async function DiscoverPage({
           </div>
         </section>
       ) : (
-        <section className="mx-auto mt-6 max-w-6xl px-4 sm:px-6">
-          {/* Scope Filters */}
-          <div className="flex flex-wrap items-center gap-2 mb-6">
+        <section className="mx-auto mt-7 max-w-6xl px-4 sm:px-6">
+          <div className="mb-6 flex gap-5 overflow-x-auto border-b border-theme hide-scrollbar">
             {scopes.map((item) => {
               const active = scope === item.value;
+
               return (
                 <Link
                   key={item.value}
@@ -404,10 +384,10 @@ export default async function DiscoverPage({
                     tab: item.value === "ALL" ? null : item.value,
                     page: null,
                   })}
-                  className={`rounded-full px-4 py-2 text-[11px] font-black transition-all ${
+                  className={`shrink-0 border-b-2 pb-3 text-[11px] font-black transition ${
                     active
-                      ? "bg-[rgb(var(--primary))] text-white shadow-sm"
-                      : "border border-theme bg-surface text-muted hover:text-brand"
+                      ? "border-[rgb(var(--primary))] text-brand"
+                      : "border-transparent text-muted hover:text-[rgb(var(--text-main))]"
                   }`}
                 >
                   {item.label}
@@ -416,13 +396,15 @@ export default async function DiscoverPage({
             })}
           </div>
 
-          <div className="mb-4">
-            <h2 className="text-xl font-black">
-              نتائج البحث {q ? `عن: "${q}"` : area ? `في ${area}` : ""}
-            </h2>
-            <p className="mt-1 text-xs text-muted">
-              {results.length} نتيجة متوفرة
-            </p>
+          <div className="mb-5 flex items-end justify-between gap-4">
+            <div>
+              <h2 className="text-xl font-black">
+                {q ? `نتائج لـ «${q}»` : area ? `الموجود في ${area}` : "النتائج"}
+              </h2>
+              <p className="mt-1 text-xs text-muted">
+                لقينا {results.length} {results.length === 1 ? "نتيجة" : "نتائج"}
+              </p>
+            </div>
           </div>
 
           {searchResult.success && results.length > 0 ? (
@@ -435,16 +417,16 @@ export default async function DiscoverPage({
               ))}
             </div>
           ) : (
-            <div className="surface-card p-10 text-center space-y-3">
-              <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-[rgb(var(--primary-soft))] text-brand">
-                <Search size={24} />
+            <div className="mx-auto max-w-xl border-y border-theme py-12 text-center sm:border sm:p-10 sm:rounded-[1.4rem] sm:bg-surface">
+              <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-[rgb(var(--primary-soft))] text-brand">
+                <Search size={21} />
               </span>
-              <h3 className="text-base font-black">لا توجد نتائج مطابقة</h3>
-              <p className="text-xs text-muted">
-                جرّب البحث بكلمة أخرى أو اختر محافظة مختلفة.
+              <h3 className="mt-4 text-base font-black">ما لقينا نتيجة مطابقة</h3>
+              <p className="mx-auto mt-1.5 max-w-sm text-xs leading-6 text-muted">
+                جرّب تحكي المشكلة بطريقة ثانية، أو شيل اسم المدينة وخلي جسر يدور بشكل أوسع.
               </p>
-              <Link href="/discover" className="brand-button mt-2">
-                عرض كل الخدمات
+              <Link href="/discover" className="secondary-button mt-5 !min-h-[42px] !rounded-xl text-xs">
+                ارجع لكل الخدمات
               </Link>
             </div>
           )}
