@@ -11,7 +11,6 @@ import {
   LayoutDashboard,
   ListTree,
   ReceiptText,
-  ShieldCheck,
   Store,
   UsersRound,
   WalletCards,
@@ -54,76 +53,61 @@ export default async function AdminLayout({
     .eq("id", user.id)
     .maybeSingle();
 
-  if (
-    !profile ||
-    !["ADMIN", "SUPER_ADMIN"].includes(profile.role)
-  ) {
+  if (!profile || !["ADMIN", "SUPER_ADMIN"].includes(profile.role)) {
     redirect("/");
   }
 
   return (
     <div className="min-h-screen bg-canvas">
-      <header className="border-b border-theme bg-[#102d2c] text-white">
-        <div className="mx-auto flex max-w-[1500px] items-center justify-between gap-4 px-4 py-4 sm:px-6">
-          <Link
-            href="/admin"
-            className="flex items-center gap-3"
-          >
-            <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[#1a8e86] font-black">
-              ج
-            </span>
+      <header className="border-b border-theme bg-surface">
+        <div className="mx-auto flex max-w-[1500px] items-center justify-between gap-4 px-4 py-3 sm:px-6">
+          <Link href="/admin" className="flex items-center gap-3">
+            <span className="brand-mark h-9 w-9 text-sm">ج</span>
 
             <span>
-              <strong className="block text-sm">
-                جسر · الإدارة
-              </strong>
-              <span className="mt-0.5 block text-[9px] text-white/60">
-                تشغيل السوق والمراجعة
+              <strong className="block text-sm">إدارة جسر</strong>
+              <span className="mt-0.5 block text-[9px] text-muted">
+                التشغيل والمراجعة
               </span>
             </span>
           </Link>
 
-          <div className="flex items-center gap-2">
-            <span className="hidden items-center gap-1.5 rounded-full bg-white/10 px-3 py-2 text-[9px] font-bold text-white/75 sm:inline-flex">
-              <ShieldCheck size={13} />
-              {profile.role === "SUPER_ADMIN"
-                ? "Super Admin"
-                : "Admin"}
+          <div className="flex items-center gap-3">
+            <span className="hidden text-[10px] font-bold text-muted sm:inline">
+              {profile.role === "SUPER_ADMIN" ? "Super Admin" : "Admin"}
             </span>
 
             <Link
               href="/"
-              className="inline-flex items-center gap-1 rounded-full border border-white/15 bg-white/10 px-3 py-2 text-[10px] font-bold transition hover:bg-white/15"
+              className="inline-flex items-center gap-1 text-[10px] font-bold text-brand"
             >
-              السوق
+              رجوع للسوق
               <ArrowLeft size={13} />
             </Link>
           </div>
         </div>
       </header>
 
-      <div className="mx-auto grid max-w-[1500px] md:grid-cols-[230px_minmax(0,1fr)]">
-        <aside className="border-b border-theme bg-surface md:min-h-[calc(100vh-73px)] md:border-b-0 md:border-l">
+      <div className="mx-auto grid max-w-[1500px] md:grid-cols-[220px_minmax(0,1fr)]">
+        <aside className="border-b border-theme bg-surface md:min-h-[calc(100vh-65px)] md:border-b-0 md:border-l">
           <nav
             aria-label="لوحة الإدارة"
-            className="hide-scrollbar flex gap-2 overflow-x-auto p-3 md:sticky md:top-0 md:flex-col md:gap-1 md:p-4"
+            className="hide-scrollbar flex gap-1 overflow-x-auto px-3 py-2 md:sticky md:top-0 md:flex-col md:px-3 md:py-4"
           >
             {links.map(({ href, label, icon: Icon }) => (
               <Link
                 key={href}
                 href={href}
-                className="group inline-flex shrink-0 items-center gap-2 rounded-2xl px-3 py-2.5 text-[10px] font-bold text-muted transition hover:bg-[rgb(var(--primary-soft))] hover:text-brand md:text-xs"
+                className="inline-flex shrink-0 items-center gap-2 border-b-2 border-transparent px-3 py-2.5 text-[10px] font-bold text-muted transition hover:border-[rgb(var(--primary)/0.25)] hover:text-brand md:border-b-0 md:border-e-2 md:text-xs"
               >
-                <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-surface-muted transition group-hover:bg-surface">
-                  <Icon size={15} />
-                </span>
+                <Icon size={15} className="shrink-0" />
                 {label}
               </Link>
             ))}
           </nav>
         </aside>
 
-        <div className="min-w-0 overflow-x-hidden p-3 sm:p-5 lg:p-7">
+        <div className="min-w-0 overflow-x-hidden p-4 sm:p-6 lg:p-8">
           {children}
         </div>
       </div>
