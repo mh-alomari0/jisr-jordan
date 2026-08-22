@@ -13,10 +13,7 @@ import {
 export default function EmailOtpPage() {
   const router = useRouter();
   const search = useSearchParams();
-  const mode =
-    search.get("mode") === "signup"
-      ? ("signup" as const)
-      : ("login" as const);
+  const mode = search.get("mode") === "signup" ? ("signup" as const) : ("login" as const);
 
   const [email, setEmail] = useState("");
   const [token, setToken] = useState("");
@@ -27,10 +24,7 @@ export default function EmailOtpPage() {
 
   useEffect(() => {
     if (countdown <= 0) return;
-    const timer = window.setTimeout(
-      () => setCountdown((v) => v - 1),
-      1000,
-    );
+    const timer = window.setTimeout(() => setCountdown((value) => value - 1), 1000);
     return () => window.clearTimeout(timer);
   }, [countdown]);
 
@@ -38,11 +32,7 @@ export default function EmailOtpPage() {
     setPending(true);
     setMessage("");
 
-    const result = await requestEmailOtpAction({
-      email,
-      mode,
-    });
-
+    const result = await requestEmailOtpAction({ email, mode });
     setPending(false);
 
     if (!result.success) {
@@ -52,21 +42,14 @@ export default function EmailOtpPage() {
 
     setSent(true);
     setCountdown(60);
-    setMessage(
-      "إذا كان البريد مؤهلاً، سيصل إليه رمز من 6 أرقام.",
-    );
+    setMessage("إذا كان البريد مؤهلاً، رح يوصله رمز من 6 أرقام.");
   }
 
   async function verify() {
     setPending(true);
     setMessage("");
 
-    const result = await verifyEmailOtpAction({
-      email,
-      token,
-      mode,
-    });
-
+    const result = await verifyEmailOtpAction({ email, token, mode });
     setPending(false);
 
     if (!result.success) {
@@ -79,19 +62,26 @@ export default function EmailOtpPage() {
   }
 
   return (
-    <main className="mx-auto grid min-h-[680px] max-w-5xl overflow-hidden rounded-[2rem] border border-theme bg-surface shadow-soft lg:my-8 lg:grid-cols-[.9fr_1.1fr]">
-      <aside className="relative hidden overflow-hidden bg-[#0b817a] p-9 text-white lg:block">
-        <div className="absolute -left-20 -top-24 h-64 w-64 rounded-full border-[25px] border-white/10" />
-        <div className="relative flex h-full flex-col justify-between">
-          <Link href="/" className="font-bold">جسر الأردن</Link>
-          <div>
-            <KeyRound className="h-9 w-9 text-[#ffc985]" />
-            <p className="mt-6 text-[10px] font-bold text-[#c9eee8]">دخول آمن</p>
-            <h1 className="mt-2 text-4xl font-bold tracking-[-.055em]">رمز مؤقت.<br /><span className="text-[#ffc985]">وخلصنا.</span></h1>
-            <p className="mt-4 text-xs leading-7 text-[#d9f2ee]">الرمز صالح لفترة محدودة، وما بنطلب منك تشاركه مع أي شخص.</p>
-          </div>
-          <span className="flex items-center gap-1.5 text-[9px] text-white/65"><ShieldCheck size={13}/>تسجيل دخول محمي</span>
+    <main className="mx-auto grid min-h-[650px] max-w-5xl overflow-hidden border border-theme bg-surface lg:my-8 lg:grid-cols-[.9fr_1.1fr] lg:rounded-[1.75rem]">
+      <aside className="hidden bg-[#0b817a] p-10 text-white lg:flex lg:flex-col lg:justify-between">
+        <Link href="/" className="text-sm font-bold">جسر الأردن</Link>
+
+        <div className="max-w-sm">
+          <KeyRound className="h-9 w-9 text-[#ffc985]" />
+          <p className="mt-6 text-[10px] font-bold text-[#c9eee8]">رمز مؤقت</p>
+          <h1 className="mt-2 text-4xl font-bold leading-[1.16] tracking-[-.055em]">
+            ست أرقام،
+            <br />
+            وبنكمّل.
+          </h1>
+          <p className="mt-4 text-xs leading-7 text-[#d9f2ee]">
+            الرمز مدته محدودة. خليه إلك وما تشاركه مع أي حدا.
+          </p>
         </div>
+
+        <span className="flex items-center gap-1.5 text-[9px] text-white/65">
+          <ShieldCheck size={13} /> دخول محمي
+        </span>
       </aside>
 
       <section className="flex items-center p-5 sm:p-10 lg:p-14">
@@ -99,11 +89,13 @@ export default function EmailOtpPage() {
           <p className="text-[10px] font-bold text-brand">
             {mode === "signup" ? "تأكيد الحساب" : "دخول برمز"}
           </p>
-          <h2 className="mt-2 text-3xl font-bold tracking-[-.05em]">تحقق من بريدك</h2>
+          <h2 className="mt-2 text-3xl font-bold tracking-[-.05em]">
+            شيّك على بريدك
+          </h2>
           <p className="mt-2 text-xs leading-6 text-muted">
             {mode === "signup"
-              ? "استخدم بريد التسجيل حتى نؤكد حسابك."
-              : "سنرسل رمزاً مؤقتاً إذا كان الحساب موجوداً ومؤهلاً."}
+              ? "استخدم نفس البريد اللي سجلت فيه حتى نأكد حسابك."
+              : "اكتب بريدك وبنبعث رمز مؤقت إذا الحساب مؤهل."}
           </p>
 
           <label className="mt-7 block text-xs font-bold">
@@ -115,7 +107,7 @@ export default function EmailOtpPage() {
                 required
                 autoComplete="email"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(event) => setEmail(event.target.value)}
                 disabled={sent}
                 className="form-field pe-10"
               />
@@ -129,18 +121,14 @@ export default function EmailOtpPage() {
               disabled={pending || !email}
               className="brand-button mt-4 w-full"
             >
-              {pending ? "جارٍ الإرسال..." : "أرسل الرمز"}
+              {pending ? "جارٍ الإرسال..." : "ابعث الرمز"}
             </button>
           ) : (
-            <div className="mt-6">
+            <div className="mt-6 border-t border-theme pt-6">
               <p className="mb-3 text-[10px] font-bold text-muted">
                 أدخل الرمز المكوّن من 6 أرقام
               </p>
-              <OtpInput
-                value={token}
-                onChange={setToken}
-                disabled={pending}
-              />
+              <OtpInput value={token} onChange={setToken} disabled={pending} />
 
               <button
                 type="button"
@@ -148,30 +136,30 @@ export default function EmailOtpPage() {
                 disabled={pending || token.length !== 6}
                 className="brand-button mt-5 w-full"
               >
-                {pending ? "جارٍ التحقق..." : "تحقق وتابع"}
+                {pending ? "جارٍ التحقق..." : "تأكيد ومتابعة"}
               </button>
 
               <button
                 type="button"
                 onClick={request}
                 disabled={pending || countdown > 0}
-                className="mt-3 w-full text-[10px] font-bold text-brand"
+                className="mt-3 w-full text-[10px] font-bold text-brand disabled:text-muted"
               >
                 {countdown > 0
-                  ? `إعادة الإرسال بعد ${countdown} ثانية`
+                  ? `بتقدر تعيد الإرسال بعد ${countdown} ثانية`
                   : "إعادة إرسال الرمز"}
               </button>
             </div>
           )}
 
           {message && (
-            <p role="status" className="mt-4 rounded-2xl bg-surface-muted p-3 text-[10px] leading-5 text-muted">
+            <p role="status" className="mt-4 border-s-2 border-theme bg-surface-muted px-3 py-2.5 text-[10px] leading-5 text-muted">
               {message}
             </p>
           )}
 
           <Link href="/login" className="mt-6 block text-center text-xs font-bold text-brand">
-            العودة لتسجيل الدخول
+            رجوع لتسجيل الدخول
           </Link>
         </div>
       </section>
