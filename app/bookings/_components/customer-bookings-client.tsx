@@ -28,108 +28,228 @@ export interface CustomerBookingItem {
 }
 
 const labels: Record<string, string> = {
-  PENDING: "قيد الانتظار",
-  CONFIRMED: "مؤكد",
-  ASSIGNED: "تم تعيين مقدم",
-  IN_PROGRESS: "قيد التنفيذ",
+  PENDING: "بانتظار التأكيد",
+  CONFIRMED: "تم التأكيد",
+  ASSIGNED: "تم اختيار مقدم الخدمة",
+  IN_PROGRESS: "الشغل بلّش",
   COMPLETED: "مكتمل",
   CANCELLED: "ملغي",
 };
 
-export default function CustomerBookingsClient({ initialBookings }: { initialBookings: CustomerBookingItem[] }) {
+const filters = [
+  ["ACTIVE", "الحالية"],
+  ["IN_PROGRESS", "قيد التنفيذ"],
+  ["COMPLETED", "المكتملة"],
+  ["CANCELLED", "الملغاة"],
+  ["ALL", "الكل"],
+] as const;
+
+function formatBookingDate(value: string) {
+  const date = new Date(`${value}T00:00:00`);
+  if (Number.isNaN(date.getTime())) return value;
+
+  return new Intl.DateTimeFormat("ar-JO", {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+  }).format(date);
+}
+
+export default function CustomerBookingsClient({
+  initialBookings,
+}: {
+  initialBookings: CustomerBookingItem[];
+}) {
   const [bookings, setBookings] = useState(initialBookings);
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const [filter, setFilter] = useState("ACTIVE");
 
   const visible = useMemo(() => {
     if (filter === "ALL") return bookings;
-    if (filter === "ACTIVE") return bookings.filter((b) => !["COMPLETED", "CANCELLED"].includes(b.status));
-    return bookings.filter((b) => b.status === filter);
+
+    if (filter === "ACTIVE") {
+      return bookings.filter(
+        (booking) => !["COMPLETED", "CANCELLED"].includes(booking.status),
+      );
+    }
+
+    return bookings.filter((booking) => booking.status === filter);
   }, [bookings, filter]);
 
   const handleCancel = async (bookingId: string) => {
-    if (!confirm("هل أنت متأكد من إلغاء الطلب؟")) return;
+    if (!confirm("متأكد بدك تلغي الطلب؟")) return;
+
     setLoadingId(bookingId);
-    const res = await cancelCustomerBookingAction(bookingId);
-    if (!res.success) alert(res.error || "تعذر إلغاء الحجز");
-    else setBookings((items) => items.map((b) => b.id === bookingId ? { ...b, status: "CANCELLED" } : b));
+    const result = await cancelCustomerBookingAction(bookingId);
+
+    if (!result.success) {
+      alert(result.error || "ما قدرنا نلغي الطلب حالياً");
+    } else {
+      setBookings((items) =>
+        items.map((booking) =>
+          booking.id === bookingId
+            ? { ...booking, status: "CANCELLED" }
+            : booking,
+        ),
+      );
+    }
+
     setLoadingId(null);
   };
 
-  const filters = [
-    ["ACTIVE", "النشطة"],
-    ["IN_PROGRESS", "قيد التنفيذ"],
-    ["COMPLETED", "المكتملة"],
-    ["CANCELLED", "الملغاة"],
-    ["ALL", "الكل"],
-  ];
-
   if (!initialBookings.length) {
     return (
-      <div className="rounded-[1.8rem] border border-dashed border-[rgb(var(--primary)/0.28)] bg-[rgb(var(--primary)/0.025)] p-10 text-center">
-        <Search className="mx-auto h-7 w-7 text-brand" />
-        <h3 className="mt-3 text-lg font-bold">لسه ما عندك حجوزات</h3>
-        <p className="mt-2 text-xs text-muted">أول طلب تعمله رح يظهر هون مع حالته وتفاصيله.</p>
-        <Link href="/discover" className="brand-button mt-5">اكتشف الخدمات</Link>
+      <div className="border-t border-theme py-12 text-center sm:py-16">
+        <span className="mx-auto flex h-11 w-11 items-center justify-center rounded-xl bg-[rgb(var(--primary-soft))] text-brand">
+          <Search size={19} />
+        </span>
+        <h3 className="mt-4 text-base font-bold">لسه ما طلبت خدمة</h3>
+        <p className="mx-auto mt-2 max-w-sm text-xs leading-6 text-muted">
+          أول ما تعمل طلب، رح تلاقيه هون وتقدر تتابع شو صار عليه خطوة بخطوة.
+        </p>
+        <Link href="/discover" className="brand-button mt-5">
+          دور على خدمة
+        </Link>
       </div>
     );
   }
 
   return (
     <div>
-      <div className="hide-scrollbar mb-4 flex gap-2 overflow-x-auto pb-1">
-        {filters.map(([id, label]) => (
-          <button key={id} type="button" onClick={() => setFilter(id)}
-            className={`shrink-0 rounded-full px-3 py-2 text-[10px] font-bold ${filter === id ? "bg-[rgb(var(--primary))] text-white" : "border border-theme bg-surface text-muted"}`}>
-            {label}
-          </button>
-        ))}
-      </div>
+      <div className="hide-scrollbar mb-5 flex gap-1 overflow-x-auto border-b border-theme pb-2">
+        {filters.map(([id, label]) => {
+          const active = filter === id;
 
-      <div className="grid gap-4 lg:grid-cols-2">
-        {visible.map((b) => {
-          const amount = b.agreed_amount ?? b.services?.price ?? null;
-          const completed = b.status === "COMPLETED";
-          const cancelled = b.status === "CANCELLED";
           return (
-            <article key={b.id} className="overflow-hidden rounded-[1.8rem] border border-theme bg-surface shadow-soft">
-              <div className={`h-1.5 ${completed ? "bg-[rgb(var(--success))]" : cancelled ? "bg-[rgb(var(--danger))]" : "bg-[rgb(var(--primary))]"}`} />
-              <div className="p-5">
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <span className="rounded-full bg-surface-muted px-2.5 py-1 text-[9px] font-bold text-muted">{labels[b.status] || b.status}</span>
-                    <h3 className="mt-3 text-lg font-bold">{b.services?.title || "خدمة غير محددة"}</h3>
-                    <p className="mt-1 text-[10px] text-muted">#{b.id.slice(0, 8)}</p>
-                  </div>
-                  {amount != null && <strong className="text-sm text-brand">{Number(amount).toFixed(2)} د.أ</strong>}
-                </div>
-
-                <div className="mt-5 grid gap-2 border-y border-theme py-4 text-[10px] text-muted">
-                  {b.booking_date && <span className="inline-flex items-center gap-2"><CalendarDays size={14} className="text-brand" />{b.booking_date}</span>}
-                  {b.start_time && <span className="inline-flex items-center gap-2"><Clock3 size={14} className="text-brand" />{b.start_time}</span>}
-                  {b.address && <span className="inline-flex items-start gap-2"><MapPin size={14} className="mt-0.5 shrink-0 text-brand" />{b.address}</span>}
-                  {b.workflow_type && b.workflow_type !== "LEGACY_HOME" && <span className="inline-flex items-center gap-2"><WalletCards size={14} className="text-brand" />{b.workflow_type === "QUOTE_PROJECT" ? "عرض سعر مقبول" : "حجز مباشر"}</span>}
-                </div>
-
-                <div className="mt-4 flex items-center justify-between gap-3">
-                  <Link href={`/bookings/${b.id}`} className="inline-flex items-center gap-1 text-xs font-bold text-brand">
-                    عرض التفاصيل <ArrowLeft size={14} />
-                  </Link>
-
-                  {["PENDING", "CONFIRMED", "ASSIGNED"].includes(b.status) && (
-                    <button type="button" disabled={loadingId === b.id} onClick={() => handleCancel(b.id)}
-                      className="inline-flex items-center gap-1 text-[10px] font-bold text-[rgb(var(--danger))] disabled:opacity-50">
-                      <XCircle size={13} />{loadingId === b.id ? "جارٍ الإلغاء..." : "إلغاء"}
-                    </button>
-                  )}
-
-                  {completed && <CheckCircle2 size={18} className="text-[rgb(var(--success))]" />}
-                </div>
-              </div>
-            </article>
+            <button
+              key={id}
+              type="button"
+              onClick={() => setFilter(id)}
+              className={`shrink-0 border-b-2 px-3 py-2 text-[11px] font-bold transition ${
+                active
+                  ? "border-[rgb(var(--primary))] text-brand"
+                  : "border-transparent text-muted hover:text-[rgb(var(--text-main))]"
+              }`}
+            >
+              {label}
+            </button>
           );
         })}
       </div>
+
+      {visible.length === 0 ? (
+        <div className="py-12 text-center">
+          <p className="text-sm font-bold">ما في طلبات بهالقسم</p>
+          <p className="mt-1 text-xs text-muted">جرّب قسم ثاني من فوق.</p>
+        </div>
+      ) : (
+        <div className="divide-y divide-[rgb(var(--border))] border-y border-theme">
+          {visible.map((booking) => {
+            const amount = booking.agreed_amount ?? booking.services?.price ?? null;
+            const completed = booking.status === "COMPLETED";
+            const cancelled = booking.status === "CANCELLED";
+            const canCancel = ["PENDING", "CONFIRMED", "ASSIGNED"].includes(
+              booking.status,
+            );
+
+            return (
+              <article
+                key={booking.id}
+                className="grid gap-4 py-5 sm:grid-cols-[1fr_auto] sm:items-center"
+              >
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span
+                      className={`text-[10px] font-bold ${
+                        completed
+                          ? "text-[rgb(var(--success))]"
+                          : cancelled
+                            ? "text-[rgb(var(--danger))]"
+                            : "text-brand"
+                      }`}
+                    >
+                      {labels[booking.status] || booking.status}
+                    </span>
+                    <span className="text-[9px] text-muted">
+                      #{booking.id.slice(0, 8)}
+                    </span>
+                  </div>
+
+                  <h3 className="mt-1.5 truncate text-base font-bold">
+                    {booking.services?.title || "خدمة"}
+                  </h3>
+
+                  <div className="mt-3 flex flex-wrap gap-x-4 gap-y-2 text-[10px] text-muted">
+                    {booking.booking_date && (
+                      <span className="inline-flex items-center gap-1.5">
+                        <CalendarDays size={13} />
+                        {formatBookingDate(booking.booking_date)}
+                      </span>
+                    )}
+                    {booking.start_time && (
+                      <span className="inline-flex items-center gap-1.5">
+                        <Clock3 size={13} />
+                        {booking.start_time}
+                      </span>
+                    )}
+                    {booking.address && (
+                      <span className="inline-flex min-w-0 items-center gap-1.5">
+                        <MapPin size={13} className="shrink-0" />
+                        <span className="max-w-[18rem] truncate">{booking.address}</span>
+                      </span>
+                    )}
+                    {booking.workflow_type && booking.workflow_type !== "LEGACY_HOME" && (
+                      <span className="inline-flex items-center gap-1.5">
+                        <WalletCards size={13} />
+                        {booking.workflow_type === "QUOTE_PROJECT"
+                          ? "عرض سعر"
+                          : "حجز مباشر"}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between gap-4 sm:min-w-[11rem] sm:flex-col sm:items-end">
+                  {amount != null && (
+                    <strong className="text-sm font-bold">
+                      {Number(amount).toFixed(2)} د.أ
+                    </strong>
+                  )}
+
+                  <div className="flex items-center gap-3">
+                    <Link
+                      href={`/bookings/${booking.id}`}
+                      className="inline-flex items-center gap-1 text-xs font-bold text-brand"
+                    >
+                      التفاصيل <ArrowLeft size={14} />
+                    </Link>
+
+                    {canCancel && (
+                      <button
+                        type="button"
+                        disabled={loadingId === booking.id}
+                        onClick={() => void handleCancel(booking.id)}
+                        className="inline-flex items-center gap-1 text-[10px] font-bold text-[rgb(var(--danger))] disabled:opacity-50"
+                      >
+                        <XCircle size={13} />
+                        {loadingId === booking.id ? "بنلغي..." : "إلغاء"}
+                      </button>
+                    )}
+
+                    {completed && (
+                      <CheckCircle2
+                        size={17}
+                        className="text-[rgb(var(--success))]"
+                        aria-label="مكتمل"
+                      />
+                    )}
+                  </div>
+                </div>
+              </article>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

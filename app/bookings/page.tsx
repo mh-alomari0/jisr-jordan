@@ -1,4 +1,5 @@
-import { CalendarDays } from "lucide-react";
+import Link from "next/link";
+import { CalendarDays, Plus } from "lucide-react";
 import { getCustomerBookingsAction } from "@/lib/actions/customer-bookings";
 import CustomerBookingsClient, {
   CustomerBookingItem,
@@ -15,59 +16,57 @@ export default async function CustomerBookingsPage() {
 
   if (!result.success || !result.bookings) {
     return (
-      <main className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
-        <div className="rounded-[1.8rem] border border-theme bg-surface p-8 text-center text-sm text-[rgb(var(--danger))]">
-          {result.error || "تعذر تحميل قائمة الطلبات"}
+      <main className="mx-auto max-w-5xl px-4 py-12 sm:px-6">
+        <div className="border-y border-[rgb(var(--danger)/0.25)] py-8 text-center">
+          <p className="text-sm font-bold text-[rgb(var(--danger))]">
+            {result.error || "تعذر تحميل قائمة الطلبات"}
+          </p>
+          <Link href="/" className="mt-4 inline-block text-xs font-bold text-brand">
+            العودة للرئيسية
+          </Link>
         </div>
       </main>
     );
   }
 
-  const typedBookings =
-    result.bookings as unknown as CustomerBookingItem[];
+  const typedBookings = result.bookings as unknown as CustomerBookingItem[];
 
   return (
-    <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-12">
-      <section className="relative overflow-hidden rounded-[2.1rem] bg-[#0b817a] px-6 py-8 text-white sm:px-8">
-        <div className="pointer-events-none absolute -left-16 -top-20 h-52 w-52 rounded-full border-[22px] border-white/10" />
+    <main className="mx-auto max-w-6xl px-4 pb-16 pt-6 sm:px-6 sm:pt-10">
+      <header className="flex flex-col gap-5 border-b border-theme pb-7 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <div className="flex items-center gap-2 text-brand">
+            <CalendarDays size={17} />
+            <p className="text-[10px] font-bold">طلباتك</p>
+          </div>
 
-        <div className="relative">
-          <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/10">
-            <CalendarDays size={20} />
-          </span>
-
-          <p className="mt-6 text-[10px] font-bold text-[#c9eee8]">
-            رحلتك مع جسر
-          </p>
-
-          <h1 className="mt-1 text-3xl font-bold tracking-[-.05em] sm:text-5xl">
-            طلباتك كلها،
-            <span className="text-[#ffc985]"> بمكان واحد.</span>
+          <h1 className="mt-2 text-3xl font-bold tracking-[-.045em] sm:text-4xl">
+            كل شغلك مع جسر هون.
           </h1>
-
-          <p className="mt-3 max-w-2xl text-sm leading-7 text-[#d9f2ee]">
-            تابع الطلب من لحظة إنشائه لحد التنفيذ والتقييم،
-            واعرف كل تحديث عليه.
-          </p>
-        </div>
-      </section>
-
-      <section className="mt-8">
-        <div className="mb-5">
-          <p className="text-[10px] font-bold text-brand">
-            متابعة الطلبات
-          </p>
-          <h2 className="mt-1 text-2xl font-bold">
-            طلباتي
-          </h2>
-          <p className="mt-1 text-xs text-muted">
-            {typedBookings.length} طلب مسجل
+          <p className="mt-2 max-w-xl text-xs leading-6 text-muted sm:text-sm">
+            من أول طلب لآخر تحديث. افتح أي طلب وشوف حالته وتفاصيله بدون ما تدور بين الصفحات.
           </p>
         </div>
 
-        <CustomerBookingsClient
-          initialBookings={typedBookings}
-        />
+        <Link href="/booking" className="brand-button shrink-0 text-xs">
+          <Plus size={15} />
+          طلب جديد
+        </Link>
+      </header>
+
+      <section className="mt-7">
+        <div className="mb-5 flex items-end justify-between gap-4">
+          <div>
+            <h2 className="text-xl font-bold">الطلبات</h2>
+            <p className="mt-1 text-[10px] text-muted">
+              {typedBookings.length === 0
+                ? "ما عندك طلبات لسا"
+                : `${typedBookings.length} طلب بحسابك`}
+            </p>
+          </div>
+        </div>
+
+        <CustomerBookingsClient initialBookings={typedBookings} />
       </section>
     </main>
   );

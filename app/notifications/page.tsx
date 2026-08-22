@@ -19,44 +19,39 @@ export default async function NotificationsPage() {
   const notifications = result.notifications || [];
 
   return (
-    <main className="mx-auto max-w-5xl px-4 py-8 sm:px-6 sm:py-12">
-      <section className="relative overflow-hidden rounded-[2.1rem] bg-[#0b817a] p-6 text-white sm:p-8">
-        <div className="absolute -left-16 -top-20 h-52 w-52 rounded-full border-[22px] border-white/10" />
-        <div className="relative">
-          <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/10">
-            <Bell size={20} />
-          </span>
-          <p className="mt-6 text-[10px] font-bold text-[#c9eee8]">
-            كل جديد أول بأول
-          </p>
-          <h1 className="mt-1 text-3xl font-bold tracking-[-.05em] sm:text-5xl">
-            لا يفوتك
-            <span className="text-[#ffc985]"> أي تحديث.</span>
-          </h1>
-          <p className="mt-3 max-w-2xl text-sm leading-7 text-[#d9f2ee]">
-            تحديثات الحجوزات، الرسائل، عروض الأسعار والحساب تظهر
-            هنا، ويمكنك تفعيل إشعارات الهاتف من نفس الصفحة.
-          </p>
-        </div>
-      </section>
+    <main className="mx-auto max-w-5xl space-y-7 px-4 py-6 sm:px-6 sm:py-10">
+      <header className="border-b border-theme pb-5">
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <p className="text-[11px] font-bold text-brand">الإشعارات</p>
+            <h1 className="mt-1 text-2xl font-bold sm:text-3xl">آخر التحديثات</h1>
+            <p className="mt-1 text-sm text-muted">
+              الحجز والرسائل والعروض وأخبار الحساب بمكان واحد.
+            </p>
+          </div>
 
-      <div className="mt-8 grid gap-6 lg:grid-cols-[1.2fr_.8fr]">
+          <div className="flex items-center gap-2 text-xs text-muted">
+            <Bell size={15} className="text-brand" />
+            {notifications.length} إشعار
+          </div>
+        </div>
+      </header>
+
+      <div className="grid gap-7 lg:grid-cols-[1.25fr_.75fr]">
         <NotificationsClient
           initialNotifications={notifications}
         />
 
-        <aside>
-          <div className="mb-4 flex items-center gap-2">
-            <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[rgb(var(--primary-soft))] text-brand">
-              <Smartphone size={18} />
+        <aside className="lg:border-r lg:border-theme lg:pr-6">
+          <div className="mb-4 flex items-center gap-3">
+            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[rgb(var(--primary-soft))] text-brand">
+              <Smartphone size={17} />
             </span>
             <div>
-              <p className="text-[9px] font-bold text-brand">
-                إشعارات الجهاز
+              <h2 className="text-sm font-bold">إشعارات الجهاز</h2>
+              <p className="mt-0.5 text-[11px] text-muted">
+                اختر التحديثات اللي بدك تستقبلها مباشرة.
               </p>
-              <h2 className="text-sm font-bold">
-                خلي جسر يوصل لك مباشرة
-              </h2>
             </div>
           </div>
 
@@ -67,7 +62,7 @@ export default async function NotificationsPage() {
               publicKey={settings.publicKey}
             />
           ) : (
-            <div className="rounded-[1.8rem] border border-theme bg-surface p-5 text-xs text-muted">
+            <div className="rounded-2xl border border-theme bg-surface p-5 text-xs text-muted">
               إعدادات إشعارات الجهاز غير متاحة حالياً.
             </div>
           )}

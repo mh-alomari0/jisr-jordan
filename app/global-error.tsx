@@ -8,80 +8,76 @@ export default function GlobalError({
 }) {
   return (
     <html lang="ar" dir="rtl">
-      <body>
-        <div
+      <body style={{ margin: 0 }}>
+        <main
           style={{
             minHeight: "100vh",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            fontFamily: "system-ui, sans-serif",
-            background: "#f8fafc",
+            padding: "24px",
+            fontFamily: "Arial, sans-serif",
+            background: "#f7f5ef",
+            color: "#183f42",
           }}
         >
-          <div
+          <section
             style={{
-              maxWidth: "28rem",
               width: "100%",
-              background: "white",
-              padding: "2rem",
-              borderRadius: "1rem",
-              border: "1px solid #e2e8f0",
-              textAlign: "center",
+              maxWidth: "560px",
+              borderTop: "1px solid #d8dedb",
+              paddingTop: "32px",
             }}
           >
-            <div
-              style={{
-                width: "3rem",
-                height: "3rem",
-                background: "#fef2f2",
-                borderRadius: "9999px",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                margin: "0 auto 1rem",
-                color: "#dc2626",
-                fontSize: "1.5rem",
-              }}
-            >
-              ⚠
-            </div>
-            <h2
-              style={{
-                fontSize: "1.25rem",
-                fontWeight: 700,
-                color: "#0f172a",
-                marginBottom: "0.5rem",
-              }}
-            >
-              حدث خطأ غير متوقع
-            </h2>
             <p
               style={{
-                fontSize: "0.875rem",
-                color: "#64748b",
-                marginBottom: "1.5rem",
+                margin: 0,
+                fontSize: "14px",
+                fontWeight: 700,
+                color: "#a63f3f",
               }}
             >
-              نعتذر، تعذر إكمال العملية. يرجى المحاولة مرة أخرى.
+              صار معنا خلل
+            </p>
+            <h1
+              style={{
+                margin: "8px 0 0",
+                fontSize: "32px",
+                lineHeight: 1.25,
+              }}
+            >
+              جسر ما قدر يكمل هالمرة
+            </h1>
+            <p
+              style={{
+                margin: "12px 0 0",
+                fontSize: "14px",
+                lineHeight: 1.9,
+                color: "#607174",
+              }}
+            >
+              جرّب إعادة المحاولة. إذا استمر الخطأ، افتح جسر من جديد بعد شوي.
             </p>
             <button
-              onClick={() => reset()}
+              type="button"
+              onClick={reset}
               style={{
-                padding: "0.625rem 1.25rem",
-                background: "#0284c7",
+                marginTop: "24px",
+                minHeight: "44px",
+                padding: "0 20px",
+                border: 0,
+                borderRadius: "12px",
+                background: "#087f79",
                 color: "white",
-                border: "none",
-                borderRadius: "0.5rem",
-                fontSize: "0.875rem",
-                fontWeight: 500,
+                fontSize: "14px",
+                fontWeight: 700,
                 cursor: "pointer",
               }}
             >
-              إعادة المحاولة
+              حاول مرة ثانية
             </button>
-          </div>
-        </div>
+          </section>
+        </main>
       </body>
     </html>
   );

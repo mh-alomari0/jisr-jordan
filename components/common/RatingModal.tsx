@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useState } from "react";
+import { Star, X } from "lucide-react";
 import { supabase } from "@/lib/supabase/client";
-import { Star, X, Sparkles } from "lucide-react";
 
 export interface RatingModalProps {
   bookingId: string;
@@ -12,20 +12,20 @@ export interface RatingModalProps {
   onSuccess?: () => void;
 }
 
-const ratingReactions = [
-  { rating: 1, emoji: "😞", label: "تجربة غير مرضية" },
-  { rating: 2, emoji: "😐", label: "مقبول يحتاج تحسين" },
-  { rating: 3, emoji: "😊", label: "جيد ومناسب" },
-  { rating: 4, emoji: "😃", label: "ممتاز جداً" },
-  { rating: 5, emoji: "🤩", label: "خرافي ومتقن للغاية!" },
+const ratingLabels = [
+  { rating: 1, label: "سيئة" },
+  { rating: 2, label: "مقبولة" },
+  { rating: 3, label: "جيدة" },
+  { rating: 4, label: "ممتازة" },
+  { rating: 5, label: "ممتازة جدًا" },
 ];
 
 const quickChips = [
-  "سريع ومتقن ⚡",
-  "خلوق ومحترم 🤝",
-  "سعر مناسب 💰",
-  "دقيق في الموعد ⏱️",
-  "شغل نظيف 🧼",
+  "سريع ومتقن",
+  "محترم بالتعامل",
+  "السعر مناسب",
+  "ملتزم بالموعد",
+  "الشغل مرتب",
 ];
 
 export default function RatingModal({
@@ -42,8 +42,8 @@ export default function RatingModal({
 
   if (!isOpen) return null;
 
-  const currentReaction =
-    ratingReactions.find((r) => r.rating === rating) || ratingReactions[4];
+  const currentLabel =
+    ratingLabels.find((item) => item.rating === rating)?.label || "ممتازة جدًا";
 
   const handleChipClick = (chip: string) => {
     setComment((prev) => (prev ? `${prev}، ${chip}` : chip));
@@ -59,7 +59,7 @@ export default function RatingModal({
     } = await supabase.auth.getUser();
 
     if (!user) {
-      setError("يجب تسجيل الدخول لتقديم التقييم");
+      setError("سجّل دخولك أولًا عشان تضيف تقييم.");
       setSubmitting(false);
       return;
     }
@@ -72,95 +72,96 @@ export default function RatingModal({
     });
 
     if (insertError) {
-      setError("تعذر حفظ التقييم. يرجى المحاولة لاحقاً.");
+      setError("ما قدرنا نحفظ التقييم. جرّب مرة ثانية.");
       setSubmitting(false);
       return;
     }
 
     setSubmitting(false);
-    if (onSuccess) onSuccess();
+    onSuccess?.();
     onClose();
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 p-3 backdrop-blur-sm">
-      <div className="surface-card w-full max-w-md !rounded-[2.2rem] p-6 space-y-5 relative page-reveal">
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-3 sm:items-center">
+      <div className="relative w-full max-w-md rounded-[1.5rem] border border-theme bg-surface p-5 sm:p-6">
         <button
           onClick={onClose}
           type="button"
           aria-label="إغلاق"
-          className="absolute top-4 left-4 flex h-8 w-8 items-center justify-center rounded-full bg-surface-muted text-muted transition hover:text-[rgb(var(--text-main))]"
+          className="absolute left-4 top-4 flex h-8 w-8 items-center justify-center rounded-full text-muted transition hover:bg-surface-muted hover:text-[rgb(var(--text-main))]"
         >
-          <X className="w-4 h-4" />
+          <X className="h-4 w-4" />
         </button>
 
-        <div className="text-center space-y-1">
-          <span className="text-4xl animate-bounce inline-block">
-            {currentReaction.emoji}
-          </span>
-          <h3 className="text-lg font-black">{currentReaction.label}</h3>
+        <div className="pe-10">
+          <p className="text-[10px] font-bold text-brand">بعد ما خلصت الخدمة</p>
+          <h3 className="mt-1 text-lg font-black">كيف كانت التجربة؟</h3>
           {serviceTitle && (
-            <p className="text-xs text-muted truncate">{serviceTitle}</p>
+            <p className="mt-1 truncate text-xs text-muted">{serviceTitle}</p>
           )}
         </div>
 
         {error && (
-          <p role="alert" className="text-xs font-bold text-[rgb(var(--danger))] bg-[rgb(var(--danger)/0.08)] p-3 rounded-xl text-center">
+          <p
+            role="alert"
+            className="mt-4 rounded-xl bg-[rgb(var(--danger)/0.08)] p-3 text-xs font-bold text-[rgb(var(--danger))]"
+          >
             {error}
           </p>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Star Selector */}
-          <div className="flex justify-center gap-2">
-            {[1, 2, 3, 4, 5].map((star) => (
-              <button
-                key={star}
-                type="button"
-                onClick={() => setRating(star)}
-                className="p-1 focus:outline-none transition-transform active:scale-125"
-              >
-                <Star
-                  className={`w-9 h-9 transition-colors ${
-                    star <= rating
-                      ? "text-[rgb(var(--warning))] fill-[rgb(var(--warning))]"
-                      : "text-muted opacity-30"
-                  }`}
-                />
-              </button>
-            ))}
+        <form onSubmit={handleSubmit} className="mt-5 space-y-5">
+          <div>
+            <div className="flex justify-center gap-2" aria-label="اختيار التقييم">
+              {[1, 2, 3, 4, 5].map((star) => (
+                <button
+                  key={star}
+                  type="button"
+                  onClick={() => setRating(star)}
+                  aria-label={`${star} من 5`}
+                  className="p-1 transition-transform active:scale-110"
+                >
+                  <Star
+                    className={`h-8 w-8 transition-colors ${
+                      star <= rating
+                        ? "fill-[rgb(var(--warning))] text-[rgb(var(--warning))]"
+                        : "text-muted opacity-30"
+                    }`}
+                  />
+                </button>
+              ))}
+            </div>
+            <p className="mt-2 text-center text-xs font-bold">{currentLabel}</p>
           </div>
 
-          {/* Quick feedback chips */}
-          <div className="flex flex-wrap gap-1.5 justify-center">
+          <div className="flex flex-wrap gap-2">
             {quickChips.map((chip) => (
               <button
                 key={chip}
                 type="button"
                 onClick={() => handleChipClick(chip)}
-                className="rounded-full bg-surface-muted px-2.5 py-1 text-[10px] font-bold text-muted transition hover:text-brand active:scale-95"
+                className="rounded-lg border border-theme px-2.5 py-1.5 text-[10px] font-bold text-muted transition hover:border-[rgb(var(--primary)/0.35)] hover:text-brand"
               >
-                + {chip}
+                {chip}
               </button>
             ))}
           </div>
 
-          <div>
-            <textarea
-              value={comment}
-              onChange={(e) => setComment(e.target.value)}
-              rows={3}
-              className="form-field !rounded-2xl text-xs"
-              placeholder="شاركنا رأيك بتفاصيل أكثر لمساعدة الآخرين..."
-            />
-          </div>
+          <textarea
+            value={comment}
+            onChange={(e) => setComment(e.target.value)}
+            rows={3}
+            className="form-field !rounded-xl text-xs"
+            placeholder="إذا في ملاحظة بتفيد غيرك، اكتبها هون..."
+          />
 
           <button
             type="submit"
             disabled={submitting}
-            className="brand-button w-full text-xs font-black shadow-md"
+            className="brand-button w-full text-xs font-black"
           >
-            {submitting ? "جارٍ الحفظ..." : "إرسال التقييم"}
+            {submitting ? "جاري الحفظ..." : "إرسال التقييم"}
           </button>
         </form>
       </div>
