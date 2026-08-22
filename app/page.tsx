@@ -36,26 +36,28 @@ function SectionHeading({
   copy,
   href,
   action,
+  compact = false,
 }: {
   eyebrow?: string;
   title: string;
   copy?: string;
   href?: string;
   action?: string;
+  compact?: boolean;
 }) {
   return (
-    <div className="mb-5 flex items-end justify-between gap-4">
-      <div>
+    <div className={`flex items-end justify-between gap-4 ${compact ? "mb-4" : "mb-5"}`}>
+      <div className="max-w-2xl">
         {eyebrow && (
-          <p className="mb-1 text-[11px] font-black tracking-wide text-brand">
+          <p className="mb-1 text-[10px] font-black tracking-[.08em] text-brand sm:text-[11px]">
             {eyebrow}
           </p>
         )}
-        <h2 className="text-2xl font-black tracking-[-.05em] sm:text-3xl">
+        <h2 className="text-xl font-black leading-tight tracking-[-.04em] sm:text-3xl">
           {title}
         </h2>
         {copy && (
-          <p className="mt-1 text-xs leading-6 text-muted sm:text-sm">
+          <p className="mt-1.5 text-xs leading-6 text-muted sm:text-sm">
             {copy}
           </p>
         )}
@@ -64,10 +66,10 @@ function SectionHeading({
       {href && action && (
         <Link
           href={href}
-          className="hidden shrink-0 items-center gap-1 rounded-full border border-theme bg-surface px-4 py-2 text-xs font-bold text-brand shadow-sm transition hover:-translate-y-0.5 hover:shadow-soft active:scale-[.98] sm:flex"
+          className="hidden shrink-0 items-center gap-1 text-xs font-black text-brand transition hover:opacity-75 sm:flex"
         >
-          <ChevronLeft size={15} />
           {action}
+          <ChevronLeft size={15} />
         </Link>
       )}
     </div>
@@ -85,14 +87,12 @@ function ObjectTile({
 }) {
   return (
     <div
-      className={`flex flex-col items-center justify-center rounded-[1.8rem] border border-white/80 bg-[#fbf8f1] shadow-[0_16px_45px_rgba(4,66,64,.10)] transition-all hover:scale-[1.02] ${className}`}
+      className={`flex flex-col items-center justify-center rounded-[1.45rem] border border-[#e7dfd3] bg-[#fbf8f1] px-4 py-5 shadow-[0_8px_26px_rgba(4,66,64,.07)] ${className}`}
     >
-      <span className="flex h-20 w-20 items-center justify-center rounded-[1.5rem] bg-[#e1f3ef] text-[#087f79]">
-        <Icon strokeWidth={1.7} size={38} />
+      <span className="flex h-16 w-16 items-center justify-center rounded-[1.15rem] bg-[#e1f3ef] text-[#087f79]">
+        <Icon strokeWidth={1.7} size={30} />
       </span>
-      <span className="mt-3 text-xs font-black text-[#164348]">
-        {label}
-      </span>
+      <span className="mt-3 text-xs font-black text-[#164348]">{label}</span>
     </div>
   );
 }
@@ -126,63 +126,65 @@ export default async function HomePage() {
 
   return (
     <div className="page-reveal pb-16 sm:pb-24">
-      <section className="mx-auto max-w-6xl px-4 pb-8 pt-4 sm:px-6 sm:pt-8 lg:pb-14">
-        <div className="overflow-hidden rounded-[2.4rem] border border-[rgb(var(--primary)/.15)] bg-[#087f79] shadow-lift">
-          <div className="grid lg:grid-cols-2">
-            <div className="relative flex min-h-[420px] items-center overflow-hidden bg-gradient-to-br from-[#065053] via-[#087f79] to-[#0ba59d] px-6 py-10 text-white sm:px-10 lg:px-12">
-              <div className="absolute -bottom-28 -right-20 h-72 w-72 rounded-full border-[30px] border-white/10" />
-              <div className="absolute -left-16 -top-16 h-56 w-56 rounded-full bg-[#ffc985]/15 blur-2xl" />
+      <section className="mx-auto max-w-6xl px-4 pb-9 pt-4 sm:px-6 sm:pt-8 lg:pb-14">
+        <div className="overflow-hidden rounded-[2rem] border border-[rgb(var(--primary)/.14)] bg-[#087f79] shadow-[0_18px_50px_rgba(4,66,64,.13)] sm:rounded-[2.3rem]">
+          <div className="grid lg:grid-cols-[1.08fr_.92fr]">
+            <div className="relative flex min-h-[390px] items-center overflow-hidden bg-[#087f79] px-6 py-9 text-white sm:px-10 sm:py-11 lg:min-h-[430px] lg:px-12">
+              <div className="absolute -bottom-32 -right-24 h-72 w-72 rounded-full border-[28px] border-white/[.07]" />
 
               <div className="relative w-full">
-                <h1 className="text-[2.6rem] font-black leading-[1.1] tracking-[-.075em] sm:text-5xl lg:text-[3.8rem]">
-                  الشغل عليك،
-                  <br />
-                  <span className="text-[#26d7cf]">
-                    وعلينا نكبّر اسمك.
-                  </span>
-                </h1>
-
-                <p className="mt-4 max-w-lg text-xs leading-6 text-[#d9f3ee] sm:text-sm sm:leading-7">
-                  بدك خدمة؟ دور عليها، قارن بين أفضل الكفاءات، وتواصل مباشرة
-                  بأمان. عندك شغلة بتتقنها؟ انضم وخلي الكل يلاقيك.
+                <p className="mb-4 text-[11px] font-black text-[#b9eee8]">
+                  خدمات ومهارات من ناس قريبين منك
                 </p>
 
-                <form action="/discover" role="search" className="mt-6">
-                  <div className="flex min-h-[58px] items-center gap-2 rounded-2xl bg-white p-2 text-[rgb(var(--text-main))] shadow-[0_20px_50px_rgba(2,45,42,.24)]">
-                    <Search
-                      size={20}
-                      className="ms-2 shrink-0 text-[#087f79]"
-                    />
+                <h1 className="max-w-xl text-[2.45rem] font-black leading-[1.12] tracking-[-.065em] sm:text-5xl lg:text-[3.7rem]">
+                  الشغل عليك،
+                  <br />
+                  <span className="text-[#63dfd6]">وعلينا نوصّلك.</span>
+                </h1>
+
+                <p className="mt-4 max-w-lg text-xs leading-7 text-[#def4f1] sm:text-sm">
+                  احكيلنا شو بدك بكلماتك. بندوّر معك على الخدمة المناسبة، وبعدها قارن بين الناس اللي بقدموها واختار براحتك.
+                </p>
+
+                <form action="/discover" role="search" className="mt-6 max-w-xl">
+                  <div className="flex min-h-[58px] items-center gap-2 rounded-[1.15rem] bg-white p-2 text-[rgb(var(--text-main))] shadow-[0_16px_38px_rgba(2,45,42,.18)]">
+                    <Search size={19} className="ms-2 shrink-0 text-[#087f79]" />
                     <input
                       name="q"
                       type="search"
                       maxLength={120}
-                      placeholder="شو حابب تنجز اليوم؟ (صيانة، تعليم، برمجة...)"
-                      className="min-w-0 flex-1 bg-transparent px-2 text-xs font-bold text-gray-800 outline-none placeholder:text-gray-400 sm:text-sm"
+                      placeholder="مثلاً: المي بتنقط من تحت المجلى"
+                      className="min-w-0 flex-1 bg-transparent px-2 text-xs font-bold text-gray-800 outline-none placeholder:font-medium placeholder:text-gray-400 sm:text-sm"
                     />
-                    <button className="brand-button !min-h-[44px] !rounded-xl !px-6 text-xs font-black">
-                      بحث
+                    <button className="brand-button !min-h-[42px] !rounded-[.9rem] !px-5 text-xs font-black">
+                      دورلي
                     </button>
                   </div>
                 </form>
+
+                <p className="mt-3 text-[10px] leading-5 text-white/65">
+                  ما بتعرف اسم الخدمة؟ عادي. اكتب المشكلة زي ما بتحكيها.
+                </p>
               </div>
             </div>
 
-            <div className="relative hidden min-h-[420px] bg-[#f4efe5] p-6 lg:block">
-              <div className="grid h-full grid-cols-2 grid-rows-2 gap-4">
+            <div className="relative hidden min-h-[430px] bg-[#f4efe5] p-6 lg:block">
+              <div className="grid h-full grid-cols-2 grid-rows-2 gap-3.5">
                 <ObjectTile icon={Wrench} label="صيانة وإصلاح" />
-                <ObjectTile icon={Code2} label="تقنية وبرمجة" />
-                <ObjectTile icon={GraduationCap} label="تعليم وتدريب" />
+                <ObjectTile icon={Code2} label="تقنية وبرمجة" className="translate-y-3" />
+                <ObjectTile icon={GraduationCap} label="تعليم وتدريب" className="-translate-y-3" />
                 <ObjectTile icon={PaintRoller} label="دهان وتشطيب" />
               </div>
-              <div className="absolute left-1/2 top-1/2 flex h-24 w-24 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-[1.8rem] border-[5px] border-[#f4efe5] bg-[#0a9b92] text-2xl font-black text-white shadow-2xl">
+
+              <div className="absolute left-1/2 top-1/2 flex h-20 w-20 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-[1.35rem] border-[5px] border-[#f4efe5] bg-[#0a9189] text-xl font-black text-white shadow-lg">
                 جسر
               </div>
             </div>
           </div>
         </div>
 
-        <div className="mt-4 grid grid-cols-4 gap-2.5 lg:hidden">
+        <div className="mt-4 grid grid-cols-4 gap-2 lg:hidden">
           {[
             [House, "خدمات بيت", "/discover?category=home-services"],
             [Wrench, "صيانة", "/discover?category=maintenance-repair"],
@@ -195,14 +197,12 @@ export default async function HomePage() {
               <Link
                 key={String(label)}
                 href={String(href)}
-                className="flex flex-col items-center justify-center rounded-2xl border border-theme bg-surface p-3 text-center shadow-sm transition-transform active:scale-95"
+                className="flex min-w-0 flex-col items-center justify-center rounded-[1.1rem] border border-theme bg-surface px-2 py-3 text-center transition active:scale-[.97]"
               >
-                <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[rgb(var(--primary-soft))] text-brand">
-                  <I size={20} />
+                <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[rgb(var(--primary-soft))] text-brand">
+                  <I size={19} />
                 </span>
-                <p className="mt-2 text-[10px] font-black">
-                  {String(label)}
-                </p>
+                <p className="mt-2 truncate text-[10px] font-black">{String(label)}</p>
               </Link>
             );
           })}
@@ -211,19 +211,17 @@ export default async function HomePage() {
 
       <section className="mx-auto max-w-6xl px-4 sm:px-6">
         <SectionHeading
-          eyebrow="تصفح المجالات"
-          title="اختار المجال وخلي الباقي علينا"
-          copy="كل ما تحتاجه من خدمات منزلية ورقمية ومهنية."
+          eyebrow="المجالات"
+          title="ابدأ من المجال الأقرب لشغلتك"
+          copy="وإذا مش متأكد، استخدم البحث فوق واحكيلنا المشكلة مثل ما هي."
           href="/discover"
-          action="عرض الكل"
+          action="شوف الكل"
         />
 
-        <div className="mobile-snap-row -mx-4 px-4 pb-3 sm:mx-0 sm:grid sm:grid-cols-3 sm:gap-4 sm:overflow-visible sm:px-0 lg:grid-cols-7">
+        <div className="mobile-snap-row -mx-4 px-4 pb-3 sm:mx-0 sm:grid sm:grid-cols-3 sm:gap-3 sm:overflow-visible sm:px-0 lg:grid-cols-7">
           {categories.slice(0, 7).map((category) => {
             const visual =
-              categoryVisuals[
-                category.slug as keyof typeof categoryVisuals
-              ] || {
+              categoryVisuals[category.slug as keyof typeof categoryVisuals] || {
                 icon: LayoutGrid,
                 tone: "bg-[#e6e4db] text-[#607064]",
               };
@@ -234,16 +232,12 @@ export default async function HomePage() {
               <Link
                 key={category.id}
                 href={`/discover?category=${category.id}`}
-                className="group min-w-[145px] rounded-[1.6rem] border border-theme bg-surface p-4 transition duration-300 hover:-translate-y-1 hover:shadow-soft active:scale-95 sm:min-w-0"
+                className="group min-w-[142px] border-b border-theme bg-transparent px-1 py-3 transition active:opacity-70 sm:min-w-0 sm:rounded-[1.2rem] sm:border sm:bg-surface sm:p-3.5"
               >
-                <span
-                  className={`flex h-13 w-13 items-center justify-center rounded-2xl ${visual.tone}`}
-                >
-                  <Icon size={24} />
+                <span className={`flex h-11 w-11 items-center justify-center rounded-xl ${visual.tone}`}>
+                  <Icon size={21} />
                 </span>
-                <h3 className="mt-4 line-clamp-1 text-sm font-black leading-5">
-                  {category.name_ar}
-                </h3>
+                <h3 className="mt-3 line-clamp-1 text-sm font-black leading-5">{category.name_ar}</h3>
                 <p className="mt-1 line-clamp-2 text-[10px] leading-5 text-muted">
                   {category.description_ar || "استكشف الخدمات المتاحة"}
                 </p>
@@ -254,34 +248,30 @@ export default async function HomePage() {
       </section>
 
       {serviceTypes.length > 0 && (
-        <section className="mx-auto mt-12 max-w-6xl px-4 sm:px-6 lg:mt-16">
+        <section className="mx-auto mt-11 max-w-6xl px-4 sm:px-6 lg:mt-15">
           <SectionHeading
-            eyebrow="شو بدك تنجز؟"
-            title="خدمات ممكن تحتاجها"
-            copy="اختار الخدمة نفسها، وبعدها شوف مين بقدمها."
+            eyebrow="طلبات شائعة"
+            title="يمكن هاي هي الشغلة اللي بدك إياها"
+            copy="ادخل على الخدمة نفسها وشوف مين بقدمها."
             href="/discover"
             action="كل الخدمات"
+            compact
           />
 
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            {serviceTypes.map((service) => (
+          <div className="divide-y divide-[rgb(var(--border))] rounded-[1.35rem] border border-theme bg-surface sm:grid sm:grid-cols-2 sm:divide-y-0 lg:grid-cols-4">
+            {serviceTypes.map((service, index) => (
               <Link
                 key={service.id}
                 href={`/service-types/${service.id}`}
-                className="group flex items-center justify-between gap-3 rounded-2xl border border-theme bg-surface p-4 transition hover:-translate-y-1 hover:shadow-soft active:scale-[.98]"
+                className={`group flex min-h-[92px] items-center justify-between gap-3 px-4 py-3.5 transition hover:bg-surface-muted active:opacity-75 ${
+                  index > 0 ? "sm:border-s sm:border-theme" : ""
+                }`}
               >
                 <div className="min-w-0">
-                  <h3 className="line-clamp-2 text-sm font-black leading-6">
-                    {service.title}
-                  </h3>
-                  <p className="mt-1 line-clamp-1 text-[10px] text-muted">
-                    {service.category_name}
-                  </p>
+                  <h3 className="line-clamp-2 text-sm font-black leading-6">{service.title}</h3>
+                  <p className="mt-0.5 line-clamp-1 text-[10px] text-muted">{service.category_name}</p>
                 </div>
-
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[rgb(var(--primary-soft))] text-brand">
-                  <ChevronLeft size={17} />
-                </span>
+                <ChevronLeft size={17} className="shrink-0 text-brand" />
               </Link>
             ))}
           </div>
@@ -291,11 +281,11 @@ export default async function HomePage() {
       {listings.length > 0 && (
         <section className="mx-auto mt-12 max-w-6xl px-4 sm:px-6 lg:mt-16">
           <SectionHeading
-            eyebrow="خدمات جاهزة"
-            title="عروض مميزة وجاهزة للطلب"
-            copy="قارن بين الأسعار وتفاصيل الخدمة واطلب فوراً."
+            eyebrow="جاهزة للطلب"
+            title="خدمات أصحابها محددين تفاصيلها من قبل"
+            copy="شوف التفاصيل والسعر وطريقة التنفيذ قبل ما تطلب."
             href="/discover?scope=LISTINGS"
-            action="كل الخدمات"
+            action="كل العروض"
           />
 
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -309,11 +299,11 @@ export default async function HomePage() {
       {providers.length > 0 && (
         <section className="mx-auto mt-12 max-w-6xl px-4 sm:px-6 lg:mt-16">
           <SectionHeading
-            eyebrow="كفاءات موثوقة"
-            title="مقدمو خدمة معتمدون"
-            copy="تصفح ملفات المحترفين وتواصل معهم مباشرة."
+            eyebrow="ناس بتشتغل"
+            title="شوف مقدمي الخدمة قبل ما تحكي معهم"
+            copy="ملفهم، شغلهم وتقييماتهم بمكان واحد."
             href="/discover?scope=PROVIDERS"
-            action="كل المحترفين"
+            action="كل مقدمي الخدمة"
           />
 
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -325,25 +315,21 @@ export default async function HomePage() {
       )}
 
       <section className="mx-auto mt-12 max-w-6xl px-4 sm:px-6 lg:mt-16">
-        <div className="relative overflow-hidden rounded-[2.2rem] bg-gradient-to-l from-[#087f79] to-[#044c52] p-7 text-white shadow-lift sm:p-10">
-          <div className="pointer-events-none absolute -left-16 -top-16 h-56 w-56 rounded-full border-[20px] border-white/10" />
-          <div className="relative grid items-center gap-6 lg:grid-cols-[1fr_auto]">
+        <div className="overflow-hidden rounded-[1.7rem] border border-[#0b746e] bg-[#087f79] px-6 py-7 text-white sm:px-9 sm:py-8">
+          <div className="grid items-center gap-5 lg:grid-cols-[1fr_auto]">
             <div>
-              <p className="text-[11px] font-black text-[#bcece6]">
-                عندك مهارة أو شغف؟
-              </p>
-              <h2 className="mt-2 text-2xl font-black tracking-[-.05em] sm:text-3xl">
-                انضم لمجتمع جسر ووسّع قاعدة عملائك.
+              <p className="text-[10px] font-black text-[#bcece6]">بتعرف تعمل شغلة منيح؟</p>
+              <h2 className="mt-1.5 text-2xl font-black tracking-[-.04em] sm:text-3xl">
+                خلي الناس تلاقيك على جسر.
               </h2>
               <p className="mt-2 max-w-xl text-xs leading-6 text-white/80 sm:text-sm">
-                اعمل ملفك المهني، أضف خدماتك، وخلي الزبائن يوصلولك بكل سهولة
-                وأمان.
+                اعمل ملفك، أضف الخدمات اللي بتقدمها، وخلي العميل يشوف شغلك قبل ما يتواصل معك.
               </p>
             </div>
 
             <Link
               href="/provider/apply"
-              className="inline-flex min-h-[48px] items-center justify-center gap-2 rounded-2xl bg-white px-6 text-xs font-black text-[#087f79] shadow-lg transition hover:-translate-y-0.5 active:scale-[.98]"
+              className="inline-flex min-h-[46px] items-center justify-center gap-2 rounded-xl bg-white px-5 text-xs font-black text-[#087f79] transition hover:bg-[#f7f7f5] active:scale-[.98]"
             >
               سجّل كمقدم خدمة <ArrowLeft size={16} />
             </Link>
@@ -354,11 +340,11 @@ export default async function HomePage() {
       {posts.length > 0 && (
         <section className="mx-auto mt-12 max-w-6xl px-4 sm:px-6 lg:mt-16">
           <SectionHeading
-            eyebrow="أعمال حقيقية"
-            title="من أرض الميدان"
-            copy="نماذج من أحدث أعمال وخدمات المحترفين على جسر."
+            eyebrow="من شغلهم"
+            title="شوف شو عم ينجزوا على أرض الواقع"
+            copy="أعمال منشورة من مقدمي الخدمة على جسر."
             href="/discover?scope=POSTS"
-            action="عرض الكل"
+            action="شوف أكثر"
           />
 
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
