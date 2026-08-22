@@ -25,26 +25,22 @@ export default async function FavoritesPage() {
   const favorites = result.favorites || [];
 
   return (
-    <main className="mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-10 space-y-6">
-      {/* Header Banner */}
-      <section className="relative overflow-hidden rounded-[2.2rem] bg-gradient-to-br from-[#fbe3db] to-[#f4d1c6] p-6 text-[#743b35] shadow-soft sm:p-8">
-        <div className="absolute -left-16 -top-20 h-52 w-52 rounded-full border-[22px] border-white/40" />
-        <div className="relative flex items-center gap-4">
-          <span className="flex h-13 w-13 items-center justify-center rounded-2xl bg-white/60 text-[#743b35] shadow-sm">
-            <Heart size={24} className="fill-current" />
-          </span>
+    <main className="mx-auto max-w-6xl space-y-7 px-4 py-6 sm:px-6 sm:py-10">
+      <header className="border-b border-theme pb-5">
+        <p className="text-[11px] font-bold text-brand">المفضلة</p>
+        <div className="mt-1 flex flex-wrap items-end justify-between gap-3">
           <div>
-            <h1 className="text-2xl font-black sm:text-4xl">محفوظاتك المفضلة ❤️</h1>
-            <p className="mt-1 text-xs text-[#743b35]/80 font-bold sm:text-sm">
-              الخدمات والمحترفون الذين حفظتهم للرجوع إليهم لاحقاً.
+            <h1 className="text-2xl font-bold sm:text-3xl">الأشياء اللي حفظتها</h1>
+            <p className="mt-1 text-sm text-muted">
+              ارجع للخدمات ومقدمي الخدمة اللي لفتوا انتباهك.
             </p>
           </div>
+          <span className="text-xs text-muted">{favorites.length} محفوظ</span>
         </div>
-      </section>
+      </header>
 
-      {/* Grid of Saved Items */}
       {favorites.length > 0 ? (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {favorites.map((favorite) => {
             const listing = record(favorite.service_listings);
             const provider = record(favorite.provider);
@@ -67,33 +63,35 @@ export default async function FavoritesPage() {
             return (
               <article
                 key={favorite.id}
-                className="surface-card flex flex-col justify-between p-5 space-y-4 hover:-translate-y-0.5 active:scale-[0.98]"
+                className="flex min-h-44 flex-col justify-between rounded-2xl border border-theme bg-surface p-5"
               >
                 <div className="flex items-start gap-3">
-                  <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[rgb(var(--primary-soft))] text-brand shadow-sm">
-                    <Icon className="h-6 w-6" />
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[rgb(var(--primary-soft))] text-brand">
+                    <Icon className="h-5 w-5" />
                   </span>
 
                   <div className="min-w-0 flex-1">
-                    <span className="text-[10px] font-black text-brand">
-                      {isListing ? "خدمة محفوظة" : "مقدم خدمة محفوظ"}
+                    <span className="text-[10px] font-bold text-muted">
+                      {isListing ? "خدمة" : "مقدم خدمة"}
                     </span>
-                    <h2 className="mt-1 truncate text-sm font-black">
+                    <h2 className="mt-1 truncate text-sm font-bold">
                       <Link href={href} className="hover:text-brand">
                         {title}
                       </Link>
                     </h2>
-                    <p className="mt-1 line-clamp-2 text-xs leading-5 text-muted">
-                      {summary}
-                    </p>
+                    {summary && (
+                      <p className="mt-1 line-clamp-2 text-xs leading-5 text-muted">
+                        {summary}
+                      </p>
+                    )}
                   </div>
                 </div>
 
                 <Link
                   href={href}
-                  className="flex items-center justify-between border-t border-theme pt-3 text-xs font-black text-brand"
+                  className="mt-4 flex items-center justify-between border-t border-theme pt-3 text-xs font-bold text-brand"
                 >
-                  <span>{isListing ? "طلب الخدمة الآن" : "عرض الملف المهني"}</span>
+                  <span>{isListing ? "عرض الخدمة" : "عرض الملف"}</span>
                   <ArrowLeft size={14} />
                 </Link>
               </article>
@@ -101,16 +99,16 @@ export default async function FavoritesPage() {
           })}
         </div>
       ) : (
-        <div className="surface-card p-12 text-center space-y-3">
-          <Heart className="mx-auto h-12 w-12 text-muted/50" />
-          <h2 className="text-base font-black">قائمة المفضلة فارغة حالياً</h2>
-          <p className="text-xs text-muted max-w-xs mx-auto">
-            تصفح الخدمات واضغط على زر القلب لحفظ ما يناسبك للمستقبل.
+        <section className="rounded-2xl border border-dashed border-theme px-5 py-12 text-center">
+          <Heart className="mx-auto h-7 w-7 text-muted" />
+          <h2 className="mt-3 text-sm font-bold">ما حفظت شيء لسا</h2>
+          <p className="mx-auto mt-1 max-w-sm text-xs leading-6 text-muted">
+            لما تلاقي خدمة أو مقدم خدمة مناسب، احفظه وبتلاقيه هون.
           </p>
-          <Link href="/discover" className="brand-button mt-3">
-            استكشف الخدمات المتاحة
+          <Link href="/discover" className="brand-button mt-4">
+            استكشف الخدمات
           </Link>
-        </div>
+        </section>
       )}
     </main>
   );
