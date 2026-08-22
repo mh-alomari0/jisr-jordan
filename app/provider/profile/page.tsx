@@ -1,3 +1,5 @@
+import Link from "next/link";
+import { ArrowRight } from "lucide-react";
 import { redirect } from "next/navigation";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import ProviderProfileClient from "./_components/provider-profile-client";
@@ -42,18 +44,23 @@ export default async function ProviderProfilePage() {
 
   return (
     <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-12">
-      <header className="mb-7 max-w-3xl">
-        <p className="text-[10px] font-bold tracking-[.08em] text-brand">
-          ملفك العام
-        </p>
-        <h1 className="mt-2 text-3xl font-bold tracking-[-.055em] sm:text-5xl">
-          خليه يحكي عن
-          <span className="text-brand"> شغلك قبل ما تحكي.</span>
-        </h1>
-        <p className="mt-3 text-sm leading-7 text-muted">
-          حدّث صورتك وغلافك ونبذتك ومهاراتك ومناطق عملك والخدمات التي تقدمها.
-          هذه هي الصفحة التي يعتمد عليها العميل قبل المراسلة أو الحجز.
-        </p>
+      <header className="mb-8 border-b border-theme pb-6">
+        <Link
+          href="/provider"
+          className="inline-flex items-center gap-1 text-xs font-bold text-muted transition hover:text-brand"
+        >
+          <ArrowRight size={14} />
+          مساحة الشغل
+        </Link>
+
+        <div className="mt-4 max-w-3xl">
+          <h1 className="text-3xl font-black tracking-[-.05em] sm:text-4xl">
+            ملفك المهني
+          </h1>
+          <p className="mt-2 text-sm leading-7 text-muted">
+            هاي الصفحة اللي الزبون بشوفها قبل ما يحكي معك. خلي الصورة، النبذة، خبرتك وخدماتك يحكوا عن شغلك بوضوح.
+          </p>
+        </div>
       </header>
 
       <ProviderProfileClient
