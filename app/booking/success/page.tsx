@@ -1,16 +1,8 @@
 import Link from "next/link";
-import {
-  ArrowLeft,
-  CalendarDays,
-  Check,
-  CheckCircle2,
-  Clock3,
-  QrCode,
-  Sparkles,
-} from "lucide-react";
+import { ArrowLeft, Check, Clock3 } from "lucide-react";
 
 export const metadata = {
-  title: "تم استلام الحجز بنجاح | جسر الأردن",
+  title: "تم استلام الحجز | جسر الأردن",
 };
 
 export default async function BookingSuccessPage({
@@ -22,76 +14,53 @@ export default async function BookingSuccessPage({
   const bookingId = id && /^[0-9a-f-]{36}$/i.test(id) ? id : null;
 
   return (
-    <main className="min-h-[75vh] flex items-center justify-center px-4 py-8">
-      <div className="w-full max-w-md space-y-6">
-        {/* Celebration Header */}
-        <div className="text-center space-y-2">
-          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-3xl bg-[rgb(var(--primary-soft))] text-brand shadow-md animate-bounce">
-            <Check className="h-8 w-8 stroke-[3]" />
-          </div>
-          <h1 className="text-2xl font-black tracking-tight sm:text-3xl">
-            تم استلام طلبك بنجاح! 🎉
+    <main className="mx-auto flex min-h-[72vh] max-w-3xl items-center px-4 py-10 sm:px-6">
+      <div className="w-full">
+        <div className="border-b border-theme pb-7">
+          <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[rgb(var(--primary-soft))] text-brand">
+            <Check size={24} strokeWidth={2.6} />
+          </span>
+
+          <p className="mt-6 text-[10px] font-bold text-brand">تم استلام الطلب</p>
+          <h1 className="mt-1 text-3xl font-bold tracking-[-.045em] sm:text-4xl">
+            تمام، طلبك صار عندنا.
           </h1>
-          <p className="text-xs text-muted leading-6">
-            تم تسجيل حجزك داخل منصة جسر، وسيصلك إشعار فوري عند تأكيد الموعد من مقدم الخدمة.
+          <p className="mt-3 max-w-xl text-xs leading-6 text-muted sm:text-sm">
+            رح تقدر تتابع أي تغيير على حالة الحجز من صفحة الطلب، وما في داعي تعيد الحجز أو تتواصل من برّا جسر.
           </p>
         </div>
 
-        {/* 🎫 Digital Perforated Ticket Card */}
-        <div className="surface-card relative overflow-hidden !rounded-[2rem] border-2 border-dashed border-[rgb(var(--primary)/0.3)] bg-surface p-6 shadow-lift">
-          <div className="flex items-center justify-between border-b border-theme pb-4">
-            <div>
-              <span className="status-pill bg-[rgb(var(--primary-soft))] text-brand font-black">
-                حجز موثق
-              </span>
-              <p className="text-[10px] font-bold text-muted mt-1.5">
-                رقم الحجز: #{bookingId ? bookingId.slice(0, 8) : "JISR-BOOKING"}
-              </p>
-            </div>
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-surface-muted text-muted">
-              <QrCode size={22} />
-            </div>
-          </div>
-
-          <div className="py-4 space-y-3 text-xs">
-            <div className="flex items-center justify-between">
-              <span className="text-muted flex items-center gap-1.5">
-                <CalendarDays size={14} className="text-brand" /> حالة الطلب
-              </span>
-              <strong className="text-[rgb(var(--warning))] font-black">
-                قيد المراجعة والتأكيد
-              </strong>
-            </div>
-
-            <div className="flex items-center justify-between">
-              <span className="text-muted flex items-center gap-1.5">
-                <Clock3 size={14} className="text-brand" /> طريقة الدفع
-              </span>
-              <strong className="font-bold">الدفع عند الاستلام (نقدي)</strong>
-            </div>
-          </div>
-
-          <div className="border-t border-theme pt-4 text-center">
-            <p className="text-[10px] text-muted leading-5">
-              💡 يمكنك متابعة حالة الطلب أو مراسلة مقدم الخدمة مباشرة من صفحة تفاصيل الحجز.
+        <div className="grid gap-0 border-b border-theme sm:grid-cols-2">
+          <div className="border-b border-theme py-5 sm:border-b-0 sm:border-e sm:pe-6">
+            <p className="text-[10px] font-bold text-muted">رقم الطلب</p>
+            <p className="mt-1 font-mono text-sm font-bold">
+              #{bookingId ? bookingId.slice(0, 8).toUpperCase() : "JISR"}
             </p>
+          </div>
+
+          <div className="py-5 sm:ps-6">
+            <p className="flex items-center gap-1.5 text-[10px] font-bold text-muted">
+              <Clock3 size={13} className="text-brand" />
+              الحالة الحالية
+            </p>
+            <p className="mt-1 text-sm font-bold">بانتظار التأكيد</p>
           </div>
         </div>
 
-        {/* Action Buttons */}
-        <div className="space-y-2.5">
+        <div className="mt-7 flex flex-col gap-3 sm:flex-row">
           <Link
             href={bookingId ? `/bookings/${bookingId}` : "/bookings"}
-            className="brand-button w-full text-xs font-black shadow-md"
+            className="brand-button flex-1 text-xs"
           >
-            فتح تفاصيل وتتبع الحجز <ArrowLeft size={15} />
+            فتح الطلب
+            <ArrowLeft size={14} />
           </Link>
 
           <Link
-            href="/"
-            className="secondary-button w-full text-xs font-bold"
+            href="/bookings"
+            className="secondary-button flex-1 text-xs"
           >
-            العودة للرئيسية
+            كل طلباتي
           </Link>
         </div>
       </div>
